@@ -26,17 +26,17 @@
       margin-bottom: 28px;
     }
 
-    /* iPad Pro 12.9" landscape proportions */
+    /* iPad 10.3" landscape (65% scale) */
     .ipad {
       position: relative;
-      width: 1108px;
-      height: 808px;
+      width: 720px;
+      height: 525px;
       background: #1c1c1e;
-      border-radius: 36px;
+      border-radius: 24px;
       box-shadow:
         0 0 0 2px #3a3a3c,
         0 0 0 3px #2a2a2c,
-        0 40px 120px rgba(0,0,0,0.7),
+        0 30px 80px rgba(0,0,0,0.7),
         inset 0 0 0 2px #3a3a3c;
       flex-shrink: 0;
     }
@@ -45,33 +45,33 @@
     .ipad::before {
       content: '';
       position: absolute;
-      right: -4px;
-      top: 120px;
-      width: 4px;
-      height: 60px;
+      right: -3px;
+      top: 78px;
+      width: 3px;
+      height: 39px;
       background: #2c2c2e;
-      border-radius: 0 3px 3px 0;
-      box-shadow: 0 80px 0 #2c2c2e, 0 160px 0 #2c2c2e;
+      border-radius: 0 2px 2px 0;
+      box-shadow: 0 52px 0 #2c2c2e, 0 104px 0 #2c2c2e;
     }
 
     .ipad::after {
       content: '';
       position: absolute;
-      left: -4px;
-      top: 160px;
-      width: 4px;
-      height: 80px;
+      left: -3px;
+      top: 104px;
+      width: 3px;
+      height: 52px;
       background: #2c2c2e;
-      border-radius: 3px 0 0 3px;
+      border-radius: 2px 0 0 2px;
     }
 
     .screen {
       position: absolute;
-      top: 18px;
-      left: 18px;
-      right: 18px;
-      bottom: 18px;
-      border-radius: 20px;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      border-radius: 14px;
       overflow: hidden;
       background: #000;
     }
@@ -103,18 +103,18 @@
       letter-spacing: 0.5px;
     }
 
-    @media (max-width: 1160px) {
+    @media (max-width: 760px) {
       .ipad {
         width: calc(100vw - 40px);
-        height: calc((100vw - 40px) * 808 / 1108);
-        border-radius: calc(36px * (100vw - 40px) / 1108);
+        height: calc((100vw - 40px) * 525 / 720);
+        border-radius: calc(24px * (100vw - 40px) / 720);
       }
       .screen {
-        top: calc(18px * (100vw - 40px) / 1108);
-        left: calc(18px * (100vw - 40px) / 1108);
-        right: calc(18px * (100vw - 40px) / 1108);
-        bottom: calc(18px * (100vw - 40px) / 1108);
-        border-radius: calc(20px * (100vw - 40px) / 1108);
+        top: calc(12px * (100vw - 40px) / 720);
+        left: calc(12px * (100vw - 40px) / 720);
+        right: calc(12px * (100vw - 40px) / 720);
+        bottom: calc(12px * (100vw - 40px) / 720);
+        border-radius: calc(14px * (100vw - 40px) / 720);
       }
     }
   </style>
@@ -130,7 +130,7 @@
     </div>
   </div>
 
-  <p class="footer">iPad Pro 12.9" Landscape &nbsp;·&nbsp; 1366 × 1024</p>
+  <p class="footer">iPad 10.3" Landscape &nbsp;·&nbsp; 1080 × 810</p>
 
 </body>
 </html>
