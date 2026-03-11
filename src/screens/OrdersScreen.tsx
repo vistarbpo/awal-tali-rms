@@ -864,6 +864,79 @@ function orderToCartItems(order: Order): CartItem[] {
   }));
 }
 
+// ─── Refund Method Dialog ────────────────────────────────────────────────────
+const REFUND_METHODS = ['Cash', 'Mada', 'Credit Card', 'House Account'];
+
+function RefundMethodDialog({ visible, onSelect, onClose }: { visible: boolean; onSelect: (method: string) => void; onClose: () => void }) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
+      <TouchableWithoutFeedback onPress={onClose}>
+        <View style={rm.backdrop} />
+      </TouchableWithoutFeedback>
+      <View style={rm.center} pointerEvents="box-none">
+        <View style={rm.card}>
+          <View style={rm.header}>
+            <Text style={rm.headerTitle}>Select payment method</Text>
+          </View>
+          {REFUND_METHODS.map((method, i) => (
+            <React.Fragment key={method}>
+              {i > 0 && <View style={rm.divider} />}
+              <TouchableOpacity style={rm.row} onPress={() => onSelect(method)} activeOpacity={0.6}>
+                <Text style={rm.methodText}>{method}</Text>
+              </TouchableOpacity>
+            </React.Fragment>
+          ))}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const rm = StyleSheet.create({
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.35)' },
+  center:   { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  card: {
+    width: 480,
+    backgroundColor: Colors.white,
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  header: {
+    backgroundColor: Colors.grayLight,
+    paddingVertical: 18,
+    paddingHorizontal: 28,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.grayBorder,
+  },
+  headerTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: Colors.primary,
+    letterSpacing: -0.3,
+  },
+  divider: {
+    height: 0.5,
+    backgroundColor: 'rgba(60,60,67,0.18)',
+    marginLeft: 24,
+  },
+  row: {
+    paddingHorizontal: 28,
+    paddingVertical: 20,
+  },
+  methodText: {
+    fontSize: 17,
+    fontWeight: '400',
+    color: Colors.black,
+    letterSpacing: -0.2,
+  },
+});
+
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 interface Props {
   onBack?:       () => void;
@@ -883,7 +956,7 @@ export default function OrdersScreen({ onBack, onTotalPress }: Props) {
   const activeFilterCount = countActiveFilters(appliedFilters);
 
   // ── Return flow state ──────────────────────────────────────────────────────
-  const [returnStep, setReturnStep]     = useState<'select' | 'reason' | 'amount' | null>(null);
+  const [returnStep, setReturnStep]     = useState<'select' | 'reason' | 'amount' | 'refund' | null>(null);
   const [returnItems, setReturnItems]   = useState<ReturnItem[]>([]);
   const [returnAmount, setReturnAmount] = useState(0);
   // Local orders copy so we can mark RETURNED without mutating the constant
@@ -1124,7 +1197,14 @@ export default function OrdersScreen({ onBack, onTotalPress }: Props) {
         visible={returnStep === 'amount'}
         amount={returnAmount}
         orderNumber={selectedOrder?.orderNumber ?? ''}
-        onClose={handleReturnConfirm}
+        onClose={() => setReturnStep('refund')}
+      />
+
+      {/* ── Return Order: Step 4 — Select refund method ── */}
+      <RefundMethodDialog
+        visible={returnStep === 'refund'}
+        onSelect={handleReturnConfirm}
+        onClose={() => setReturnStep(null)}
       />
     </SafeAreaView>
   );
