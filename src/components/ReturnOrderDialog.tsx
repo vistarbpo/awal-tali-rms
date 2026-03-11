@@ -77,6 +77,16 @@ export default function ReturnOrderDialog({ visible, items, onClose, onDone }: P
     setWastes(prev => { const n = [...prev]; n[i] = !n[i]; return n; });
   }
 
+  const allSelected = items.length > 0 && returnQtys.every((q, i) => q === items[i]?.qty);
+
+  function selectAll() {
+    if (allSelected) {
+      setReturnQtys(items.map(() => 0));
+    } else {
+      setReturnQtys(items.map(item => item.qty));
+    }
+  }
+
   function handleDone() {
     const selected = items
       .map((item, i) => ({ name: item.name, qty: returnQtys[i], price: item.price, isWaste: wastes[i] }))
@@ -93,6 +103,22 @@ export default function ReturnOrderDialog({ visible, items, onClose, onDone }: P
           <View style={s.header}>
             <Text style={s.headerTitle}>Select products to return</Text>
             <Text style={s.headerSub}>Choose qty and mark wasted items</Text>
+          </View>
+
+          {/* Select / Deselect All */}
+          <View style={s.selectAllRow}>
+            <TouchableOpacity
+              style={[s.selectAllBtn, allSelected && s.selectAllBtnOn]}
+              onPress={selectAll}
+              activeOpacity={0.75}
+            >
+              <View style={[s.checkbox, allSelected && s.checkboxOn]}>
+                {allSelected && <View style={s.checkmark} />}
+              </View>
+              <Text style={[s.selectAllText, allSelected && s.selectAllTextOn]}>
+                {allSelected ? 'Deselect All' : 'Select All'}
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* Item rows */}
@@ -215,6 +241,61 @@ const s = StyleSheet.create({
     color: Colors.grayText,
     letterSpacing: -0.1,
     textAlign: 'center',
+  },
+
+  selectAllRow: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.grayBorder,
+  },
+  selectAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.primaryLight,
+    borderWidth: 1.5,
+    borderColor: Colors.grayBorder,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  selectAllBtnOn: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  checkbox: {
+    width: 18,
+    height: 18,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: Colors.grayMid,
+    backgroundColor: Colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxOn: {
+    borderColor: Colors.white,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+  },
+  checkmark: {
+    width: 10,
+    height: 6,
+    borderLeftWidth: 2,
+    borderBottomWidth: 2,
+    borderColor: Colors.white,
+    marginTop: -2,
+    transform: [{ rotate: '-45deg' }],
+  },
+  selectAllText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.primary,
+    letterSpacing: -0.1,
+  },
+  selectAllTextOn: {
+    color: Colors.white,
   },
 
   scroll: { maxHeight: 400 },
