@@ -1,0 +1,368 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View, Text, TouchableOpacity, Modal, ScrollView, StyleSheet,
+} from 'react-native';
+import { Colors } from '../constants/colors';
+
+export interface ReturnItem {
+  name: string;
+  qty: number;
+  price: number;
+  isWaste: boolean;
+}
+
+interface OrderItem {
+  name: string;
+  qty: number;
+  price: number;
+  note?: string;
+}
+
+interface Props {
+  visible: boolean;
+  items: OrderItem[];
+  onClose: () => void;
+  onDone: (items: ReturnItem[]) => void;
+}
+
+// ─── View-drawn icons (no font/asset dependency) ─────────────────────────────
+function MinusIcon() {
+  return <View style={icon.bar} />;
+}
+
+function PlusIcon() {
+  return (
+    <View style={icon.plusWrap}>
+      <View style={icon.bar} />
+      <View style={icon.barV} />
+    </View>
+  );
+}
+
+const icon = StyleSheet.create({
+  bar:     { width: 14, height: 2.5, backgroundColor: Colors.white, borderRadius: 2 },
+  plusWrap:{ width: 14, height: 14, alignItems: 'center', justifyContent: 'center' },
+  barV:    { width: 2.5, height: 14, backgroundColor: Colors.white, borderRadius: 2, position: 'absolute' },
+});
+
+// ─── Component ────────────────────────────────────────────────────────────────
+export default function ReturnOrderDialog({ visible, items, onClose, onDone }: Props) {
+  const [returnQtys, setReturnQtys] = useState<number[]>([]);
+  const [wastes, setWastes]         = useState<boolean[]>([]);
+
+  useEffect(() => {
+    if (visible) {
+      setReturnQtys(items.map(() => 0));
+      setWastes(items.map(() => false));
+    }
+  }, [visible]);
+
+  function increment(i: number) {
+    setReturnQtys(prev => {
+      const next = [...prev];
+      if (next[i] < items[i].qty) next[i]++;
+      return next;
+    });
+  }
+
+  function decrement(i: number) {
+    setReturnQtys(prev => {
+      const next = [...prev];
+      if (next[i] > 0) next[i]--;
+      return next;
+    });
+  }
+
+  function toggleWaste(i: number) {
+    setWastes(prev => { const n = [...prev]; n[i] = !n[i]; return n; });
+  }
+
+  function handleDone() {
+    const selected = items
+      .map((item, i) => ({ name: item.name, qty: returnQtys[i], price: item.price, isWaste: wastes[i] }))
+      .filter(r => r.qty > 0);
+    onDone(selected);
+  }
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
+      <View style={s.backdrop}>
+        <View style={s.card}>
+
+          {/* Header */}
+          <View style={s.header}>
+            <Text style={s.headerTitle}>Select products to return</Text>
+            <Text style={s.headerSub}>Choose qty and mark wasted items</Text>
+          </View>
+
+          {/* Item rows */}
+          <ScrollView style={s.scroll} showsVerticalScrollIndicator={false}>
+            {items.map((item, i) => {
+              const qty    = returnQtys[i] ?? 0;
+              const isWaste = wastes[i] ?? false;
+              const atMax  = qty >= item.qty;
+              const atMin  = qty === 0;
+
+              return (
+                <View key={i}>
+                  {i > 0 && <View style={s.divider} />}
+                  <View style={s.row}>
+
+                    {/* Name + note */}
+                    <View style={s.nameCol}>
+                      <Text style={s.itemName} numberOfLines={2}>{item.name}</Text>
+                      {item.note && <Text style={s.itemNote}>{item.note}</Text>}
+                    </View>
+
+                    {/* Stepper */}
+                    <View style={s.stepper}>
+                      <TouchableOpacity
+                        style={[s.stepBtn, s.stepBtnMinus, atMin && s.stepBtnDisabled]}
+                        onPress={() => decrement(i)}
+                        activeOpacity={atMin ? 1 : 0.7}
+                      >
+                        <MinusIcon />
+                      </TouchableOpacity>
+
+                      <View style={s.qtyBox}>
+                        <Text style={s.qtyNum}>{qty}</Text>
+                        <Text style={s.qtyOf}>/ {item.qty}</Text>
+                      </View>
+
+                      <TouchableOpacity
+                        style={[s.stepBtn, s.stepBtnPlus, atMax && s.stepBtnDisabled]}
+                        onPress={() => increment(i)}
+                        activeOpacity={atMax ? 1 : 0.7}
+                      >
+                        <PlusIcon />
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Waste toggle */}
+                    <TouchableOpacity
+                      style={[s.wasteBtn, isWaste && s.wasteBtnOn]}
+                      onPress={() => toggleWaste(i)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[s.wasteDot, isWaste && s.wasteDotOn]} />
+                      <Text style={[s.wasteLabel, isWaste && s.wasteLabelOn]}>Waste</Text>
+                    </TouchableOpacity>
+
+                  </View>
+                </View>
+              );
+            })}
+            <View style={{ height: 6 }} />
+          </ScrollView>
+
+          {/* Footer */}
+          <View style={s.footer}>
+            <TouchableOpacity style={s.cancelBtn} onPress={onClose} activeOpacity={0.8}>
+              <Text style={s.cancelText}>Cancel</Text>
+            </TouchableOpacity>
+            <View style={s.footerDivider} />
+            <TouchableOpacity style={s.doneBtn} onPress={handleDone} activeOpacity={0.8}>
+              <Text style={s.footerText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const s = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  card: {
+    width: 560,
+    backgroundColor: Colors.white,
+    borderRadius: 24,
+    overflow: 'hidden',
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.22,
+    shadowRadius: 32,
+    elevation: 16,
+  },
+
+  /* Header */
+  header: {
+    backgroundColor: Colors.grayLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+    paddingVertical: 20,
+    gap: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.grayBorder,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.primary,
+    letterSpacing: -0.4,
+    textAlign: 'center',
+  },
+  headerSub: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: Colors.grayText,
+    letterSpacing: -0.1,
+    textAlign: 'center',
+  },
+
+  scroll: { maxHeight: 400 },
+
+  divider: {
+    height: 1,
+    backgroundColor: Colors.grayBorder,
+    marginHorizontal: 24,
+  },
+
+  /* Row */
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    gap: 16,
+  },
+  nameCol: {
+    flex: 1,
+    gap: 2,
+  },
+  itemName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.black,
+    letterSpacing: -0.2,
+    lineHeight: 20,
+  },
+  itemNote: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: Colors.grayText,
+  },
+
+  /* Stepper */
+  stepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.backgroundAlt,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.grayBorder,
+    overflow: 'hidden',
+  },
+  stepBtn: {
+    width: 40,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepBtnMinus: {
+    backgroundColor: Colors.primary,
+  },
+  stepBtnPlus: {
+    backgroundColor: Colors.goldShade,
+  },
+  stepBtnDisabled: {
+    opacity: 0.35,
+  },
+  qtyBox: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    paddingHorizontal: 14,
+    gap: 3,
+    minWidth: 64,
+    justifyContent: 'center',
+  },
+  qtyNum: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.primary,
+    letterSpacing: -0.3,
+  },
+  qtyOf: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: Colors.grayText,
+  },
+
+  /* Waste toggle */
+  wasteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: Colors.grayBorder,
+    backgroundColor: Colors.white,
+  },
+  wasteBtnOn: {
+    backgroundColor: '#FEF0F0',
+    borderColor: Colors.red,
+  },
+  wasteDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.grayMid,
+  },
+  wasteDotOn: {
+    backgroundColor: Colors.red,
+  },
+  wasteLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: Colors.grayText,
+  },
+  wasteLabelOn: {
+    color: Colors.red,
+    fontWeight: '600',
+  },
+
+  /* Footer */
+  footer: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: Colors.grayBorder,
+    height: 64,
+  },
+  footerDivider: {
+    width: 1,
+    backgroundColor: Colors.grayBorder,
+  },
+  cancelBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEF0F0',
+  },
+  cancelText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: Colors.red,
+    letterSpacing: -0.2,
+  },
+  doneBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.primary,
+  },
+  footerText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: Colors.white,
+    letterSpacing: -0.2,
+  },
+});
