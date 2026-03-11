@@ -45,7 +45,8 @@ interface Props {
   onCountPress?: () => void;
   orderSeq?: number;
   isPaymentOpen?: boolean;
-  isVoided?: boolean;
+  isVoided?:    boolean;
+  isReturned?:  boolean;
   status?: string;
   discount?: OrderDiscount | null;
   onDiscountPress?: () => void;
@@ -68,7 +69,7 @@ function statusBg(s: string) {
   return map[s.toUpperCase()] ?? Colors.grayLight;
 }
 
-export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveItem, orderType, onOrderTypePress, customer, onAddCustomerPress, onTotalPress, onCountPress, orderSeq, isPaymentOpen, isVoided, status, discount, onDiscountPress }: Props) {
+export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveItem, orderType, onOrderTypePress, customer, onAddCustomerPress, onTotalPress, onCountPress, orderSeq, isPaymentOpen, isVoided, isReturned, status, discount, onDiscountPress }: Props) {
   const subtotal        = items.reduce((sum, i) => sum + itemEffectiveTotal(i), 0);
   const discountAmount  = discount
     ? discount.kind === 'percentage'
@@ -140,11 +141,11 @@ export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveIt
                 <TouchableOpacity
                   key={item.id}
                   style={s.item}
-                  onPress={() => !isVoided && onSelectItem(item.id)}
-                  activeOpacity={isVoided ? 1 : 0.8}
+                  onPress={() => !isVoided && !isReturned && onSelectItem(item.id)}
+                  activeOpacity={isVoided || isReturned ? 1 : 0.8}
                 >
-                  {selected && !isVoided && <View style={s.selectedBar} />}
-                  <View style={[s.itemContent, selected && !isVoided && s.itemContentSelected, isVoided && s.itemContentVoided]}>
+                  {selected && !isVoided && !isReturned && <View style={s.selectedBar} />}
+                  <View style={[s.itemContent, selected && !isVoided && !isReturned && s.itemContentSelected, isVoided && s.itemContentVoided, isReturned && s.itemContentReturned]}>
                     <View style={s.itemLeft}>
                       <Text style={s.itemQty}>{item.qty}</Text>
                       <View>
@@ -379,6 +380,11 @@ const s = StyleSheet.create({
   },
   itemContentSelected: {
     backgroundColor: Colors.primaryLight,
+  },
+  itemContentReturned: {
+    backgroundColor: 'rgba(160, 129, 75, 0.10)',  // Colors.yellowGold tint
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.yellowGold,
   },
   itemContentVoided: {
     backgroundColor: Colors.liteColor2,

@@ -1002,12 +1002,26 @@ export default function OrdersScreen({ onBack, onTotalPress }: Props) {
     setReturnStep('amount');
   }
 
-  function handleReturnConfirm() {
+  function handleReturnConfirm(_method?: string) {
     if (selectedOrder) {
-      setOrders(prev =>
-        prev.map(o => o.id === selectedOrder.id ? { ...o, status: 'RETURNED' as OrderStatus } : o)
-      );
-      setSelectedOrder(prev => prev ? { ...prev, status: 'RETURNED' } : prev);
+      const returnOrderNumber = `R${selectedOrder.orderNumber}`;
+      const returnTotal = returnItems.reduce((s, i) => s + i.price * i.qty, 0) * 1.15;
+      const newReturnOrder: Order = {
+        id:            `return-${selectedOrder.id}-${Date.now()}`,
+        orderNumber:   returnOrderNumber,
+        type:          selectedOrder.type,
+        itemCount:     returnItems.reduce((s, i) => s + i.qty, 0),
+        time:          new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        createdBy:     selectedOrder.createdBy,
+        paymentMethod: 'Unpaid',
+        status:        'RETURNED' as OrderStatus,
+        total:         returnTotal,
+        items:         returnItems.map(i => ({ name: i.name, qty: i.qty, price: i.price })),
+        customerName:  selectedOrder.customerName,
+        customerPhone: selectedOrder.customerPhone,
+      };
+      setOrders(prev => [newReturnOrder, ...prev]);
+      setSelectedOrder(newReturnOrder);
     }
     setReturnStep(null);
   }
@@ -1032,6 +1046,7 @@ export default function OrdersScreen({ onBack, onTotalPress }: Props) {
             ? () => onTotalPress(orderToCartItems(selectedOrder), selectedOrder.type)
             : undefined}
           isVoided={selectedOrder?.status === 'VOID'}
+          isReturned={selectedOrder?.status === 'RETURNED'}
         />
 
         {/* ══ RIGHT: Content ══ */}
