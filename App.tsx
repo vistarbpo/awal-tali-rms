@@ -7,6 +7,8 @@ import PaymentScreen from './src/screens/PaymentScreen';
 import DesignSystemScreen from './src/screens/DesignSystemScreen';
 import OrdersScreen, { Order } from './src/screens/OrdersScreen';
 import OrderEditScreen from './src/screens/OrderEditScreen';
+import TablesScreen from './src/screens/TablesScreen';
+import ReservationsScreen from './src/screens/ReservationsScreen';
 import ProductAvailabilityCategoriesScreen from './src/screens/ProductAvailabilityCategoriesScreen';
 import ProductAvailabilityProductsScreen, { ProductAvailabilityMap } from './src/screens/ProductAvailabilityProductsScreen';
 import { CartItem } from './src/components/OrderPanel';
@@ -16,7 +18,7 @@ import { OrderDiscount } from './src/components/DiscountDialog';
 type Screen =
   | 'login' | 'welcome' | 'home' | 'products' | 'payment'
   | 'design-system' | 'orders' | 'order-edit' | 'payment-order-edit'
-  | 'avail-categories' | 'avail-products';
+  | 'avail-categories' | 'avail-products' | 'tables' | 'reservations';
 
 export default function App() {
   const [screen, setScreen]               = useState<Screen>('login');
@@ -25,6 +27,7 @@ export default function App() {
   const [orderEditPayment, setOrderEditPayment] = useState<{ cart: CartItem[]; orderType: string; backScreen: Screen } | null>(null);
   const [isTillOpen, setIsTillOpen]     = useState(false);
   const [orderType, setOrderType]       = useState<OrderType | null>(null);
+  const [dineInTable, setDineInTable]   = useState<string | null>(null);
   const [orderSeqMap, setOrderSeqMap]   = useState<Partial<Record<OrderType, number>>>({});
   const [productAvailability, setProductAvailability] = useState<ProductAvailabilityMap>({});
   const [availCategoryId, setAvailCategoryId]     = useState<string | null>(null);
@@ -89,14 +92,24 @@ export default function App() {
     isTillOpen,
     onTillToggle: () => setIsTillOpen(prev => !prev),
     onExit: handleExit,
-    orderType,
+    orderType: orderType
+      ? (dineInTable ? `${orderType} (${dineInTable})` : orderType)
+      : null,
+    tableNumber: dineInTable ?? undefined,
     onOrderTypeSet: (type: OrderType) => {
+      setDineInTable(null);
       setOrderType(type);
       setOrderSeqMap(prev => ({ ...prev, [type]: (prev[type] ?? 0) + 1 }));
     },
     orderSeq: orderType ? (orderSeqMap[orderType] ?? 1) : undefined,
     status: 'Active',
     onTotalPress: () => setScreen('payment'),
+    onNewOrder: () => {
+      setCart([]);
+      setSelectedCartId(null);
+      setOrderType(null);
+      setDineInTable(null);
+    },
   };
 
   if (screen === 'avail-products' && availCategoryId) {
@@ -142,6 +155,7 @@ export default function App() {
           setCart([]);
           setSelectedCartId(null);
           setOrderType(null);
+          setDineInTable(null);
           setScreen('home');
         }}
       />
@@ -153,10 +167,31 @@ export default function App() {
       <OrderEditScreen
         order={editingOrder}
         onBack={() => setScreen('orders')}
-        onTabPress={tab => { if (tab === 'orders') setScreen('orders'); }}
+        onTabPress={tab => { if (tab === 'orders') setScreen('orders'); if (tab === 'tables') setScreen('tables'); }}
         onTotalPress={(cart, orderType) => {
           setOrderEditPayment({ cart, orderType, backScreen: 'order-edit' });
           setScreen('payment-order-edit');
+        }}
+      />
+    );
+  }
+
+  if (screen === 'reservations') {
+    return <ReservationsScreen onBack={() => setScreen('tables')} />;
+  }
+
+  if (screen === 'tables') {
+    return (
+      <TablesScreen
+        onBack={() => setScreen('home')}
+        onReservations={() => setScreen('reservations')}
+        onStartOrder={(tableName, _section, _guests) => {
+          setCart([]);
+          setSelectedCartId(null);
+          setOrderType('Dine in' as OrderType);
+          setDineInTable(tableName);
+          setOrderSeqMap(prev => ({ ...prev, ['Dine in']: (prev['Dine in'] ?? 0) + 1 }));
+          setScreen('products');
         }}
       />
     );
@@ -169,6 +204,26 @@ export default function App() {
         onTotalPress={(orderCart, orderType) => {
           setOrderEditPayment({ cart: orderCart, orderType, backScreen: 'orders' });
           setScreen('payment-order-edit');
+        }}
+        onLoadOrder={order => {
+          const items: CartItem[] = order.items.map((item, i) => ({
+            id: `${order.id}-${i}`,
+            name: item.name,
+            qty: item.qty,
+            price: item.price,
+          }));
+          setCart(items);
+          setSelectedCartId(null);
+          const typeMap: Record<string, OrderType> = {
+            'DINE IN':    'Dine in',
+            'PICK UP':    'Pick up',
+            'DELIVERY':   'Delivery',
+            'DRIVE THRU': 'Drive thru',
+          };
+          setOrderType(typeMap[order.type] ?? null);
+          setDineInTable(order.tableNumber ?? null);
+          setOrderSeqMap(prev => ({ ...prev, [order.type]: (prev[order.type as OrderType] ?? 0) + 1 }));
+          setScreen('products');
         }}
       />
     );
@@ -186,6 +241,7 @@ export default function App() {
           setCart([]);
           setSelectedCartId(null);
           setOrderType(null);
+          setDineInTable(null);
           setScreen('home');
         }}
       />
@@ -197,7 +253,7 @@ export default function App() {
       <HomeProductsScreen
         onBack={() => setScreen('home')}
         onAddToCart={addToCart}
-        onTabPress={tab => { if (tab === 'orders') setScreen('orders'); }}
+        onTabPress={tab => { if (tab === 'orders') setScreen('orders'); if (tab === 'tables') setScreen('tables'); }}
         productAvailability={productAvailability}
         onAvailabilityPress={openAvailability}
         {...cartProps}
@@ -209,7 +265,7 @@ export default function App() {
     return (
       <HomeScreen
         onCategorySelect={() => setScreen('products')}
-        onTabPress={tab => { if (tab === 'orders') setScreen('orders'); }}
+        onTabPress={tab => { if (tab === 'orders') setScreen('orders'); if (tab === 'tables') setScreen('tables'); }}
         onAvailabilityPress={openAvailability}
         {...cartProps}
       />

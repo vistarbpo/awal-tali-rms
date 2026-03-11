@@ -939,11 +939,12 @@ const rm = StyleSheet.create({
 
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 interface Props {
-  onBack?:       () => void;
-  onTotalPress?: (cart: CartItem[], orderType: string) => void;
+  onBack?:        () => void;
+  onTotalPress?:  (cart: CartItem[], orderType: string) => void;
+  onLoadOrder?:   (order: Order) => void;
 }
 
-export default function OrdersScreen({ onBack, onTotalPress }: Props) {
+export default function OrdersScreen({ onBack, onTotalPress, onLoadOrder }: Props) {
   const [activeTab, setActiveTab]               = useState<FilterTab>('ALL');
   const [selectedOrder, setSelectedOrder]       = useState<Order | null>(ORDERS[0]);
   const [search, setSearch]                     = useState('');
@@ -1047,6 +1048,7 @@ export default function OrdersScreen({ onBack, onTotalPress }: Props) {
             : undefined}
           isVoided={selectedOrder?.status === 'VOID'}
           isReturned={selectedOrder?.status === 'RETURNED'}
+          tableNumber={selectedOrder?.type === 'DINE IN' ? 'Table' : undefined}
         />
 
         {/* ══ RIGHT: Content ══ */}
@@ -1058,7 +1060,7 @@ export default function OrdersScreen({ onBack, onTotalPress }: Props) {
             <>
               {/* Action bar */}
               <View style={s.actionBar}>
-                <TouchableOpacity style={s.backBtn} onPress={onBack} activeOpacity={0.8}>
+                <TouchableOpacity style={s.backBtn} onPress={() => { if (selectedOrder) onLoadOrder?.(selectedOrder); onBack?.(); }} activeOpacity={0.8}>
                   <Image source={ICONS.arrowLeft} style={s.btnIcon} />
                   <Text style={s.btnLabel}>BACK</Text>
                 </TouchableOpacity>

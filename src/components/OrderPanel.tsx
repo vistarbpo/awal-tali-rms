@@ -45,8 +45,9 @@ interface Props {
   onCountPress?: () => void;
   orderSeq?: number;
   isPaymentOpen?: boolean;
-  isVoided?:    boolean;
-  isReturned?:  boolean;
+  isVoided?:     boolean;
+  isReturned?:   boolean;
+  tableNumber?:  string;
   status?: string;
   discount?: OrderDiscount | null;
   onDiscountPress?: () => void;
@@ -69,7 +70,7 @@ function statusBg(s: string) {
   return map[s.toUpperCase()] ?? Colors.grayLight;
 }
 
-export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveItem, orderType, onOrderTypePress, customer, onAddCustomerPress, onTotalPress, onCountPress, orderSeq, isPaymentOpen, isVoided, isReturned, status, discount, onDiscountPress }: Props) {
+export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveItem, orderType, onOrderTypePress, customer, onAddCustomerPress, onTotalPress, onCountPress, orderSeq, isPaymentOpen, isVoided, isReturned, tableNumber, status, discount, onDiscountPress }: Props) {
   const subtotal        = items.reduce((sum, i) => sum + itemEffectiveTotal(i), 0);
   const discountAmount  = discount
     ? discount.kind === 'percentage'
@@ -153,6 +154,11 @@ export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveIt
                       </View>
                       <View style={s.itemNameCol}>
                         <Text style={s.itemName} numberOfLines={2}>{item.name}</Text>
+                        {(tableNumber || orderType?.toLowerCase().includes('dine')) && (
+                          <View style={s.tableBadge}>
+                            <Text style={s.tableBadgeText}>{tableNumber ?? 'Table'}</Text>
+                          </View>
+                        )}
                         {item.discount && (
                           <Text style={s.itemDiscountBadge}>{item.discount.label}</Text>
                         )}
@@ -417,6 +423,21 @@ const s = StyleSheet.create({
     color: Colors.black,
     lineHeight: 18,
     letterSpacing: -0.07,
+  },
+  tableBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.primaryLight,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    borderRadius: 5,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  tableBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: Colors.primary,
+    letterSpacing: 0.1,
   },
   itemDiscountBadge: {
     fontSize: 11,

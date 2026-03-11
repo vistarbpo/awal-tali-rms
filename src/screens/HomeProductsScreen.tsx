@@ -23,6 +23,7 @@ import OrderTypeDialog, { OrderType } from '../components/OrderTypeDialog';
 import VoidReasonDialog from '../components/VoidReasonDialog';
 import CustomerFlowDialogs, { DeliveryCustomer } from '../components/CustomerFlowDialogs';
 import DiscountDialog, { OrderDiscount } from '../components/DiscountDialog';
+import OrderMoreMenu, { OrderMenuStatus } from '../components/OrderMoreMenu';
 import { ProductAvailabilityMap } from './ProductAvailabilityProductsScreen';
 
 // ─── Asset URLs (Figma node 43-382) ───────────────────────────────────────────
@@ -215,6 +216,8 @@ interface Props {
   onTabPress?:           (tab: string) => void;
   productAvailability?:  ProductAvailabilityMap;
   onAvailabilityPress?:  () => void;
+  tableNumber?:          string;
+  onNewOrder?:           () => void;
 }
 
 export default function HomeProductsScreen({
@@ -238,6 +241,8 @@ export default function HomeProductsScreen({
   onTabPress,
   productAvailability,
   onAvailabilityPress,
+  tableNumber,
+  onNewOrder,
 }: Props) {
   const { width: screenW }    = useWindowDimensions();
   const searchRef                         = useRef<TextInput>(null);
@@ -260,6 +265,7 @@ export default function HomeProductsScreen({
   const [discountVisible, setDiscountVisible]         = useState(false);
   const [orderDiscount, setOrderDiscount]             = useState<OrderDiscount | null>(null);
   const [itemDiscountVisible, setItemDiscountVisible] = useState(false);
+  const [orderMoreVisible, setOrderMoreVisible]       = useState(false);
 
   const totalPages = Math.ceil(PRODUCTS.length / PAGE_SIZE);
   const gridData   = buildGrid(PRODUCTS, page, totalPages);
@@ -318,6 +324,7 @@ export default function HomeProductsScreen({
           onAddCustomerPress={() => setCustomerFlowVisible(true)}
           onTotalPress={onTotalPress}
           isVoided={isVoided}
+          tableNumber={tableNumber}
           discount={orderDiscount}
           onDiscountPress={() => setDiscountVisible(true)}
         />
@@ -414,8 +421,9 @@ export default function HomeProductsScreen({
                     style={[layout.actionBtn, btn.danger && layout.actionBtnDanger]}
                     activeOpacity={0.8}
                     onPress={
-                      btn.key === 'void'     ? () => setVoidReasonVisible(true) :
-                      btn.key === 'discount' ? () => setDiscountVisible(true)   : undefined
+                      btn.key === 'void'     ? () => setVoidReasonVisible(true)  :
+                      btn.key === 'discount' ? () => setDiscountVisible(true)    :
+                      btn.key === 'more'     ? () => setOrderMoreVisible(true)   : undefined
                     }
                   >
                     <Image source={btn.icon} style={layout.actionIcon} />
@@ -478,6 +486,13 @@ export default function HomeProductsScreen({
                       onPress={() => {
                         if (tab.key === 'home') {
                           setHomeMenuVisible(true);
+                        } else if (tab.key === 'new') {
+                          setIsVoided(false);
+                          setVoidedReason('');
+                          setDeliveryCustomer(null);
+                          setOrderDiscount(null);
+                          setIsEditingItem(false);
+                          onNewOrder?.();
                         } else {
                           setActiveTab(tab.key);
                           onTabPress?.(tab.key);
@@ -602,6 +617,15 @@ export default function HomeProductsScreen({
         onCustomerAssigned={customer => {
           setDeliveryCustomer(customer);
           setCustomerFlowVisible(false);
+        }}
+      />
+
+      <OrderMoreMenu
+        visible={orderMoreVisible}
+        onClose={() => setOrderMoreVisible(false)}
+        status={isVoided ? 'voided' : 'active'}
+        onItemPress={key => {
+          // handlers can be wired up per item in future
         }}
       />
     </SafeAreaView>

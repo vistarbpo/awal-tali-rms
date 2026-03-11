@@ -104,9 +104,10 @@ interface Props {
   status?:              string;
   onTotalPress?:        () => void;
   onAvailabilityPress?: () => void;
+  tableNumber?:         string;
 }
 
-export default function HomeScreen({ onTabPress, onCategorySelect, cart, selectedCartId, onSelectItem, onRemoveItem, onUpdateQty, onDoneEditing, isTillOpen, onTillToggle, onExit, orderType, onOrderTypeSet, orderSeq, status, onTotalPress, onAvailabilityPress }: Props) {
+export default function HomeScreen({ onTabPress, onCategorySelect, cart, selectedCartId, onSelectItem, onRemoveItem, onUpdateQty, onDoneEditing, isTillOpen, onTillToggle, onExit, orderType, onOrderTypeSet, orderSeq, status, onTotalPress, onAvailabilityPress, tableNumber }: Props) {
   const { width: screenW }      = useWindowDimensions();
   const searchRef                   = useRef<TextInput>(null);
   const [search, setSearch]         = useState('');
@@ -141,6 +142,7 @@ export default function HomeScreen({ onTabPress, onCategorySelect, cart, selecte
           orderType={orderType}
           orderSeq={orderSeq}
           status={status}
+          tableNumber={tableNumber}
           onTotalPress={onTotalPress}
         />
 
@@ -235,7 +237,7 @@ export default function HomeScreen({ onTabPress, onCategorySelect, cart, selecte
                       setHomeMenuVisible(true);
                     } else {
                       setActiveTab(tab.key);
-                      onTabPress?.(tab.key);
+                      if (tab.key === 'orders' || tab.key === 'tables') onTabPress?.(tab.key);
                     }
                   }}
                   activeOpacity={0.7}

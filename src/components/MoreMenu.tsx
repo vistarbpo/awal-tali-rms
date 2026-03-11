@@ -158,12 +158,12 @@ const s = StyleSheet.create({
     gap: 20,
   },
   icon: {
-    width: 28,
-    height: 28,
+    width: 22,
+    height: 22,
     resizeMode: 'contain',
   },
   label: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '400',
     color: Colors.grayText,
     letterSpacing: -0.4,
