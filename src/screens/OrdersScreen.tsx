@@ -37,13 +37,14 @@ type PaymentMethod = 'Cash' | 'Card' | 'Split' | 'Unpaid';
 type OrderSource  = 'Cashier' | 'API';
 
 interface OrderFilters {
-  statuses:     Set<OrderStatus>;
-  types:        Set<OrderType>;
-  sources:      Set<OrderSource>;
-  creator:      string;
-  cashier:      string;
-  businessDate: string;
-  dueDate:      string;
+  statusId:     string;   // '' = All
+  typeId:       string;   // '' = All
+  sourceId:     string;   // '' = All
+  creatorId:    string;   // '' = All
+  cashierId:    string;   // '' = All
+  driverId:     string;   // '' = All
+  businessDate: string;   // '' = All, or 'YYYY-MM-DD'
+  dueDate:      string;   // '' = All, or 'YYYY-MM-DD'
   ahead:        boolean;
 }
 
@@ -390,47 +391,76 @@ function DashedDivider() {
   );
 }
 
-// ─── Filter Panel ────────────────────────────────────────────────────────────
-const STATUS_OPTIONS: { key: OrderStatus; label: string }[] = [
-  { key: 'PENDING',  label: 'Pending'  },
-  { key: 'ACTIVE',   label: 'Active'   },
-  { key: 'DONE',     label: 'Done'     },
-  { key: 'VOID',     label: 'Void'     },
-  { key: 'RETURNED', label: 'Returned' },
+// ─── Filter Panel ─────────────────────────────────────────────────────────────
+type FPStep = 'main' | 'status' | 'type' | 'source' | 'creator' | 'cashier' | 'driver' | 'biz_date' | 'due_date';
+
+const STATUS_OPTIONS = [
+  { id: 'PENDING',  label: 'Pending'  },
+  { id: 'ACTIVE',   label: 'Active'   },
+  { id: 'JOINED',   label: 'Joined'   },
+  { id: 'RETURNED', label: 'Returned' },
+  { id: 'DONE',     label: 'Done'     },
+  { id: 'DECLINED', label: 'Declined' },
+];
+const TYPE_OPTIONS = [
+  { id: 'DINE IN',    label: 'Dine In'    },
+  { id: 'PICK UP',    label: 'Pick Up'    },
+  { id: 'DELIVERY',   label: 'Delivery'   },
+  { id: 'DRIVE THRU', label: 'Drive Thru' },
+];
+const SOURCE_OPTIONS = [
+  { id: 'Call Center',          label: 'Call Center'          },
+  { id: 'Cashier',              label: 'Cashier'              },
+  { id: 'API',                  label: 'API'                  },
+  { id: 'API (Foodics Online)', label: 'API (Foodics Online)' },
+];
+const STAFF_OPTIONS = [
+  { id: 'Sainudheen',     label: 'Sainudheen'     },
+  { id: 'سيد عمر',       label: 'سيد عمر'       },
+  { id: 'Saud Al Osaimi', label: 'Saud Al Osaimi' },
+  { id: 'احمد',           label: 'احمد'           },
+  { id: 'Call Center',    label: 'Call Center'    },
+  { id: 'ابويكر يس',     label: 'ابويكر يس'     },
+];
+const DRIVER_OPTIONS = [
+  { id: '_none',          label: 'No Driver Assigned' },
+  { id: 'Sainudheen',     label: 'Sainudheen'         },
+  { id: 'Saud Al Osaimi', label: 'Saud Al Osaimi'     },
+  { id: 'احمد',           label: 'احمد'               },
+  { id: 'ابويكر يس',     label: 'ابويكر يس'         },
+  { id: 'ابو بكر يس',    label: 'ابو بكر يس'         },
 ];
 
-const TYPE_OPTIONS: { key: OrderType; label: string }[] = [
-  { key: 'DINE IN',    label: 'Dine In'    },
-  { key: 'PICK UP',    label: 'Pick Up'    },
-  { key: 'DELIVERY',   label: 'Delivery'   },
-  { key: 'DRIVE THRU', label: 'Drive Thru' },
-];
+const MONTH_NAMES = ['January','February','March','April','May','June',
+  'July','August','September','October','November','December'];
+const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAY_NAMES = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
 
-const SOURCE_OPTIONS: { key: OrderSource; label: string }[] = [
-  { key: 'Cashier', label: 'Cashier' },
-  { key: 'API',     label: 'API'     },
-];
+function todayISO(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function formatDateLabel(iso: string): string {
+  if (!iso) return 'All';
+  const [y, m, d] = iso.split('-').map(Number);
+  return `${MONTH_SHORT[m-1]} ${d}, ${y}`;
+}
+function findLabel(opts: { id: string; label: string }[], id: string) {
+  return opts.find(o => o.id === id)?.label ?? 'All';
+}
 
 function emptyFilters(): OrderFilters {
   return {
-    statuses:     new Set(),
-    types:        new Set(),
-    sources:      new Set(),
-    creator:      '',
-    cashier:      '',
-    businessDate: '',
-    dueDate:      '',
-    ahead:        false,
+    statusId: '', typeId: '', sourceId: '',
+    creatorId: '', cashierId: '', driverId: '',
+    businessDate: '', dueDate: '', ahead: false,
   };
 }
 
 function countActiveFilters(f: OrderFilters): number {
-  return (
-    f.statuses.size + f.types.size + f.sources.size +
-    (f.creator ? 1 : 0) + (f.cashier ? 1 : 0) +
-    (f.businessDate ? 1 : 0) + (f.dueDate ? 1 : 0) +
-    (f.ahead ? 1 : 0)
-  );
+  return (f.statusId ? 1 : 0) + (f.typeId ? 1 : 0) + (f.sourceId ? 1 : 0) +
+    (f.creatorId ? 1 : 0) + (f.cashierId ? 1 : 0) + (f.driverId ? 1 : 0) +
+    (f.businessDate ? 1 : 0) + (f.dueDate ? 1 : 0) + (f.ahead ? 1 : 0);
 }
 
 interface FilterPanelProps {
@@ -441,54 +471,291 @@ interface FilterPanelProps {
 }
 
 function FilterPanel({ visible, filters, onApply, onClose }: FilterPanelProps) {
-  const [local, setLocal] = useState<OrderFilters>(() => ({ ...filters, statuses: new Set(filters.statuses), types: new Set(filters.types), sources: new Set(filters.sources) }));
-  const creatorRef      = useRef<TextInput>(null);
-  const cashierRef      = useRef<TextInput>(null);
-  const bizDateRef      = useRef<TextInput>(null);
-  const dueDateRef      = useRef<TextInput>(null);
-  const [creatorFocused, setCreatorFocused]   = useState(false);
-  const [cashierFocused, setCashierFocused]   = useState(false);
-  const [bizDateFocused, setBizDateFocused]   = useState(false);
-  const [dueDateFocused, setDueDateFocused]   = useState(false);
+  const [local,    setLocal]    = useState<OrderFilters>(emptyFilters);
+  const [step,     setStep]     = useState<FPStep>('main');
+  const [calYear,  setCalYear]  = useState(new Date().getFullYear());
+  const [calMonth, setCalMonth] = useState(new Date().getMonth());
 
-  // Sync when re-opened
   React.useEffect(() => {
-    if (visible) {
-      setLocal({ ...filters, statuses: new Set(filters.statuses), types: new Set(filters.types), sources: new Set(filters.sources) });
-    }
+    if (visible) { setLocal({ ...filters }); setStep('main'); }
   }, [visible]);
 
-  function toggleSet<T>(set: Set<T>, key: T): Set<T> {
-    const next = new Set(set);
-    next.has(key) ? next.delete(key) : next.add(key);
-    return next;
+  const TODAY = todayISO();
+
+  // ── Mini calendar ──────────────────────────────────────────────────────────
+  function MiniCalendar({ dateStr, onSelect, bottomLink, onBottomLink }: {
+    dateStr: string;
+    onSelect: (d: string) => void;
+    bottomLink?: string;
+    onBottomLink?: () => void;
+  }) {
+    const daysInMo  = new Date(calYear, calMonth + 1, 0).getDate();
+    const firstDay  = new Date(calYear, calMonth, 1).getDay();
+    const cells: (number | null)[] = [];
+    for (let i = 0; i < firstDay; i++) cells.push(null);
+    for (let d = 1; d <= daysInMo; d++) cells.push(d);
+    while (cells.length % 7 !== 0) cells.push(null);
+    const rows: (number | null)[][] = [];
+    for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
+
+    function dayISO(d: number) {
+      return `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    }
+    function prevMonth() {
+      if (calMonth === 0) { setCalYear(y => y-1); setCalMonth(11); } else setCalMonth(m => m-1);
+    }
+    function nextMonth() {
+      if (calMonth === 11) { setCalYear(y => y+1); setCalMonth(0); } else setCalMonth(m => m+1);
+    }
+
+    return (
+      <View style={fp.calendar}>
+        <View style={fp.calHeader}>
+          <Text style={fp.calMonthTitle}>{MONTH_NAMES[calMonth]} {calYear} ›</Text>
+          <View style={fp.calNavRow}>
+            <TouchableOpacity onPress={prevMonth} style={fp.calNav} activeOpacity={0.7}>
+              <Text style={fp.calNavText}>‹</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={nextMonth} style={fp.calNav} activeOpacity={0.7}>
+              <Text style={fp.calNavText}>›</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={fp.calDayNames}>
+          {DAY_NAMES.map(d => <Text key={d} style={fp.calDayName}>{d}</Text>)}
+        </View>
+
+        {rows.map((row, ri) => (
+          <View key={ri} style={fp.calWeek}>
+            {row.map((day, di) => {
+              if (!day) return <View key={di} style={fp.calDay} />;
+              const iso = dayISO(day);
+              const sel = iso === dateStr;
+              const tod = iso === TODAY;
+              return (
+                <TouchableOpacity key={di} style={fp.calDay} onPress={() => onSelect(iso)} activeOpacity={0.7}>
+                  <View style={[fp.calDayInner, sel && fp.calDaySel, !sel && tod && fp.calDayTod]}>
+                    <Text style={[fp.calDayText, sel && fp.calDayTextSel, !sel && tod && fp.calDayTextTod]}>
+                      {day}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ))}
+
+        {bottomLink && (
+          <TouchableOpacity style={fp.calBottom} onPress={onBottomLink} activeOpacity={0.7}>
+            <Text style={fp.calBottomText}>{bottomLink}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
   }
 
-  function SectionHeader({ title }: { title: string }) {
-    return <Text style={fp.sectionTitle}>{title}</Text>;
-  }
-
-  function ChipRow<T extends string>({ options, selected, onToggle }: {
-    options: { key: T; label: string }[];
-    selected: Set<T>;
-    onToggle: (key: T) => void;
+  // ── Sub-list (single-select) ───────────────────────────────────────────────
+  function SelectList({ options, selectedId, onSelect }: {
+    options: { id: string; label: string }[];
+    selectedId: string;
+    onSelect: (id: string) => void;
   }) {
     return (
-      <View style={fp.chipRow}>
-        {options.map(o => {
-          const active = selected.has(o.key);
+      <ScrollView bounces={false} style={fp.subList}>
+        <TouchableOpacity onPress={() => onSelect('')} activeOpacity={0.7}>
+          <View style={fp.optRow}>
+            <Text style={[fp.optLabel, !selectedId && fp.optLabelSel]}>All</Text>
+            {!selectedId && <Text style={fp.optCheck}>✓</Text>}
+          </View>
+        </TouchableOpacity>
+        {options.map(opt => {
+          const sel = selectedId === opt.id;
           return (
-            <TouchableOpacity
-              key={o.key}
-              style={[fp.chip, active && fp.chipActive]}
-              onPress={() => onToggle(o.key)}
-              activeOpacity={0.7}
-            >
-              <Text style={[fp.chipLabel, active && fp.chipLabelActive]}>{o.label}</Text>
+            <TouchableOpacity key={opt.id} onPress={() => onSelect(opt.id)} activeOpacity={0.7}>
+              <View style={fp.optDivider} />
+              <View style={fp.optRow}>
+                <Text style={[fp.optLabel, sel && fp.optLabelSel]}>{opt.label}</Text>
+                {sel && <Text style={fp.optCheck}>✓</Text>}
+              </View>
             </TouchableOpacity>
           );
         })}
+        <View style={{ height: 12 }} />
+      </ScrollView>
+    );
+  }
+
+  // ── Sub-panel header ───────────────────────────────────────────────────────
+  function SubHeader({ title }: { title: string }) {
+    return (
+      <View style={fp.subHeader}>
+        <TouchableOpacity style={fp.backBtn} onPress={() => setStep('main')} activeOpacity={0.7}>
+          <Text style={fp.backText}>‹ Back</Text>
+        </TouchableOpacity>
+        <Text style={fp.subHeaderTitle}>{title}</Text>
+        <View style={fp.backBtn} />
       </View>
+    );
+  }
+
+  // ── Main filter row ────────────────────────────────────────────────────────
+  function FRow({ label, value, onPress }: { label: string; value: string; onPress?: () => void }) {
+    return (
+      <TouchableOpacity style={fp.fRow} onPress={onPress} activeOpacity={onPress ? 0.7 : 1} disabled={!onPress}>
+        <Text style={fp.fRowLabel}>{label}</Text>
+        <View style={fp.fRowRight}>
+          <Text style={fp.fRowValue}>{value}</Text>
+          {onPress && <Text style={fp.fRowChev}>›</Text>}
+        </View>
+      </TouchableOpacity>
+    );
+  }
+
+  // ── Content by step ────────────────────────────────────────────────────────
+  function renderContent() {
+    if (step === 'status') return (
+      <><SubHeader title="Order status" />
+        <SelectList options={STATUS_OPTIONS} selectedId={local.statusId}
+          onSelect={id => { setLocal(l => ({ ...l, statusId: id })); setStep('main'); }} /></>
+    );
+    if (step === 'type') return (
+      <><SubHeader title="Order type" />
+        <SelectList options={TYPE_OPTIONS} selectedId={local.typeId}
+          onSelect={id => { setLocal(l => ({ ...l, typeId: id })); setStep('main'); }} /></>
+    );
+    if (step === 'source') return (
+      <><SubHeader title="Order source" />
+        <SelectList options={SOURCE_OPTIONS} selectedId={local.sourceId}
+          onSelect={id => { setLocal(l => ({ ...l, sourceId: id })); setStep('main'); }} /></>
+    );
+    if (step === 'creator') return (
+      <><SubHeader title="Creator" />
+        <SelectList options={STAFF_OPTIONS} selectedId={local.creatorId}
+          onSelect={id => { setLocal(l => ({ ...l, creatorId: id })); setStep('main'); }} /></>
+    );
+    if (step === 'cashier') return (
+      <><SubHeader title="Cashier" />
+        <SelectList options={STAFF_OPTIONS} selectedId={local.cashierId}
+          onSelect={id => { setLocal(l => ({ ...l, cashierId: id })); setStep('main'); }} /></>
+    );
+    if (step === 'driver') return (
+      <><SubHeader title="Driver" />
+        <SelectList options={DRIVER_OPTIONS} selectedId={local.driverId}
+          onSelect={id => { setLocal(l => ({ ...l, driverId: id })); setStep('main'); }} /></>
+    );
+    if (step === 'biz_date') return (
+      <>
+        <View style={fp.dateStepHeader}>
+          <TouchableOpacity onPress={() => setStep('main')} activeOpacity={0.7} style={fp.backBtn}>
+            <Text style={fp.backText}>‹ Back</Text>
+          </TouchableOpacity>
+          <Text style={[fp.dateStepLabel, { textAlign: 'center' }]}>Business date</Text>
+          <TouchableOpacity onPress={() => { setLocal(l => ({ ...l, businessDate: '' })); setStep('main'); }} activeOpacity={0.7} style={fp.backBtn}>
+            <Text style={[fp.dateStepAll, { textAlign: 'right' }]}>All</Text>
+          </TouchableOpacity>
+        </View>
+        <MiniCalendar
+          dateStr={local.businessDate}
+          onSelect={d => { setLocal(l => ({ ...l, businessDate: d })); setStep('main'); }}
+          bottomLink={local.businessDate ? 'Show all business days' : 'Show current business day'}
+          onBottomLink={() => { setLocal(l => ({ ...l, businessDate: l.businessDate ? '' : TODAY })); setStep('main'); }}
+        />
+      </>
+    );
+    if (step === 'due_date') return (
+      <>
+        <View style={fp.dateStepHeader}>
+          <TouchableOpacity onPress={() => setStep('main')} activeOpacity={0.7} style={fp.backBtn}>
+            <Text style={fp.backText}>‹ Back</Text>
+          </TouchableOpacity>
+          <Text style={[fp.dateStepLabel, { textAlign: 'center' }]}>Due date</Text>
+          <TouchableOpacity onPress={() => { setLocal(l => ({ ...l, dueDate: '' })); setStep('main'); }} activeOpacity={0.7} style={fp.backBtn}>
+            <Text style={[fp.dateStepAll, { textAlign: 'right' }]}>All</Text>
+          </TouchableOpacity>
+        </View>
+        <MiniCalendar
+          dateStr={local.dueDate}
+          onSelect={d => { setLocal(l => ({ ...l, dueDate: d })); setStep('main'); }}
+          bottomLink="Select today"
+          onBottomLink={() => { setLocal(l => ({ ...l, dueDate: TODAY })); setStep('main'); }}
+        />
+      </>
+    );
+
+    // Main panel
+    return (
+      <>
+        <View style={fp.header}>
+          <Text style={fp.headerTitle}>Order Filters</Text>
+        </View>
+        <ScrollView style={fp.body} showsVerticalScrollIndicator={false}>
+          <FRow label="Order status" value={local.statusId ? findLabel(STATUS_OPTIONS, local.statusId) : 'All'} onPress={() => setStep('status')} />
+          <View style={fp.rowDiv} />
+          <FRow label="Order type"   value={local.typeId   ? findLabel(TYPE_OPTIONS,   local.typeId)   : 'All'} onPress={() => setStep('type')} />
+          <View style={fp.rowDiv} />
+          <FRow label="Order source" value={local.sourceId ? findLabel(SOURCE_OPTIONS, local.sourceId) : 'All'} onPress={() => setStep('source')} />
+          <View style={fp.rowDiv} />
+          <FRow label="Creator"      value={local.creatorId  || 'All'} onPress={() => setStep('creator')} />
+          <View style={fp.rowDiv} />
+          <FRow label="Cashier"      value={local.cashierId  || 'All'} onPress={() => setStep('cashier')} />
+          <View style={fp.rowDiv} />
+          <FRow label="Driver"       value={local.driverId ? findLabel(DRIVER_OPTIONS, local.driverId) : 'All'} onPress={() => setStep('driver')} />
+
+          <View style={fp.sectionGap} />
+
+          {/* Business date */}
+          <TouchableOpacity style={fp.fRow} onPress={() => {
+            if (local.businessDate) { const [y,m] = local.businessDate.split('-').map(Number); setCalYear(y); setCalMonth(m-1); }
+            else { const n = new Date(); setCalYear(n.getFullYear()); setCalMonth(n.getMonth()); }
+            setStep('biz_date');
+          }} activeOpacity={0.7}>
+            <Text style={fp.fRowLabel}>Business date</Text>
+            <Text style={fp.fRowValue}>{formatDateLabel(local.businessDate)}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={fp.subLink} activeOpacity={0.7}
+            onPress={() => setLocal(l => ({ ...l, businessDate: l.businessDate ? '' : TODAY }))}>
+            <Text style={fp.subLinkText}>{local.businessDate ? 'Show all business days' : 'Show current business day'}</Text>
+          </TouchableOpacity>
+
+          <View style={fp.sectionGap} />
+
+          {/* Ahead */}
+          <View style={fp.fRow}>
+            <Text style={fp.fRowLabel}>Ahead</Text>
+            <TouchableOpacity style={[fp.toggle, local.ahead && fp.toggleOn]}
+              onPress={() => setLocal(l => ({ ...l, ahead: !l.ahead }))} activeOpacity={0.8}>
+              <View style={[fp.toggleThumb, local.ahead && fp.toggleThumbOn]} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={fp.sectionGap} />
+
+          {/* Due date */}
+          <TouchableOpacity style={fp.fRow} onPress={() => {
+            if (local.dueDate) { const [y,m] = local.dueDate.split('-').map(Number); setCalYear(y); setCalMonth(m-1); }
+            else { const n = new Date(); setCalYear(n.getFullYear()); setCalMonth(n.getMonth()); }
+            setStep('due_date');
+          }} activeOpacity={0.7}>
+            <Text style={fp.fRowLabel}>Due date</Text>
+            <Text style={fp.fRowValue}>{formatDateLabel(local.dueDate)}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={fp.subLink} onPress={() => setLocal(l => ({ ...l, dueDate: TODAY }))} activeOpacity={0.7}>
+            <Text style={fp.subLinkText}>Select today</Text>
+          </TouchableOpacity>
+
+          <View style={{ height: 16 }} />
+        </ScrollView>
+
+        <View style={fp.footer}>
+          <TouchableOpacity style={fp.clearBtn} onPress={() => setLocal(emptyFilters())} activeOpacity={0.7}>
+            <Text style={fp.clearBtnText}>Clear All</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={fp.applyBtn} onPress={() => onApply(local)} activeOpacity={0.8}>
+            <Text style={fp.applyBtnText}>Apply Filters</Text>
+          </TouchableOpacity>
+        </View>
+      </>
     );
   }
 
@@ -497,156 +764,9 @@ function FilterPanel({ visible, filters, onApply, onClose }: FilterPanelProps) {
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={fp.backdrop} />
       </TouchableWithoutFeedback>
-
       <View style={fp.panel} pointerEvents="box-none">
         <View style={fp.card}>
-
-          {/* Header */}
-          <View style={fp.header}>
-            <Text style={fp.headerTitle}>Filter Orders</Text>
-            <TouchableOpacity onPress={onClose} style={fp.closeBtn} activeOpacity={0.7}>
-              <Text style={fp.closeBtnText}>✕</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView style={fp.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-
-            {/* Order Status */}
-            <SectionHeader title="Order Status" />
-            <ChipRow
-              options={STATUS_OPTIONS}
-              selected={local.statuses}
-              onToggle={key => setLocal(l => ({ ...l, statuses: toggleSet(l.statuses, key) }))}
-            />
-
-            <View style={fp.divider} />
-
-            {/* Order Type */}
-            <SectionHeader title="Order Type" />
-            <ChipRow
-              options={TYPE_OPTIONS}
-              selected={local.types}
-              onToggle={key => setLocal(l => ({ ...l, types: toggleSet(l.types, key) }))}
-            />
-
-            <View style={fp.divider} />
-
-            {/* Order Source */}
-            <SectionHeader title="Order Source" />
-            <ChipRow
-              options={SOURCE_OPTIONS}
-              selected={local.sources}
-              onToggle={key => setLocal(l => ({ ...l, sources: toggleSet(l.sources, key) }))}
-            />
-
-            <View style={fp.divider} />
-
-            {/* Creator */}
-            <SectionHeader title="Creator" />
-            <Pressable style={[fp.inputWrap, creatorFocused && fp.inputWrapFocused]} onPress={() => creatorRef.current?.focus()}>
-              <TextInput
-                ref={creatorRef}
-                style={fp.input}
-                placeholder="Filter by creator"
-                placeholderTextColor={Colors.placeholder}
-                value={local.creator}
-                onChangeText={v => setLocal(l => ({ ...l, creator: v }))}
-                onFocus={() => setCreatorFocused(true)}
-                onBlur={() => setCreatorFocused(false)}
-              />
-            </Pressable>
-
-            <View style={fp.divider} />
-
-            {/* Cashier */}
-            <SectionHeader title="Cashier" />
-            <Pressable style={[fp.inputWrap, cashierFocused && fp.inputWrapFocused]} onPress={() => cashierRef.current?.focus()}>
-              <TextInput
-                ref={cashierRef}
-                style={fp.input}
-                placeholder="Filter by cashier"
-                placeholderTextColor={Colors.placeholder}
-                value={local.cashier}
-                onChangeText={v => setLocal(l => ({ ...l, cashier: v }))}
-                onFocus={() => setCashierFocused(true)}
-                onBlur={() => setCashierFocused(false)}
-              />
-            </Pressable>
-
-            <View style={fp.divider} />
-
-            {/* Business Date */}
-            <SectionHeader title="Business Date" />
-            <Pressable style={[fp.inputWrap, bizDateFocused && fp.inputWrapFocused]} onPress={() => bizDateRef.current?.focus()}>
-              <TextInput
-                ref={bizDateRef}
-                style={fp.input}
-                placeholder="DD/MM/YYYY"
-                placeholderTextColor={Colors.placeholder}
-                value={local.businessDate}
-                onChangeText={v => setLocal(l => ({ ...l, businessDate: v }))}
-                onFocus={() => setBizDateFocused(true)}
-                onBlur={() => setBizDateFocused(false)}
-                keyboardType="numeric"
-              />
-            </Pressable>
-
-            <View style={fp.divider} />
-
-            {/* Due Date */}
-            <SectionHeader title="Due Date" />
-            <Pressable style={[fp.inputWrap, dueDateFocused && fp.inputWrapFocused]} onPress={() => dueDateRef.current?.focus()}>
-              <TextInput
-                ref={dueDateRef}
-                style={fp.input}
-                placeholder="DD/MM/YYYY"
-                placeholderTextColor={Colors.placeholder}
-                value={local.dueDate}
-                onChangeText={v => setLocal(l => ({ ...l, dueDate: v }))}
-                onFocus={() => setDueDateFocused(true)}
-                onBlur={() => setDueDateFocused(false)}
-                keyboardType="numeric"
-              />
-            </Pressable>
-
-            <View style={fp.divider} />
-
-            {/* Ahead */}
-            <View style={fp.aheadRow}>
-              <View>
-                <SectionHeader title="Ahead Orders" />
-                <Text style={fp.aheadHint}>Only orders with an ahead due time</Text>
-              </View>
-              <TouchableOpacity
-                style={[fp.toggle, local.ahead && fp.toggleOn]}
-                onPress={() => setLocal(l => ({ ...l, ahead: !l.ahead }))}
-                activeOpacity={0.8}
-              >
-                <View style={[fp.toggleThumb, local.ahead && fp.toggleThumbOn]} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={{ height: 12 }} />
-          </ScrollView>
-
-          {/* Footer buttons */}
-          <View style={fp.footer}>
-            <TouchableOpacity
-              style={fp.clearBtn}
-              onPress={() => setLocal(emptyFilters())}
-              activeOpacity={0.7}
-            >
-              <Text style={fp.clearBtnText}>Clear All</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={fp.applyBtn}
-              onPress={() => onApply(local)}
-              activeOpacity={0.8}
-            >
-              <Text style={fp.applyBtnText}>Apply Filters</Text>
-            </TouchableOpacity>
-          </View>
-
+          {renderContent()}
         </View>
       </View>
     </Modal>
@@ -656,32 +776,33 @@ function FilterPanel({ visible, filters, onApply, onClose }: FilterPanelProps) {
 const fp = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: 'rgba(0,0,0,0.35)',
   },
   panel: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    width: 400,
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
     justifyContent: 'center',
   },
   card: {
-    flex: 1,
+    width: 400,
+    maxHeight: 640,
     backgroundColor: Colors.white,
+    borderRadius: 24,
+    overflow: 'hidden',
     shadowColor: Colors.black,
-    shadowOffset: { width: -4, height: 0 },
-    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
     shadowRadius: 24,
     elevation: 16,
   },
+
+  // ── Main header ──
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     backgroundColor: Colors.grayLight,
-    height: 72,
-    paddingHorizontal: 24,
+    paddingVertical: 20,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.grayBorder,
   },
   headerTitle: {
     fontSize: 20,
@@ -689,100 +810,214 @@ const fp = StyleSheet.create({
     color: Colors.primary,
     letterSpacing: -0.4,
   },
-  closeBtn: {
+  body: {
+    flex: 1,
+  },
+
+  // ── Filter rows ──
+  fRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    minHeight: 58,
+  },
+  fRowLabel: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '400',
+    color: Colors.black,
+    letterSpacing: -0.3,
+  },
+  fRowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  fRowValue: {
+    fontSize: 16,
+    fontWeight: '400',
+    color: Colors.grayText,
+    letterSpacing: -0.3,
+  },
+  fRowChev: {
+    fontSize: 18,
+    color: Colors.grayMid,
+    marginLeft: 2,
+  },
+  rowDiv: {
+    height: 0.5,
+    backgroundColor: 'rgba(60,60,67,0.29)',
+  },
+  sectionGap: {
+    height: 10,
+    backgroundColor: Colors.grayLight,
+    borderTopWidth: 0.5,
+    borderBottomWidth: 0.5,
+    borderColor: Colors.grayBorder,
+  },
+  subLink: {
+    paddingHorizontal: 20,
+    paddingBottom: 14,
+  },
+  subLinkText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.primary,
+    letterSpacing: -0.2,
+  },
+
+  // ── Sub-panel header ──
+  subHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.grayLight,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.grayBorder,
+  },
+  subHeaderTitle: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.primary,
+    letterSpacing: -0.4,
+    textAlign: 'center',
+  },
+  backBtn: { width: 64 },
+  backText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: Colors.primary,
+    letterSpacing: -0.3,
+  },
+
+  // ── Select list ──
+  subList: { maxHeight: 460 },
+  optRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+  },
+  optDivider: {
+    height: 0.5,
+    backgroundColor: 'rgba(60,60,67,0.29)',
+  },
+  optLabel: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '400',
+    color: Colors.grayText,
+    letterSpacing: -0.3,
+  },
+  optLabelSel: {
+    color: Colors.primary,
+    fontWeight: '500',
+  },
+  optCheck: {
+    fontSize: 18,
+    color: Colors.primary,
+    fontWeight: '600',
+  },
+
+  // ── Date step header ──
+  dateStepHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 0.5,
+    borderBottomColor: Colors.grayBorder,
+  },
+  dateStepLabel: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '500',
+    color: Colors.black,
+    letterSpacing: -0.3,
+  },
+  dateStepAll: {
+    fontSize: 16,
+    fontWeight: '400',
+    color: Colors.primary,
+    letterSpacing: -0.3,
+  },
+
+  // ── Calendar ──
+  calendar: { paddingHorizontal: 16, paddingTop: 12 },
+  calHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  calMonthTitle: {
+    flex: 1,
+    fontSize: 17,
+    fontWeight: '600',
+    color: Colors.black,
+    letterSpacing: -0.3,
+  },
+  calNavRow: { flexDirection: 'row', gap: 4 },
+  calNav: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  calNavText: {
+    fontSize: 22,
+    color: Colors.primary,
+    fontWeight: '400',
+  },
+  calDayNames: {
+    flexDirection: 'row',
+    marginBottom: 4,
+  },
+  calDayName: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 11,
+    fontWeight: '500',
+    color: Colors.grayText,
+    letterSpacing: 0.2,
+  },
+  calWeek: { flexDirection: 'row' },
+  calDay: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  calDayInner: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Colors.white,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  closeBtnText: {
-    fontSize: 16,
-    color: Colors.grayText,
-    fontWeight: '500',
-  },
-  body: {
-    flex: 1,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.primary,
-    letterSpacing: 0.2,
-    textTransform: 'uppercase',
-    marginTop: 18,
-    marginBottom: 10,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: Colors.grayBorder,
-    backgroundColor: Colors.white,
-  },
-  chipActive: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primaryLight,
-  },
-  chipLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.grayText,
-    letterSpacing: -0.1,
-  },
-  chipLabelActive: {
-    color: Colors.primary,
-    fontWeight: '600',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: Colors.grayBorder,
-    marginTop: 18,
-  },
-  inputWrap: {
-    backgroundColor: Colors.white,
-    borderRadius: 16,
-    height: 56,
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-  },
-  inputWrapFocused: {
-    borderColor: Colors.primary,
-    shadowOpacity: 0.10,
-  },
-  input: {
+  calDaySel: { backgroundColor: Colors.primary },
+  calDayTod: { borderWidth: 1.5, borderColor: Colors.primary },
+  calDayText: {
     fontSize: 15,
     fontWeight: '400',
     color: Colors.black,
-    flex: 1,
+    letterSpacing: -0.2,
   },
-  aheadRow: {
-    flexDirection: 'row',
+  calDayTextSel: { color: Colors.white, fontWeight: '600' },
+  calDayTextTod: { color: Colors.primary, fontWeight: '600' },
+  calBottom: {
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 18,
+    paddingVertical: 16,
+    marginTop: 4,
+    borderTopWidth: 0.5,
+    borderTopColor: Colors.grayBorder,
   },
-  aheadHint: {
-    fontSize: 12,
-    fontWeight: '400',
-    color: Colors.grayText,
-    marginTop: 2,
-    letterSpacing: -0.1,
+  calBottomText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: Colors.primary,
+    letterSpacing: -0.2,
   },
   toggle: {
     width: 50,
@@ -980,9 +1215,9 @@ export default function OrdersScreen({ onBack, onTotalPress, onLoadOrder }: Prop
       (o.customerPhone ?? '').includes(search);
 
     const f = appliedFilters;
-    const matchStatus  = f.statuses.size === 0 || f.statuses.has(o.status);
-    const matchType    = f.types.size === 0    || f.types.has(o.type as OrderType);
-    const matchCreator = !f.creator  || o.createdBy.toLowerCase().includes(f.creator.toLowerCase());
+    const matchStatus  = !f.statusId  || o.status === f.statusId;
+    const matchType    = !f.typeId    || o.type === f.typeId;
+    const matchCreator = !f.creatorId || o.createdBy === f.creatorId;
 
     return matchTab && matchSearch && matchStatus && matchType && matchCreator;
   });

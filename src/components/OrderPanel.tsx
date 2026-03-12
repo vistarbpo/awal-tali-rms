@@ -51,11 +51,12 @@ interface Props {
   status?: string;
   discount?: OrderDiscount | null;
   onDiscountPress?: () => void;
+  priceTagMultiplier?: number;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
-function itemEffectiveTotal(item: CartItem): number {
-  const base = item.price * item.qty;
+function itemEffectiveTotal(item: CartItem, multiplier = 1): number {
+  const base = item.price * item.qty * multiplier;
   if (!item.discount) return base;
   if (item.discount.kind === 'percentage') return base * (1 - item.discount.value / 100);
   return Math.max(0, base - item.discount.value);
@@ -70,8 +71,8 @@ function statusBg(s: string) {
   return map[s.toUpperCase()] ?? Colors.grayLight;
 }
 
-export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveItem, orderType, onOrderTypePress, customer, onAddCustomerPress, onTotalPress, onCountPress, orderSeq, isPaymentOpen, isVoided, isReturned, tableNumber, status, discount, onDiscountPress }: Props) {
-  const subtotal        = items.reduce((sum, i) => sum + itemEffectiveTotal(i), 0);
+export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveItem, orderType, onOrderTypePress, customer, onAddCustomerPress, onTotalPress, onCountPress, orderSeq, isPaymentOpen, isVoided, isReturned, tableNumber, status, discount, onDiscountPress, priceTagMultiplier = 1 }: Props) {
+  const subtotal        = items.reduce((sum, i) => sum + itemEffectiveTotal(i, priceTagMultiplier), 0);
   const discountAmount  = discount
     ? discount.kind === 'percentage'
       ? (subtotal * discount.value) / 100
@@ -166,12 +167,12 @@ export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveIt
                     </View>
                     <View style={s.itemPriceCol}>
                       {item.discount && (
-                        <Text style={s.itemOrigPrice}>{(item.price * item.qty).toFixed(2)}</Text>
+                        <Text style={s.itemOrigPrice}>{(item.price * item.qty * priceTagMultiplier).toFixed(2)}</Text>
                       )}
                       <View style={s.itemPriceRow}>
                         <Image source={ICONS.sarDark} style={s.sarDark} />
                         <Text style={[s.itemPriceText, !!item.discount && s.itemPriceDiscounted]}>
-                          {itemEffectiveTotal(item).toFixed(2)}
+                          {itemEffectiveTotal(item, priceTagMultiplier).toFixed(2)}
                         </Text>
                       </View>
                     </View>

@@ -24,6 +24,11 @@ import VoidReasonDialog from '../components/VoidReasonDialog';
 import CustomerFlowDialogs, { DeliveryCustomer } from '../components/CustomerFlowDialogs';
 import DiscountDialog, { OrderDiscount } from '../components/DiscountDialog';
 import OrderMoreMenu, { OrderMenuStatus } from '../components/OrderMoreMenu';
+import AssignPriceTagDialog, { PriceTag } from '../components/AssignPriceTagDialog';
+import HouseAccountPaymentDialog from '../components/HouseAccountPaymentDialog';
+import OrderNotesDialog from '../components/OrderNotesDialog';
+import QuantityPadDialog from '../components/QuantityPadDialog';
+import OrderTagsDialog from '../components/OrderTagsDialog';
 import { ProductAvailabilityMap } from './ProductAvailabilityProductsScreen';
 
 // ─── Asset URLs (Figma node 43-382) ───────────────────────────────────────────
@@ -265,7 +270,16 @@ export default function HomeProductsScreen({
   const [discountVisible, setDiscountVisible]         = useState(false);
   const [orderDiscount, setOrderDiscount]             = useState<OrderDiscount | null>(null);
   const [itemDiscountVisible, setItemDiscountVisible] = useState(false);
-  const [orderMoreVisible, setOrderMoreVisible]       = useState(false);
+  const [orderMoreVisible, setOrderMoreVisible]         = useState(false);
+  const [priceTagVisible, setPriceTagVisible]           = useState(false);
+  const [activePriceTag, setActivePriceTag]             = useState<PriceTag | null>(null);
+  const [houseAccountVisible, setHouseAccountVisible]   = useState(false);
+  const [notesVisible,        setNotesVisible]           = useState(false);
+  const [receiptNotes,        setReceiptNotes]           = useState('');
+  const [kitchenNotes,        setKitchenNotes]           = useState('');
+  const [tagsVisible,         setTagsVisible]            = useState(false);
+  const [activeTags,          setActiveTags]             = useState<string[]>([]);
+  const [qtyPadVisible,       setQtyPadVisible]          = useState(false);
 
   const totalPages = Math.ceil(PRODUCTS.length / PAGE_SIZE);
   const gridData   = buildGrid(PRODUCTS, page, totalPages);
@@ -327,6 +341,7 @@ export default function HomeProductsScreen({
           tableNumber={tableNumber}
           discount={orderDiscount}
           onDiscountPress={() => setDiscountVisible(true)}
+          priceTagMultiplier={activePriceTag?.multiplier ?? 1}
         />
 
         {/* ══ RIGHT: Content ══ */}
@@ -384,10 +399,10 @@ export default function HomeProductsScreen({
                   <TouchableOpacity style={[layout.actionBtn, styles.itemActionBtn]} activeOpacity={0.8}>
                     <Text style={styles.itemActionText}>Notes</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[layout.actionBtn, styles.itemActionBtn]} onPress={() => handleQty(-1)} activeOpacity={0.8}>
+                  <TouchableOpacity style={[layout.actionBtn, styles.itemActionBtn]} onPress={() => handleQty(-1)} onLongPress={() => setQtyPadVisible(true)} delayLongPress={400} activeOpacity={0.8}>
                     <Text style={styles.qtySymbol}>−</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[layout.actionBtn, styles.itemActionBtn]} onPress={() => handleQty(1)} activeOpacity={0.8}>
+                  <TouchableOpacity style={[layout.actionBtn, styles.itemActionBtn]} onPress={() => handleQty(1)} onLongPress={() => setQtyPadVisible(true)} delayLongPress={400} activeOpacity={0.8}>
                     <Text style={styles.qtySymbol}>+</Text>
                   </TouchableOpacity>
                 </View>
@@ -423,7 +438,9 @@ export default function HomeProductsScreen({
                     onPress={
                       btn.key === 'void'     ? () => setVoidReasonVisible(true)  :
                       btn.key === 'discount' ? () => setDiscountVisible(true)    :
-                      btn.key === 'more'     ? () => setOrderMoreVisible(true)   : undefined
+                      btn.key === 'more'     ? () => setOrderMoreVisible(true)   :
+                      btn.key === 'notes'    ? () => setNotesVisible(true)       :
+                      btn.key === 'tags'     ? () => setTagsVisible(true)        : undefined
                     }
                   >
                     <Image source={btn.icon} style={layout.actionIcon} />
@@ -522,6 +539,7 @@ export default function HomeProductsScreen({
           if (key === 'open_till' || key === 'close_till') setConfirmTillVisible(true);
           if (key === 'exit') onExit();
           if (key === 'availability') onAvailabilityPress?.();
+          if (key === 'house_acct') setHouseAccountVisible(true);
         }}
       />
 
@@ -625,9 +643,51 @@ export default function HomeProductsScreen({
         onClose={() => setOrderMoreVisible(false)}
         status={isVoided ? 'voided' : 'active'}
         onItemPress={key => {
-          // handlers can be wired up per item in future
+          if (key === 'assign_price_tag') setPriceTagVisible(true);
         }}
       />
+
+      <AssignPriceTagDialog
+        visible={priceTagVisible}
+        activePriceTag={activePriceTag}
+        onClose={() => setPriceTagVisible(false)}
+        onApply={tag => setActivePriceTag(tag)}
+      />
+
+      <HouseAccountPaymentDialog
+        visible={houseAccountVisible}
+        onClose={() => setHouseAccountVisible(false)}
+      />
+
+      <OrderNotesDialog
+        visible={notesVisible}
+        receiptNotes={receiptNotes}
+        kitchenNotes={kitchenNotes}
+        onClose={() => setNotesVisible(false)}
+        onSave={(r, k) => { setReceiptNotes(r); setKitchenNotes(k); }}
+      />
+
+      <OrderTagsDialog
+        visible={tagsVisible}
+        activeTags={activeTags}
+        onClose={() => setTagsVisible(false)}
+        onApply={tags => setActiveTags(tags)}
+      />
+
+      {(() => {
+        const editItem = selectedCartId ? cart.find(i => i.id === selectedCartId) : null;
+        return (
+          <QuantityPadDialog
+            visible={qtyPadVisible}
+            currentQty={editItem?.qty ?? 1}
+            itemName={editItem?.name ?? ''}
+            onClose={() => setQtyPadVisible(false)}
+            onConfirm={qty => {
+              if (editItem) onUpdateQty?.(editItem.id, qty - editItem.qty);
+            }}
+          />
+        );
+      })()}
     </SafeAreaView>
   );
 }
