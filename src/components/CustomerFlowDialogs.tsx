@@ -53,7 +53,8 @@ function PlusIcon({ color = Colors.white }: { color?: string }) {
   );
 }
 
-const SEARCH_ICON = { uri: 'https://www.figma.com/api/mcp/asset/16716d7b-a23f-4fc3-812b-6beecf934ea2' };
+import { iconSearch } from '../assets/icons';
+const SEARCH_ICON = iconSearch;
 
 function SearchIcon() {
   return <Image source={SEARCH_ICON} style={ico.searchImg} />;

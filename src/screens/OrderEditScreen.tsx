@@ -20,29 +20,30 @@ import OrderPanel, { CartItem } from '../components/OrderPanel';
 import VoidReasonDialog from '../components/VoidReasonDialog';
 import { Order } from './OrdersScreen';
 
-// ─── Shared icon URLs (same as HomeProductsScreen) ────────────────────────────
+// ─── Icons ────────────────────────────────────────────────────────────────────
+import {
+  iconPrinter, iconKitchen, iconVoid, iconDiscount, iconNotes, iconTags, iconMore,
+  iconSearch, iconArrowLeft, iconHome, iconOrders, iconTables, iconNewOrder,
+  catImg0, catImg1, catImg2, catImg3,
+} from '../assets/icons';
+
 const ICONS = {
-  printer:      { uri: 'https://www.figma.com/api/mcp/asset/9c81a4f6-19e8-4c24-91f1-4029da9b5d85' },
-  kitchen:      { uri: 'https://www.figma.com/api/mcp/asset/e4ff08e4-89cb-48cc-8af8-69a94e353e97' },
-  void:         { uri: 'https://www.figma.com/api/mcp/asset/e19c29de-88eb-4b90-b4e5-bcd44a80e8c7' },
-  discount:     { uri: 'https://www.figma.com/api/mcp/asset/5ec51166-ce3c-480e-84a0-351deeacf5c3' },
-  notes:        { uri: 'https://www.figma.com/api/mcp/asset/3720ba0f-7b2f-48b0-b1ac-2732fb449e63' },
-  tags:         { uri: 'https://www.figma.com/api/mcp/asset/ebe1e728-eb26-4ecb-bf53-f6cc5fb2f013' },
-  more:         { uri: 'https://www.figma.com/api/mcp/asset/58a25a2e-16a9-40f6-9072-893a8453bcab' },
-  search:       { uri: 'https://www.figma.com/api/mcp/asset/9155f14b-6f44-44e1-9912-566c91ff3d4b' },
-  arrowLeft:    { uri: 'https://www.figma.com/api/mcp/asset/e77a3522-12d8-402e-a4da-7924113ef5b9' },
-  home:         { uri: 'https://www.figma.com/api/mcp/asset/ae1e5116-508d-456d-a18e-a69b54c97201' },
-  orders:       { uri: 'https://www.figma.com/api/mcp/asset/e3df933b-7dce-407b-b48c-bc94abca7b04' },
-  tables:       { uri: 'https://www.figma.com/api/mcp/asset/7e8b57df-5116-40a4-b67f-d47d4dc56c34' },
-  newOrder:     { uri: 'https://www.figma.com/api/mcp/asset/af948af3-cd5d-4312-be32-1e04975ce1ec' },
+  printer:      iconPrinter,
+  kitchen:      iconKitchen,
+  void:         iconVoid,
+  discount:     iconDiscount,
+  notes:        iconNotes,
+  tags:         iconTags,
+  more:         iconMore,
+  search:       iconSearch,
+  arrowLeft:    iconArrowLeft,
+  home:         iconHome,
+  orders:       iconOrders,
+  tables:       iconTables,
+  newOrder:     iconNewOrder,
 };
 
-const PROD_IMG = [
-  { uri: 'https://www.figma.com/api/mcp/asset/29c54800-98d4-4bf6-85f6-b1c8008e4961' },
-  { uri: 'https://www.figma.com/api/mcp/asset/4158c9b1-5743-4472-bfee-d8633c37db5b' },
-  { uri: 'https://www.figma.com/api/mcp/asset/b7aa18df-9b53-48aa-b622-4a14e054ed96' },
-  { uri: 'https://www.figma.com/api/mcp/asset/ebb4eb7c-3671-4d1e-88a3-5aa11627a66d' },
-];
+const PROD_IMG = [catImg0, catImg1, catImg2, catImg3];
 
 const ACTION_BUTTONS = [
   { key: 'print',    label: 'Print',    icon: ICONS.printer,  danger: false },

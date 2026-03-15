@@ -15,33 +15,42 @@ import {
 } from 'react-native';
 import { Colors } from '../constants/colors';
 import { layout, LEFT_PANEL_W, CARD_GAP, RIGHT_PAD } from '../styles/screenLayout';
-import OrderPanel, { CartItem } from '../components/OrderPanel';
+import OrderPanel, { CartItem, Course } from '../components/OrderPanel';
 import MoreMenu from '../components/MoreMenu';
 import ConfirmDialog from '../components/ConfirmDialog';
 import TillAmountDialog from '../components/TillAmountDialog';
+import DrawerOperationsDialog from '../components/DrawerOperationsDialog';
+import DiagnosticsScreen from './DiagnosticsScreen';
+import EndOfDayScreen from './EndOfDayScreen';
 
-// ─── Asset URLs (Figma node 9-33) ─────────────────────────────────────────────
+// ─── Icons ────────────────────────────────────────────────────────────────────
+import {
+  iconPrinter, iconKitchen, iconVoid, iconDiscount, iconNotes, iconTags, iconMore,
+  iconSearch, iconHome, iconOrders, iconTables, iconNewOrder,
+  catImg0, catImg1, catImg2, catImg3, catImg4,
+} from '../assets/icons';
+
 const ICONS = {
-  printer:  { uri: 'https://www.figma.com/api/mcp/asset/f43ecbc6-f49f-41af-8bce-b3aceeb7c593' },
-  kitchen:  { uri: 'https://www.figma.com/api/mcp/asset/73b1b7b2-649a-4884-a4bc-c336c123a9a5' },
-  void:     { uri: 'https://www.figma.com/api/mcp/asset/542d1143-1899-4b0e-bf8b-a5ec2788eb75' },
-  discount: { uri: 'https://www.figma.com/api/mcp/asset/e237b4d0-f4d6-46b7-aa7b-ff019b452491' },
-  notes:    { uri: 'https://www.figma.com/api/mcp/asset/86ea4743-bba1-4147-bfeb-e8a0a789f73c' },
-  tags:     { uri: 'https://www.figma.com/api/mcp/asset/5ef9060d-7645-4473-8f8a-071e6e3aa10d' },
-  more:     { uri: 'https://www.figma.com/api/mcp/asset/88f5a31d-1674-4dca-b3fb-47c479c8f5ad' },
-  search:   { uri: 'https://www.figma.com/api/mcp/asset/16716d7b-a23f-4fc3-812b-6beecf934ea2' },
-  home:     { uri: 'https://www.figma.com/api/mcp/asset/de698f57-3a4d-4649-a5a7-b45450ada39c' },
-  orders:   { uri: 'https://www.figma.com/api/mcp/asset/af583d1a-f13b-42f2-9713-8f8370b47c5f' },
-  tables:   { uri: 'https://www.figma.com/api/mcp/asset/e6c5b050-0608-4d02-97b8-ab7950ed18bc' },
-  newOrder: { uri: 'https://www.figma.com/api/mcp/asset/c1143eb2-c349-4a02-a008-e4c6cd0f5170' },
+  printer:  iconPrinter,
+  kitchen:  iconKitchen,
+  void:     iconVoid,
+  discount: iconDiscount,
+  notes:    iconNotes,
+  tags:     iconTags,
+  more:     iconMore,
+  search:   iconSearch,
+  home:     iconHome,
+  orders:   iconOrders,
+  tables:   iconTables,
+  newOrder: iconNewOrder,
 };
 
 const CAT_IMG = {
-  img0: { uri: 'https://www.figma.com/api/mcp/asset/72df0395-bc08-44a3-9c27-c98c9905e5dd' },
-  img1: { uri: 'https://www.figma.com/api/mcp/asset/74d44d07-8cab-466f-b13d-99effe3ba6c1' },
-  img2: { uri: 'https://www.figma.com/api/mcp/asset/8a4cf30b-47e8-40d1-9039-7f613b120e39' },
-  img3: { uri: 'https://www.figma.com/api/mcp/asset/78219868-ae86-44f2-9c46-7225faff05af' },
-  img4: { uri: 'https://www.figma.com/api/mcp/asset/03aa7717-fe20-4911-be0a-b84feb9de66d' },
+  img0: catImg0,
+  img1: catImg1,
+  img2: catImg2,
+  img3: catImg3,
+  img4: catImg4,
 };
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -105,9 +114,13 @@ interface Props {
   onTotalPress?:        () => void;
   onAvailabilityPress?: () => void;
   tableNumber?:         string;
+  courses?:                Course[];
+  onAddCourse?:            () => void;
+  onMoveItemToCourse?:     (itemId: string, courseId: string) => void;
+  onHoldCourse?:           (courseId: string) => void;
 }
 
-export default function HomeScreen({ onTabPress, onCategorySelect, cart, selectedCartId, onSelectItem, onRemoveItem, onUpdateQty, onDoneEditing, isTillOpen, onTillToggle, onExit, orderType, onOrderTypeSet, orderSeq, status, onTotalPress, onAvailabilityPress, tableNumber }: Props) {
+export default function HomeScreen({ onTabPress, onCategorySelect, cart, selectedCartId, onSelectItem, onRemoveItem, onUpdateQty, onDoneEditing, isTillOpen, onTillToggle, onExit, orderType, onOrderTypeSet, orderSeq, status, onTotalPress, onAvailabilityPress, tableNumber, courses, onAddCourse, onMoveItemToCourse, onHoldCourse }: Props) {
   const { width: screenW }      = useWindowDimensions();
   const searchRef                   = useRef<TextInput>(null);
   const [search, setSearch]         = useState('');
@@ -117,6 +130,9 @@ export default function HomeScreen({ onTabPress, onCategorySelect, cart, selecte
   const [homeMenuVisible, setHomeMenuVisible]       = useState(false);
   const [confirmTillVisible, setConfirmTillVisible] = useState(false);
   const [tillAmountVisible, setTillAmountVisible]   = useState(false);
+  const [drawerOpsVisible,  setDrawerOpsVisible]    = useState(false);
+  const [diagnosticsVisible, setDiagnosticsVisible] = useState(false);
+  const [endOfDayVisible,    setEndOfDayVisible]    = useState(false);
 
   const rightW    = screenW - LEFT_PANEL_W;
   const available = rightW - RIGHT_PAD * 2 - CARD_GAP * (COLS - 1);
@@ -144,6 +160,10 @@ export default function HomeScreen({ onTabPress, onCategorySelect, cart, selecte
           status={status}
           tableNumber={tableNumber}
           onTotalPress={onTotalPress}
+          courses={courses}
+          onAddCourse={onAddCourse}
+          onMoveItemToCourse={onMoveItemToCourse}
+          onHoldCourse={onHoldCourse}
         />
 
         {/* ══ RIGHT: Content ══ */}
@@ -262,6 +282,9 @@ export default function HomeScreen({ onTabPress, onCategorySelect, cart, selecte
           if (key === 'open_till' || key === 'close_till') setConfirmTillVisible(true);
           if (key === 'exit') onExit();
           if (key === 'availability') onAvailabilityPress?.();
+          if (key === 'drawer')      setDrawerOpsVisible(true);
+          if (key === 'diagnostics') setDiagnosticsVisible(true);
+          if (key === 'end_of_day')  setEndOfDayVisible(true);
         }}
       />
 
@@ -278,6 +301,24 @@ export default function HomeScreen({ onTabPress, onCategorySelect, cart, selecte
         onClose={() => setTillAmountVisible(false)}
         onDone={() => { setTillAmountVisible(false); onTillToggle(); }}
         ctaLabel={isTillOpen ? 'Close Till' : 'Open Till'}
+      />
+
+      <DrawerOperationsDialog
+        visible={drawerOpsVisible}
+        onClose={() => setDrawerOpsVisible(false)}
+      />
+
+      <DiagnosticsScreen
+        visible={diagnosticsVisible}
+        onClose={() => setDiagnosticsVisible(false)}
+        isTillOpen={isTillOpen}
+        isClockedIn={false}
+        ordersPendingSync={0}
+      />
+
+      <EndOfDayScreen
+        visible={endOfDayVisible}
+        onClose={() => setEndOfDayVisible(false)}
       />
     </SafeAreaView>
   );

@@ -11,7 +11,7 @@ import TablesScreen from './src/screens/TablesScreen';
 import ReservationsScreen from './src/screens/ReservationsScreen';
 import ProductAvailabilityCategoriesScreen from './src/screens/ProductAvailabilityCategoriesScreen';
 import ProductAvailabilityProductsScreen, { ProductAvailabilityMap } from './src/screens/ProductAvailabilityProductsScreen';
-import { CartItem } from './src/components/OrderPanel';
+import { CartItem, Course } from './src/components/OrderPanel';
 import { OrderType } from './src/components/OrderTypeDialog';
 import { OrderDiscount } from './src/components/DiscountDialog';
 
@@ -37,16 +37,51 @@ export default function App() {
   // Cart lives here — persists across home ↔ products navigation
   const [cart, setCart]                     = useState<CartItem[]>([]);
   const [selectedCartId, setSelectedCartId] = useState<string | null>(null);
+  const [courses, setCourses]               = useState<Course[]>([]);
+  const [activeCourseId, setActiveCourseId] = useState<string | null>(null);
 
   function addToCart(item: CartItem) {
+    const itemWithCourse = activeCourseId ? { ...item, courseId: activeCourseId } : item;
     setCart(prev => {
       const existing = prev.find(i => i.id === item.id);
       if (existing) {
         return prev.map(i => i.id === item.id ? { ...i, qty: i.qty + 1 } : i);
       }
-      return [...prev, item];
+      return [...prev, itemWithCourse];
     });
     setSelectedCartId(item.id);
+  }
+
+  function handleMoveItemToCourse(itemId: string, courseId: string) {
+    setCart(prev => prev.map(i => i.id === itemId ? { ...i, courseId } : i));
+  }
+
+  function handleHoldCourse(courseId: string, holdUntil?: number) {
+    setCourses(prev => prev.map(c => {
+      if (c.id !== courseId) return c;
+      // If already held, calling this unholds it (holdUntil is ignored)
+      if (c.isHeld) return { ...c, isHeld: false, holdUntil: undefined };
+      // Otherwise hold — holdUntil undefined = fire later (no countdown)
+      return { ...c, isHeld: true, holdUntil };
+    }));
+  }
+
+  function handleAddCourse() {
+    setCourses(prev => {
+      if (prev.length === 0) {
+        // First time: retroactively assign existing items to Course 1, create Course 2
+        const course1: Course = { id: 'course-1', name: 'Course 1' };
+        const course2: Course = { id: 'course-2', name: 'Course 2' };
+        setCart(items => items.map(i => ({ ...i, courseId: 'course-1' })));
+        setActiveCourseId('course-2');
+        return [course1, course2];
+      }
+      // Subsequent: create next course and make it active
+      const nextNum = prev.length + 1;
+      const newCourse: Course = { id: `course-${nextNum}`, name: `Course ${nextNum}` };
+      setActiveCourseId(newCourse.id);
+      return [...prev, newCourse];
+    });
   }
 
   function removeFromCart(id: string) {
@@ -56,6 +91,14 @@ export default function App() {
 
   function updateItemDiscount(id: string, discount: OrderDiscount | null) {
     setCart(prev => prev.map(i => i.id === id ? { ...i, discount } : i));
+  }
+
+  function toggleHold(id: string, holdTime?: number) {
+    setCart(prev => prev.map(i =>
+      i.id === id
+        ? { ...i, isHeld: !i.isHeld, holdTime: !i.isHeld ? holdTime : undefined }
+        : i
+    ));
   }
 
   function updateQty(id: string, delta: number) {
@@ -87,6 +130,7 @@ export default function App() {
     onSelectItem: setSelectedCartId,
     onRemoveItem: removeFromCart,
     onUpdateQty: updateQty,
+    onToggleHold: toggleHold,
     onUpdateItemDiscount: updateItemDiscount,
     onDoneEditing: () => setSelectedCartId(null),
     isTillOpen,
@@ -104,11 +148,17 @@ export default function App() {
     orderSeq: orderType ? (orderSeqMap[orderType] ?? 1) : undefined,
     status: 'Active',
     onTotalPress: () => setScreen('payment'),
+    courses,
+    onAddCourse: handleAddCourse,
+    onMoveItemToCourse: handleMoveItemToCourse,
+    onHoldCourse: handleHoldCourse,
     onNewOrder: () => {
       setCart([]);
       setSelectedCartId(null);
       setOrderType(null);
       setDineInTable(null);
+      setCourses([]);
+      setActiveCourseId(null);
     },
   };
 

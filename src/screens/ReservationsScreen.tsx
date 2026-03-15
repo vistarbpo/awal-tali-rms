@@ -15,8 +15,10 @@ import { Colors } from '../constants/colors';
 import { layout } from '../styles/screenLayout';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
+import { iconSearch } from '../assets/icons';
+
 const ICONS = {
-  search: { uri: 'https://www.figma.com/api/mcp/asset/fd201ba6-a12d-4ea8-8196-05d196f5bcaa' },
+  search: iconSearch,
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────

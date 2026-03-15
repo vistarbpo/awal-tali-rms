@@ -11,20 +11,26 @@ import {
 } from 'react-native';
 import { Colors } from '../constants/colors';
 
-// ─── Icons (Figma node 47-525) ────────────────────────────────────────────────
+// ─── Icons ────────────────────────────────────────────────────────────────────
+import {
+  iconKeyRound, iconCalendarArrowDown, iconInbox, iconCircleDollarSign,
+  iconPackageCheck, iconChartColumnBig, iconRefreshCcw, iconWrench,
+  iconCable, iconHeadset, iconLogOut, iconPolygon,
+} from '../assets/icons';
+
 const ICONS: Record<string, ImageSourcePropType> = {
-  keyRound:          { uri: 'https://www.figma.com/api/mcp/asset/d96a1bca-1eb3-459d-8260-6f22cb914ba8' },
-  calendarArrowDown: { uri: 'https://www.figma.com/api/mcp/asset/90002dca-b188-4ddb-b36c-21eff183ccb1' },
-  inbox:             { uri: 'https://www.figma.com/api/mcp/asset/0999b698-852a-493a-b36f-79b179ee074a' },
-  circleDollarSign:  { uri: 'https://www.figma.com/api/mcp/asset/45ecc482-c854-4aa2-bc0d-fba12329c3f6' },
-  packageCheck:      { uri: 'https://www.figma.com/api/mcp/asset/864b92c2-b5c7-4545-ac71-65adbdc8a852' },
-  chartColumnBig:    { uri: 'https://www.figma.com/api/mcp/asset/6d3794fb-c767-4ef9-add2-529c9705e512' },
-  refreshCcw:        { uri: 'https://www.figma.com/api/mcp/asset/f0b23d9b-db2b-42e8-8692-41fe1a792669' },
-  wrench:            { uri: 'https://www.figma.com/api/mcp/asset/e3b32276-5c16-4ae4-8968-19f396e33f44' },
-  cable:             { uri: 'https://www.figma.com/api/mcp/asset/72fb9dea-4ecf-44ca-9efd-1eb6f280278a' },
-  headset:           { uri: 'https://www.figma.com/api/mcp/asset/7e94f338-770c-457d-ab25-8548a47e6ab6' },
-  logOut:            { uri: 'https://www.figma.com/api/mcp/asset/06c15b47-6807-494f-86cd-c10b2629a779' },
-  polygon:           { uri: 'https://www.figma.com/api/mcp/asset/d4f8a821-08e9-41a6-8000-1e8452036fc5' },
+  keyRound:          iconKeyRound,
+  calendarArrowDown: iconCalendarArrowDown,
+  inbox:             iconInbox,
+  circleDollarSign:  iconCircleDollarSign,
+  packageCheck:      iconPackageCheck,
+  chartColumnBig:    iconChartColumnBig,
+  refreshCcw:        iconRefreshCcw,
+  wrench:            iconWrench,
+  cable:             iconCable,
+  headset:           iconHeadset,
+  logOut:            iconLogOut,
+  polygon:           iconPolygon,
 };
 
 // ─── Menu items ───────────────────────────────────────────────────────────────

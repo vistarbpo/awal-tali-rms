@@ -20,8 +20,10 @@ export interface ProductAvailabilityItem {
 }
 export type ProductAvailabilityMap = Record<string, ProductAvailabilityItem>;
 
+import { iconSearch } from '../assets/icons';
+
 const ICONS = {
-  search: { uri: 'https://www.figma.com/api/mcp/asset/9155f14b-6f44-44e1-9912-566c91ff3d4b' },
+  search: iconSearch,
 };
 
 // ─── Mock product data per category ──────────────────────────────────────────

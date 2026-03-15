@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { Colors } from '../constants/colors';
 import { layout, LEFT_PANEL_W, CARD_GAP, RIGHT_PAD } from '../styles/screenLayout';
-import OrderPanel, { CartItem } from '../components/OrderPanel';
+import OrderPanel, { CartItem, Course } from '../components/OrderPanel';
 import MoreMenu from '../components/MoreMenu';
 import ConfirmDialog from '../components/ConfirmDialog';
 import TillAmountDialog from '../components/TillAmountDialog';
@@ -29,36 +29,42 @@ import HouseAccountPaymentDialog from '../components/HouseAccountPaymentDialog';
 import OrderNotesDialog from '../components/OrderNotesDialog';
 import QuantityPadDialog from '../components/QuantityPadDialog';
 import OrderTagsDialog from '../components/OrderTagsDialog';
+import HoldTimeDialog from '../components/HoldTimeDialog';
+import DrawerOperationsDialog from '../components/DrawerOperationsDialog';
+import DiagnosticsScreen from './DiagnosticsScreen';
+import EndOfDayScreen from './EndOfDayScreen';
 import { ProductAvailabilityMap } from './ProductAvailabilityProductsScreen';
 
-// ─── Asset URLs (Figma node 43-382) ───────────────────────────────────────────
+// ─── Icons ────────────────────────────────────────────────────────────────────
+import {
+  iconPrinter, iconKitchen, iconVoid, iconDiscount, iconNotes, iconTags, iconMore,
+  iconSearch, iconSarDark, iconSarGray, iconSarWhite, iconXClose, iconChevronRight,
+  iconArrowLeft, iconHome, iconOrders, iconTables, iconNewOrder,
+  catImg0, catImg1, catImg2, catImg3,
+} from '../assets/icons';
+
 const ICONS = {
-  printer:      { uri: 'https://www.figma.com/api/mcp/asset/9c81a4f6-19e8-4c24-91f1-4029da9b5d85' },
-  kitchen:      { uri: 'https://www.figma.com/api/mcp/asset/e4ff08e4-89cb-48cc-8af8-69a94e353e97' },
-  void:         { uri: 'https://www.figma.com/api/mcp/asset/e19c29de-88eb-4b90-b4e5-bcd44a80e8c7' },
-  discount:     { uri: 'https://www.figma.com/api/mcp/asset/5ec51166-ce3c-480e-84a0-351deeacf5c3' },
-  notes:        { uri: 'https://www.figma.com/api/mcp/asset/3720ba0f-7b2f-48b0-b1ac-2732fb449e63' },
-  tags:         { uri: 'https://www.figma.com/api/mcp/asset/ebe1e728-eb26-4ecb-bf53-f6cc5fb2f013' },
-  more:         { uri: 'https://www.figma.com/api/mcp/asset/58a25a2e-16a9-40f6-9072-893a8453bcab' },
-  search:       { uri: 'https://www.figma.com/api/mcp/asset/9155f14b-6f44-44e1-9912-566c91ff3d4b' },
-  sarDark:      { uri: 'https://www.figma.com/api/mcp/asset/9abd0b7f-8af7-4a1b-8191-c6434269d8d7' },
-  sarGray:      { uri: 'https://www.figma.com/api/mcp/asset/a87a31c4-ad15-4c7d-8cbd-fbc065a2fff7' },
-  sarWhite:     { uri: 'https://www.figma.com/api/mcp/asset/79841237-e621-48bf-836f-e1dd0aa820dc' },
-  xClose:       { uri: 'https://www.figma.com/api/mcp/asset/a3c1b4c3-adf5-47fc-94cb-779ead2c9f31' },
-  chevronRight: { uri: 'https://www.figma.com/api/mcp/asset/2030ebbb-d2ee-41de-b21b-96523c3e0860' },
-  arrowLeft:    { uri: 'https://www.figma.com/api/mcp/asset/e77a3522-12d8-402e-a4da-7924113ef5b9' },
-  home:         { uri: 'https://www.figma.com/api/mcp/asset/ae1e5116-508d-456d-a18e-a69b54c97201' },
-  orders:       { uri: 'https://www.figma.com/api/mcp/asset/e3df933b-7dce-407b-b48c-bc94abca7b04' },
-  tables:       { uri: 'https://www.figma.com/api/mcp/asset/7e8b57df-5116-40a4-b67f-d47d4dc56c34' },
-  newOrder:     { uri: 'https://www.figma.com/api/mcp/asset/af948af3-cd5d-4312-be32-1e04975ce1ec' },
+  printer:      iconPrinter,
+  kitchen:      iconKitchen,
+  void:         iconVoid,
+  discount:     iconDiscount,
+  notes:        iconNotes,
+  tags:         iconTags,
+  more:         iconMore,
+  search:       iconSearch,
+  sarDark:      iconSarDark,
+  sarGray:      iconSarGray,
+  sarWhite:     iconSarWhite,
+  xClose:       iconXClose,
+  chevronRight: iconChevronRight,
+  arrowLeft:    iconArrowLeft,
+  home:         iconHome,
+  orders:       iconOrders,
+  tables:       iconTables,
+  newOrder:     iconNewOrder,
 };
 
-const PROD_IMG = [
-  { uri: 'https://www.figma.com/api/mcp/asset/29c54800-98d4-4bf6-85f6-b1c8008e4961' },
-  { uri: 'https://www.figma.com/api/mcp/asset/4158c9b1-5743-4472-bfee-d8633c37db5b' },
-  { uri: 'https://www.figma.com/api/mcp/asset/b7aa18df-9b53-48aa-b622-4a14e054ed96' },
-  { uri: 'https://www.figma.com/api/mcp/asset/ebb4eb7c-3671-4d1e-88a3-5aa11627a66d' },
-];
+const PROD_IMG = [catImg0, catImg1, catImg2, catImg3];
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 const ACTION_BUTTONS = [
@@ -208,6 +214,7 @@ interface Props {
   onSelectItem:     (id: string) => void;
   onRemoveItem:     (id: string) => void;
   onUpdateQty?:           (id: string, delta: number) => void;
+  onToggleHold?:          (id: string, holdTime?: number) => void;
   onUpdateItemDiscount?:  (id: string, discount: OrderDiscount | null) => void;
   onDoneEditing?:         () => void;
   isTillOpen:       boolean;
@@ -223,6 +230,10 @@ interface Props {
   onAvailabilityPress?:  () => void;
   tableNumber?:          string;
   onNewOrder?:           () => void;
+  courses?:              Course[];
+  onAddCourse?:          () => void;
+  onMoveItemToCourse?:   (itemId: string, courseId: string) => void;
+  onHoldCourse?:         (courseId: string) => void;
 }
 
 export default function HomeProductsScreen({
@@ -233,6 +244,7 @@ export default function HomeProductsScreen({
   onSelectItem,
   onRemoveItem,
   onUpdateQty,
+  onToggleHold,
   onUpdateItemDiscount,
   onDoneEditing,
   isTillOpen,
@@ -248,6 +260,10 @@ export default function HomeProductsScreen({
   onAvailabilityPress,
   tableNumber,
   onNewOrder,
+  courses,
+  onAddCourse,
+  onMoveItemToCourse,
+  onHoldCourse,
 }: Props) {
   const { width: screenW }    = useWindowDimensions();
   const searchRef                         = useRef<TextInput>(null);
@@ -280,6 +296,26 @@ export default function HomeProductsScreen({
   const [tagsVisible,         setTagsVisible]            = useState(false);
   const [activeTags,          setActiveTags]             = useState<string[]>([]);
   const [qtyPadVisible,       setQtyPadVisible]          = useState(false);
+  const [diagnosticsVisible,  setDiagnosticsVisible]     = useState(false);
+  const [endOfDayVisible,     setEndOfDayVisible]        = useState(false);
+  const [drawerOpsVisible,    setDrawerOpsVisible]       = useState(false);
+  const [holdTimeVisible,     setHoldTimeVisible]        = useState(false);
+  const [currentTime,         setCurrentTime]            = useState(() => Date.now());
+
+  // Tick every second — drives countdown badges + auto-fire
+  useEffect(() => {
+    const id = setInterval(() => setCurrentTime(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Auto-fire held items whose timer has expired
+  useEffect(() => {
+    cart.forEach(item => {
+      if (item.isHeld && item.holdTime && item.holdTime <= currentTime) {
+        onToggleHold?.(item.id);
+      }
+    });
+  }, [currentTime]);
 
   const totalPages = Math.ceil(PRODUCTS.length / PAGE_SIZE);
   const gridData   = buildGrid(PRODUCTS, page, totalPages);
@@ -342,6 +378,11 @@ export default function HomeProductsScreen({
           discount={orderDiscount}
           onDiscountPress={() => setDiscountVisible(true)}
           priceTagMultiplier={activePriceTag?.multiplier ?? 1}
+          currentTime={currentTime}
+          courses={courses}
+          onAddCourse={onAddCourse}
+          onMoveItemToCourse={onMoveItemToCourse}
+          onHoldCourse={onHoldCourse}
         />
 
         {/* ══ RIGHT: Content ══ */}
@@ -390,8 +431,24 @@ export default function HomeProductsScreen({
                   <TouchableOpacity style={[layout.actionBtn, layout.actionBtnDanger, styles.itemActionBtn]} onPress={handleVoid} activeOpacity={0.8}>
                     <Text style={styles.itemActionText}>Void</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[layout.actionBtn, styles.itemActionBtn]} activeOpacity={0.8}>
-                    <Text style={styles.itemActionText}>Hold</Text>
+                  <TouchableOpacity
+                    style={[layout.actionBtn, styles.itemActionBtn, item.isHeld && styles.itemActionBtnFire]}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      // Tap: fire immediately (if held) or simple hold
+                      onToggleHold?.(item.id);
+                    }}
+                    onLongPress={() => {
+                      // Long press on Dine-In: open time picker
+                      if (!item.isHeld && orderType?.toLowerCase().includes('dine')) {
+                        setHoldTimeVisible(true);
+                      }
+                    }}
+                    delayLongPress={400}
+                  >
+                    <Text style={[styles.itemActionText, item.isHeld && styles.itemActionTextFire]}>
+                      {item.isHeld ? 'Fire' : 'Hold'}
+                    </Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[layout.actionBtn, styles.itemActionBtn]} activeOpacity={0.8} onPress={() => setItemDiscountVisible(true)}>
                     <Text style={styles.itemActionText}>Discount</Text>
@@ -540,6 +597,9 @@ export default function HomeProductsScreen({
           if (key === 'exit') onExit();
           if (key === 'availability') onAvailabilityPress?.();
           if (key === 'house_acct') setHouseAccountVisible(true);
+          if (key === 'diagnostics') setDiagnosticsVisible(true);
+          if (key === 'end_of_day')  setEndOfDayVisible(true);
+          if (key === 'drawer')      setDrawerOpsVisible(true);
         }}
       />
 
@@ -688,6 +748,35 @@ export default function HomeProductsScreen({
           />
         );
       })()}
+
+      <HoldTimeDialog
+        visible={holdTimeVisible}
+        itemName={selectedCartId ? (cart.find(i => i.id === selectedCartId)?.name ?? '') : ''}
+        onClose={() => setHoldTimeVisible(false)}
+        onConfirm={minutes => {
+          if (selectedCartId) {
+            onToggleHold?.(selectedCartId, Date.now() + minutes * 60 * 1000);
+          }
+        }}
+      />
+
+      <DrawerOperationsDialog
+        visible={drawerOpsVisible}
+        onClose={() => setDrawerOpsVisible(false)}
+      />
+
+      <DiagnosticsScreen
+        visible={diagnosticsVisible}
+        onClose={() => setDiagnosticsVisible(false)}
+        isTillOpen={isTillOpen}
+        isClockedIn={false}
+        ordersPendingSync={0}
+      />
+
+      <EndOfDayScreen
+        visible={endOfDayVisible}
+        onClose={() => setEndOfDayVisible(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -712,6 +801,15 @@ const styles = StyleSheet.create({
     color: Colors.white,
     textAlign: 'center',
     letterSpacing: 0.1,
+  },
+  itemActionBtnFire: {
+    backgroundColor: '#F59E0B',
+    shadowColor: '#F59E0B',
+  },
+  itemActionTextFire: {
+    color: Colors.white,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   qtySymbol: {
     fontSize: 24,

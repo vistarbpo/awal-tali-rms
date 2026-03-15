@@ -586,7 +586,7 @@ export default function DesignSystemScreen({ onClose }: Props) {
             {/* ── Dialog Search Bar ── */}
             <SubHead label="Dialog Search Bar" />
             <View style={s.dialogSearchBox}>
-              <Image source={{ uri: 'https://www.figma.com/api/mcp/asset/16716d7b-a23f-4fc3-812b-6beecf934ea2' }} style={s.dsSearchIcon} />
+              <Image source={require('../assets/icons/search.png')} style={s.dsSearchIcon} />
               <Text style={s.dsSearchPlaceholder}>Search by name or phone</Text>
             </View>
             <View style={s.actionSpecGrid}>

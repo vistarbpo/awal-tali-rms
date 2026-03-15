@@ -11,7 +11,8 @@ import {
 import { Colors } from '../constants/colors';
 
 // Reuse same polygon asset as MoreMenu
-const POLYGON = { uri: 'https://www.figma.com/api/mcp/asset/d4f8a821-08e9-41a6-8000-1e8452036fc5' };
+import { iconPolygon } from '../assets/icons';
+const POLYGON = iconPolygon;
 
 // ─── Menu definitions ─────────────────────────────────────────────────────────
 export type OrderMenuStatus = 'active' | 'voided' | 'returned';

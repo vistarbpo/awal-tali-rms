@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,27 +6,49 @@ import {
   ScrollView,
   Image,
   StyleSheet,
+  Animated,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Colors } from '../constants/colors';
 import { OrderDiscount } from './DiscountDialog';
 
 // ─── Shared types ─────────────────────────────────────────────────────────────
+export interface Course {
+  id: string;
+  name: string;
+  isHeld?: boolean;
+  holdUntil?: number;  // epoch ms — when the hold expires (auto-send to kitchen)
+}
+
 export interface CartItem {
   id: string;
   name: string;
   qty: number;
   price: number;
   discount?: OrderDiscount | null;
+  isHeld?: boolean;
+  holdTime?: number;   // epoch ms when to auto-fire (Dine-In only)
+  courseId?: string;   // which course this item belongs to
 }
 
-// ─── Icons (Figma node 43-382) ────────────────────────────────────────────────
+export function formatHoldCountdown(holdTime: number, now: number): string {
+  const remaining = Math.max(0, holdTime - now);
+  const totalSec  = Math.ceil(remaining / 1000);
+  const mm = String(Math.floor(totalSec / 60)).padStart(2, '0');
+  const ss = String(totalSec % 60).padStart(2, '0');
+  return `${mm}:${ss}`;
+}
+
+// ─── Icons ────────────────────────────────────────────────────────────────────
+import { iconSarDark, iconSarGray, iconSarWhite, iconXClose, iconChevronRight } from '../assets/icons';
+import HoldTimeDialog from './HoldTimeDialog';
+
 const ICONS = {
-  sarDark:      { uri: 'https://www.figma.com/api/mcp/asset/9abd0b7f-8af7-4a1b-8191-c6434269d8d7' },
-  sarGray:      { uri: 'https://www.figma.com/api/mcp/asset/a87a31c4-ad15-4c7d-8cbd-fbc065a2fff7' },
-  sarWhite:     { uri: 'https://www.figma.com/api/mcp/asset/79841237-e621-48bf-836f-e1dd0aa820dc' },
-  xClose:       { uri: 'https://www.figma.com/api/mcp/asset/a3c1b4c3-adf5-47fc-94cb-779ead2c9f31' },
-  chevronRight: { uri: 'https://www.figma.com/api/mcp/asset/2030ebbb-d2ee-41de-b21b-96523c3e0860' },
+  sarDark:      iconSarDark,
+  sarGray:      iconSarGray,
+  sarWhite:     iconSarWhite,
+  xClose:       iconXClose,
+  chevronRight: iconChevronRight,
 };
 
 const TAX_RATE = 0.15;
@@ -52,6 +74,11 @@ interface Props {
   discount?: OrderDiscount | null;
   onDiscountPress?: () => void;
   priceTagMultiplier?: number;
+  currentTime?: number;
+  courses?: Course[];
+  onAddCourse?: () => void;
+  onMoveItemToCourse?: (itemId: string, courseId: string) => void;
+  onHoldCourse?: (courseId: string, holdUntil?: number) => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -71,25 +98,185 @@ function statusBg(s: string) {
   return map[s.toUpperCase()] ?? Colors.grayLight;
 }
 
-export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveItem, orderType, onOrderTypePress, customer, onAddCustomerPress, onTotalPress, onCountPress, orderSeq, isPaymentOpen, isVoided, isReturned, tableNumber, status, discount, onDiscountPress, priceTagMultiplier = 1 }: Props) {
-  const subtotal        = items.reduce((sum, i) => sum + itemEffectiveTotal(i, priceTagMultiplier), 0);
-  const discountAmount  = discount
+export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveItem, orderType, onOrderTypePress, customer, onAddCustomerPress, onTotalPress, onCountPress, orderSeq, isPaymentOpen, isVoided, isReturned, tableNumber, status, discount, onDiscountPress, priceTagMultiplier = 1, currentTime, courses, onAddCourse, onMoveItemToCourse, onHoldCourse }: Props) {
+  const subtotal       = items.reduce((sum, i) => sum + itemEffectiveTotal(i, priceTagMultiplier), 0);
+  const discountAmount = discount
     ? discount.kind === 'percentage'
       ? (subtotal * discount.value) / 100
       : Math.min(discount.value, subtotal)
     : 0;
-  const discountedSub   = subtotal - discountAmount;
-  // Taxes are inclusive — extracted from the total price
-  const taxes           = discountedSub * TAX_RATE / (1 + TAX_RATE);
-  const total           = discountedSub;
+  const discountedSub  = subtotal - discountAmount;
+  const taxes          = discountedSub * TAX_RATE / (1 + TAX_RATE);
+  const total          = discountedSub;
+
+  const hasCourses = !!courses && courses.length > 0;
+
+  // ─── Hold course dialog ───────────────────────────────────────────────────
+  const [holdDialogCourse, setHoldDialogCourse] = useState<Course | null>(null);
+
+  // ─── Drag state ───────────────────────────────────────────────────────────
+  // All gesture data lives in refs so callbacks never go stale
+  const panelRef          = useRef<View>(null);
+  const panelPageYRef     = useRef(0);
+  const scrollViewRef     = useRef<ScrollView>(null);
+  // Absolute screen Y of the ScrollView's top edge — set on its onLayout
+  const scrollViewPageYRef = useRef(0);
+  const scrollOffsetRef   = useRef(0);
+  // courseId → { y, height } in scroll-content coordinates (from onLayout)
+  const courseRectsRef    = useRef<Map<string, { y: number; height: number }>>(new Map());
+  // Stable refs for drag session
+  const draggingItemRef   = useRef<CartItem | null>(null);
+  const hoverCourseIdRef  = useRef<string | null>(null);
+  const onMoveRef         = useRef(onMoveItemToCourse);
+  onMoveRef.current       = onMoveItemToCourse;
+
+  // Animated ghost Y relative to panel root
+  const ghostAnimY = useRef(new Animated.Value(-300)).current;
+
+  // State only for re-renders
+  const [draggingId,    setDraggingId]    = useState<string | null>(null);
+  const [hoverCourseId, setHoverCourseId] = useState<string | null>(null);
+
+  function startDrag(item: CartItem, pageY: number) {
+    draggingItemRef.current  = item;
+    hoverCourseIdRef.current = null;
+    // Re-measure panel for ghost positioning
+    panelRef.current?.measureInWindow((_x, py) => { panelPageYRef.current = py; });
+    ghostAnimY.setValue(pageY - panelPageYRef.current - 24);
+    setDraggingId(item.id);
+    setHoverCourseId(null);
+  }
+
+  function moveDrag(pageY: number) {
+    // Ghost tracks finger relative to panel root
+    ghostAnimY.setValue(pageY - panelPageYRef.current - 24);
+
+    // Convert absolute pageY → scroll-content Y
+    const contentY = pageY - scrollViewPageYRef.current + scrollOffsetRef.current;
+
+    // Pick nearest course by center distance — makes the whole panel height
+    // a valid drop zone so the user doesn't have to be precise
+    let hovered: string | null = null;
+    let minDist = Infinity;
+    courseRectsRef.current.forEach((rect, id) => {
+      const center = rect.y + rect.height / 2;
+      const dist   = Math.abs(contentY - center);
+      if (dist < minDist) { minDist = dist; hovered = id; }
+    });
+
+    if (hovered !== hoverCourseIdRef.current) {
+      hoverCourseIdRef.current = hovered;
+      setHoverCourseId(hovered);
+    }
+  }
+
+  function endDrag() {
+    const item   = draggingItemRef.current;
+    const target = hoverCourseIdRef.current;
+    if (item && target && target !== item.courseId) {
+      onMoveRef.current?.(item.id, target);
+    }
+    draggingItemRef.current  = null;
+    hoverCourseIdRef.current = null;
+    ghostAnimY.setValue(-300);
+    setDraggingId(null);
+    setHoverCourseId(null);
+  }
+
+  function dragHandleProps(item: CartItem) {
+    return {
+      onStartShouldSetResponder: () => hasCourses && !isVoided && !isReturned,
+      onResponderGrant: (e: any) => startDrag(item, e.nativeEvent.pageY),
+      onResponderMove:  (e: any) => moveDrag(e.nativeEvent.pageY),
+      onResponderRelease:    () => endDrag(),
+      onResponderTerminate:  () => endDrag(),
+    };
+  }
+
+  function renderItem(item: CartItem) {
+    const selected  = item.id === selectedId;
+    const isDragging = item.id === draggingId;
+    return (
+      <TouchableOpacity
+        key={item.id}
+        style={[s.item, isDragging && s.itemDragging]}
+        onPress={() => !isDragging && !isVoided && !isReturned && onSelectItem(item.id)}
+        activeOpacity={isVoided || isReturned ? 1 : 0.8}
+      >
+        {selected && !isVoided && !isReturned && !isDragging && <View style={s.selectedBar} />}
+        {item.isHeld && !isVoided && !isReturned && <View style={s.holdBar} />}
+        <View style={[
+          s.itemContent,
+          selected && !isVoided && !isReturned && !isDragging && s.itemContentSelected,
+          isVoided    && s.itemContentVoided,
+          isReturned  && s.itemContentReturned,
+          item.isHeld && !isVoided && !isReturned && s.itemContentHeld,
+        ]}>
+          <View style={s.itemLeft}>
+            <Text style={s.itemQty}>{item.qty}</Text>
+            <View>
+              <Image source={ICONS.xClose} style={s.itemX} />
+            </View>
+            <View style={s.itemNameCol}>
+              <Text style={s.itemName} numberOfLines={2}>{item.name}</Text>
+              {(tableNumber || orderType?.toLowerCase().includes('dine')) && (
+                <View style={s.tableBadge}>
+                  <Text style={s.tableBadgeText}>{tableNumber ?? 'Table'}</Text>
+                </View>
+              )}
+              {item.isHeld && !isVoided && !isReturned && (
+                <View style={s.holdBadge}>
+                  <Text style={s.holdBadgeText}>
+                    {item.holdTime && currentTime
+                      ? formatHoldCountdown(item.holdTime, currentTime)
+                      : 'HOLD'}
+                  </Text>
+                </View>
+              )}
+              {item.discount && (
+                <Text style={s.itemDiscountBadge}>{item.discount.label}</Text>
+              )}
+            </View>
+          </View>
+          <View style={s.itemRight}>
+            <View style={s.itemPriceCol}>
+              {item.discount && (
+                <Text style={s.itemOrigPrice}>{(item.price * item.qty * priceTagMultiplier).toFixed(2)}</Text>
+              )}
+              <View style={s.itemPriceRow}>
+                <Image source={ICONS.sarDark} style={s.sarDark} />
+                <Text style={[s.itemPriceText, !!item.discount && s.itemPriceDiscounted]}>
+                  {itemEffectiveTotal(item, priceTagMultiplier).toFixed(2)}
+                </Text>
+              </View>
+            </View>
+
+            {/* Drag handle — gesture responder applied directly so it intercepts the parent TouchableOpacity */}
+            {hasCourses && !isVoided && !isReturned && (
+              <View style={s.dragHandleBtn} {...dragHandleProps(item)}>
+                <View style={s.dragLine} />
+                <View style={s.dragLine} />
+                <View style={s.dragLine} />
+              </View>
+            )}
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  }
 
   return (
-    <View style={s.root}>
+    <View
+      style={s.root}
+      ref={panelRef}
+      onLayout={() => {
+        panelRef.current?.measureInWindow((_x, py) => { panelPageYRef.current = py; });
+      }}
+    >
       <View style={s.card}>
 
         {/* Header */}
         <View style={s.header}>
-          {/* Row 1: seq# (left) + status badge (right) */}
           <View style={s.headerRow}>
             {orderSeq !== undefined ? (
               <TouchableOpacity onPress={onCountPress} activeOpacity={0.6} disabled={!onCountPress}>
@@ -103,7 +290,6 @@ export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveIt
             )}
           </View>
 
-          {/* Row 2: delivery type (left) + customer name (right) */}
           <View style={s.headerRow}>
             <TouchableOpacity onPress={onOrderTypePress} activeOpacity={0.6} disabled={!onOrderTypePress}>
               <Text style={s.pickup}>{orderType ?? 'Order Type'}</Text>
@@ -122,7 +308,7 @@ export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveIt
 
         <View style={s.divider} />
 
-        {/* Items section title — glass effect */}
+        {/* Items title — glass effect */}
         <BlurView intensity={60} tint="light">
           <View style={s.itemsTitle}>
             <Text style={s.itemsTitleText}>Items</Text>
@@ -131,64 +317,105 @@ export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveIt
         </BlurView>
 
         {/* Order items */}
-        <ScrollView style={s.scroll} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          ref={scrollViewRef}
+          style={s.scroll}
+          showsVerticalScrollIndicator={false}
+          scrollEnabled={!draggingId}
+          onLayout={() => {
+            // Capture the ScrollView's absolute screen Y so we can convert
+            // gesture pageY → scroll-content Y during drag
+            (scrollViewRef.current as any)?.measureInWindow(
+              (_x: number, py: number) => { scrollViewPageYRef.current = py; },
+            );
+          }}
+          onScroll={e => { scrollOffsetRef.current = e.nativeEvent.contentOffset.y; }}
+          scrollEventThrottle={16}
+        >
           {items.length === 0 ? (
             <View style={s.emptyState}>
               <Text style={s.emptyText}>No items yet</Text>
             </View>
-          ) : (
-            items.map(item => {
-              const selected = item.id === selectedId;
+          ) : courses && courses.length > 0 ? (
+            courses.map(course => {
+              const courseItems  = items.filter(i => i.courseId === course.id);
+              const isDropTarget = !!draggingId
+                && draggingItemRef.current?.courseId !== course.id
+                && hoverCourseId === course.id;
+              const isHovered    = !!draggingId && draggingItemRef.current?.courseId !== course.id;
               return (
-                <TouchableOpacity
-                  key={item.id}
-                  style={s.item}
-                  onPress={() => !isVoided && !isReturned && onSelectItem(item.id)}
-                  activeOpacity={isVoided || isReturned ? 1 : 0.8}
+                <View
+                  key={course.id}
+                  onLayout={e => {
+                    courseRectsRef.current.set(course.id, {
+                      y:      e.nativeEvent.layout.y,
+                      height: e.nativeEvent.layout.height,
+                    });
+                  }}
                 >
-                  {selected && !isVoided && !isReturned && <View style={s.selectedBar} />}
-                  <View style={[s.itemContent, selected && !isVoided && !isReturned && s.itemContentSelected, isVoided && s.itemContentVoided, isReturned && s.itemContentReturned]}>
-                    <View style={s.itemLeft}>
-                      <Text style={s.itemQty}>{item.qty}</Text>
-                      <View>
-                        <Image source={ICONS.xClose} style={s.itemX} />
-                      </View>
-                      <View style={s.itemNameCol}>
-                        <Text style={s.itemName} numberOfLines={2}>{item.name}</Text>
-                        {(tableNumber || orderType?.toLowerCase().includes('dine')) && (
-                          <View style={s.tableBadge}>
-                            <Text style={s.tableBadgeText}>{tableNumber ?? 'Table'}</Text>
-                          </View>
-                        )}
-                        {item.discount && (
-                          <Text style={s.itemDiscountBadge}>{item.discount.label}</Text>
-                        )}
-                      </View>
+                  <View style={[
+                    s.courseHeader,
+                    course.isHeld && s.courseHeaderHeld,
+                    isDropTarget && s.courseHeaderDrop,
+                    isHovered && !isDropTarget && s.courseHeaderHoverable,
+                  ]}>
+                    <View style={s.courseHeaderLeft}>
+                      {course.isHeld && <View style={s.courseHoldDot} />}
+                      <Text style={[s.courseHeaderText, course.isHeld && s.courseHeaderTextHeld]}>
+                        {course.name}
+                      </Text>
+                      {course.isHeld && course.holdUntil && currentTime ? (
+                        <View style={s.courseTimerBadge}>
+                          <Text style={s.courseTimerText}>
+                            {formatHoldCountdown(course.holdUntil, currentTime)}
+                          </Text>
+                        </View>
+                      ) : course.isHeld ? (
+                        <View style={s.courseHeldBadge}>
+                          <Text style={s.courseHeldBadgeText}>ON HOLD</Text>
+                        </View>
+                      ) : null}
                     </View>
-                    <View style={s.itemPriceCol}>
-                      {item.discount && (
-                        <Text style={s.itemOrigPrice}>{(item.price * item.qty * priceTagMultiplier).toFixed(2)}</Text>
-                      )}
-                      <View style={s.itemPriceRow}>
-                        <Image source={ICONS.sarDark} style={s.sarDark} />
-                        <Text style={[s.itemPriceText, !!item.discount && s.itemPriceDiscounted]}>
-                          {itemEffectiveTotal(item, priceTagMultiplier).toFixed(2)}
+                    {isDropTarget ? (
+                      <View style={s.dropBadge}>
+                        <Text style={s.dropBadgeText}>Drop here</Text>
+                      </View>
+                    ) : !draggingId && onHoldCourse && !isVoided && !isReturned ? (
+                      <TouchableOpacity
+                        style={[s.holdCourseBtn, course.isHeld && s.holdCourseBtnActive]}
+                        onPress={() => {
+                          if (course.isHeld) {
+                            // Unhold immediately
+                            onHoldCourse(course.id, undefined);
+                          } else {
+                            // Open time picker dialog
+                            setHoldDialogCourse(course);
+                          }
+                        }}
+                        activeOpacity={0.75}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Text style={[s.holdCourseBtnText, course.isHeld && s.holdCourseBtnTextActive]}>
+                          {course.isHeld ? 'Unhold' : 'Hold'}
                         </Text>
-                      </View>
-                    </View>
+                      </TouchableOpacity>
+                    ) : null}
                   </View>
-                </TouchableOpacity>
+                  {courseItems.map(item => renderItem(item))}
+                </View>
               );
             })
+          ) : (
+            items.map(item => renderItem(item))
           )}
         </ScrollView>
 
         {/* Add Course */}
-        <TouchableOpacity style={s.addCourse} activeOpacity={0.7}>
+        <TouchableOpacity style={s.addCourse} activeOpacity={0.7} onPress={onAddCourse} disabled={!onAddCourse}>
           <Text style={s.addCourseText}>Add Course</Text>
         </TouchableOpacity>
 
-        {/* Sub Total row — only visible when an order-level discount is applied */}
+        {/* Sub Total row — only when discount applied */}
         {discount ? (
           <View style={s.subTotalRow}>
             <Text style={s.subTotalLabel}>Sub Total</Text>
@@ -233,7 +460,7 @@ export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveIt
                 <Image source={ICONS.chevronRight} style={[s.totalChevron, inactive && s.totalChevronInactive]} />
               </View>
               <View style={s.totalRight}>
-                <Image source={inactive ? ICONS.sarDark : ICONS.sarWhite} style={s.sarWhite} />
+                <Image source={ICONS.sarWhite} style={[s.sarWhite, inactive && s.sarWhiteInactive]} />
                 <Text style={[s.totalAmount, inactive && s.totalLabelInactive]}>{total.toFixed(2)}</Text>
               </View>
             </TouchableOpacity>
@@ -241,6 +468,44 @@ export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveIt
         })()}
 
       </View>
+
+      {/* ── Hold course time picker ── */}
+      {onHoldCourse && (
+        <HoldTimeDialog
+          visible={!!holdDialogCourse}
+          itemName={holdDialogCourse?.name ?? ''}
+          onClose={() => setHoldDialogCourse(null)}
+          onConfirm={minutes => {
+            if (holdDialogCourse) {
+              onHoldCourse(holdDialogCourse.id, Date.now() + minutes * 60 * 1000);
+              setHoldDialogCourse(null);
+            }
+          }}
+          onFireLater={() => {
+            if (holdDialogCourse) {
+              onHoldCourse(holdDialogCourse.id, undefined);
+              setHoldDialogCourse(null);
+            }
+          }}
+        />
+      )}
+
+      {/* ── Drag ghost — floats above the card during drag ── */}
+      {draggingId && (
+        <Animated.View
+          style={[s.ghost, { transform: [{ translateY: ghostAnimY }] }]}
+          pointerEvents="none"
+        >
+          <View style={s.ghostHandle}>
+            <View style={s.ghostHandleLine} />
+            <View style={s.ghostHandleLine} />
+            <View style={s.ghostHandleLine} />
+          </View>
+          <Text style={s.ghostText} numberOfLines={1}>
+            {items.find(i => i.id === draggingId)?.name ?? ''}
+          </Text>
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -362,17 +627,134 @@ const s = StyleSheet.create({
     fontWeight: '400',
   },
 
+  // ── Course headers ──────────────────────────────────────────────────────────
+  courseHeader: {
+    backgroundColor: Colors.grayLight,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.grayBorder,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  courseHeaderHeld: {
+    backgroundColor: 'rgba(245,158,11,0.10)',
+    borderBottomColor: '#F59E0B',
+  },
+  courseHeaderDrop: {
+    backgroundColor: Colors.primaryLight,
+    borderBottomColor: Colors.primary,
+    borderBottomWidth: 2,
+  },
+  courseHeaderHoverable: {
+    borderBottomColor: Colors.grayMid,
+  },
+  courseHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+  },
+  courseHoldDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#F59E0B',
+  },
+  courseHeaderText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.primary,
+    letterSpacing: -0.07,
+  },
+  courseHeaderTextHeld: {
+    color: '#B45309',
+  },
+  courseHeldBadge: {
+    backgroundColor: 'rgba(245,158,11,0.18)',
+    borderRadius: 5,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  courseHeldBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#B45309',
+    letterSpacing: 0.3,
+  },
+  courseTimerBadge: {
+    backgroundColor: Colors.black,
+    borderRadius: 5,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  courseTimerText: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: Colors.white,
+    letterSpacing: -0.05,
+    fontVariant: ['tabular-nums'],
+  },
+  holdCourseBtn: {
+    borderWidth: 1.5,
+    borderColor: Colors.grayMid,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: Colors.white,
+  },
+  holdCourseBtnActive: {
+    borderColor: '#F59E0B',
+    backgroundColor: 'rgba(245,158,11,0.08)',
+  },
+  holdCourseBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.grayText,
+    letterSpacing: -0.05,
+  },
+  holdCourseBtnTextActive: {
+    color: '#B45309',
+  },
+  dropBadge: {
+    backgroundColor: Colors.primary,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  dropBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.white,
+    letterSpacing: -0.05,
+  },
+
+  // ── Items ───────────────────────────────────────────────────────────────────
   item: {
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: Colors.grayBorder,
     position: 'relative',
   },
+  itemDragging: {
+    opacity: 0.35,
+  },
   selectedBar: {
     position: 'absolute',
     left: 0, top: 0, bottom: 0,
     width: 5,
     backgroundColor: Colors.primary,
+    zIndex: 1,
+  },
+  holdBar: {
+    position: 'absolute',
+    left: 0, top: 0, bottom: 0,
+    width: 5,
+    backgroundColor: '#F59E0B',
     zIndex: 1,
   },
   itemContent: {
@@ -389,12 +771,30 @@ const s = StyleSheet.create({
     backgroundColor: Colors.primaryLight,
   },
   itemContentReturned: {
-    backgroundColor: 'rgba(160, 129, 75, 0.10)',  // Colors.yellowGold tint
+    backgroundColor: 'rgba(160, 129, 75, 0.10)',
     borderLeftWidth: 3,
     borderLeftColor: Colors.yellowGold,
   },
   itemContentVoided: {
     backgroundColor: Colors.liteColor2,
+  },
+  itemContentHeld: {
+    backgroundColor: 'rgba(245,158,11,0.07)',
+  },
+  holdBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(245,158,11,0.15)',
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+    borderRadius: 5,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  holdBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#B45309',
+    letterSpacing: 0.3,
   },
   itemLeft: {
     flexDirection: 'row',
@@ -446,6 +846,12 @@ const s = StyleSheet.create({
     color: Colors.primary,
     letterSpacing: -0.05,
   },
+  itemRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 0,
+  },
   itemPriceCol: {
     alignItems: 'flex-end',
     gap: 1,
@@ -473,15 +879,72 @@ const s = StyleSheet.create({
   itemPriceDiscounted: {
     color: Colors.primary,
   },
-  sarDark:  { width: 13, height: 15, resizeMode: 'contain' },
-  sarGray:  { width: 12, height: 14, resizeMode: 'contain' },
-  sarWhite: { width: 16, height: 18, resizeMode: 'contain' },
+  sarDark:          { width: 14, height: 16, resizeMode: 'contain' as const },
+  sarGray:          { width: 12, height: 14, resizeMode: 'contain' as const },
+  sarWhite:         { width: 16, height: 18, resizeMode: 'contain' as const },
+  sarWhiteInactive: { opacity: 0.5 },
 
+  // ── Drag handle ─────────────────────────────────────────────────────────────
+  dragHandleBtn: {
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 3.5,
+  },
+  dragLine: {
+    height: 2,
+    width: 14,
+    borderRadius: 1,
+    backgroundColor: Colors.grayMid,
+  },
+
+  // ── Drag ghost (floats above card) ──────────────────────────────────────────
+  ghost: {
+    position: 'absolute',
+    left: 20,
+    right: 20,
+    height: 48,
+    backgroundColor: Colors.primary,
+    borderRadius: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    gap: 10,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    elevation: 10,
+    zIndex: 100,
+  },
+  ghostHandle: {
+    gap: 3.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  ghostHandleLine: {
+    height: 2,
+    width: 14,
+    borderRadius: 1,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+  },
+  ghostText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.white,
+    letterSpacing: -0.07,
+  },
+
+  // ── Add Course ──────────────────────────────────────────────────────────────
   addCourse: {
     backgroundColor: Colors.grayLight,
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    borderTopWidth: 1,
+    borderTopColor: Colors.grayBorder,
   },
   addCourseText: {
     fontSize: 14,

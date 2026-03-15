@@ -16,10 +16,12 @@ import { layout, LEFT_PANEL_W } from '../styles/screenLayout';
 import OrderPanel, { CartItem } from '../components/OrderPanel';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
+import { iconSarDark, iconSarGray, iconSarWhite } from '../assets/icons';
+
 const ICONS = {
-  sarDark:  { uri: 'https://www.figma.com/api/mcp/asset/9abd0b7f-8af7-4a1b-8191-c6434269d8d7' },
-  sarGray:  { uri: 'https://www.figma.com/api/mcp/asset/a87a31c4-ad15-4c7d-8cbd-fbc065a2fff7' },
-  sarWhite: { uri: 'https://www.figma.com/api/mcp/asset/79841237-e621-48bf-836f-e1dd0aa820dc' },
+  sarDark:  iconSarDark,
+  sarGray:  iconSarGray,
+  sarWhite: iconSarWhite,
 };
 
 const TAX_RATE = 0.15;

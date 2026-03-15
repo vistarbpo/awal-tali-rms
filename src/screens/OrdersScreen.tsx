@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
   SafeAreaView,
   StatusBar,
   StyleSheet,
+  Animated,
 } from 'react-native';
 import { Colors } from '../constants/colors';
 import { layout } from '../styles/screenLayout';
@@ -21,12 +22,14 @@ import ReturnOrderDialog, { ReturnItem } from '../components/ReturnOrderDialog';
 import ReturnReasonDialog from '../components/ReturnReasonDialog';
 import ReturnAmountDialog from '../components/ReturnAmountDialog';
 
-// ─── Assets ───────────────────────────────────────────────────────────────────
+// ─── Icons ────────────────────────────────────────────────────────────────────
+import { iconSearch, iconSarDark, iconSarWhite, iconArrowLeft } from '../assets/icons';
+
 const ICONS = {
-  search:    { uri: 'https://www.figma.com/api/mcp/asset/fd201ba6-a12d-4ea8-8196-05d196f5bcaa' },
-  sar:       { uri: 'https://www.figma.com/api/mcp/asset/9d901ed9-6fb1-4640-a45b-01cd885535d6' },
-  sarW:      { uri: 'https://www.figma.com/api/mcp/asset/79841237-e621-48bf-836f-e1dd0aa820dc' },
-  arrowLeft: { uri: 'https://www.figma.com/api/mcp/asset/e77a3522-12d8-402e-a4da-7924113ef5b9' },
+  search:    iconSearch,
+  sar:       iconSarDark,
+  sarW:      iconSarWhite,
+  arrowLeft: iconArrowLeft,
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -1198,6 +1201,37 @@ export default function OrdersScreen({ onBack, onTotalPress, onLoadOrder }: Prop
   // Local orders copy so we can mark RETURNED without mutating the constant
   const [orders, setOrders] = useState<Order[]>(ORDERS);
 
+  // ── Sync animation ─────────────────────────────────────────────────────────
+  const [syncing, setSyncing]   = useState(false);
+  const spinA = useRef(new Animated.Value(0)).current;
+  const spinB = useRef(new Animated.Value(0)).current;
+  const syncLoopRef = useRef<Animated.CompositeAnimation | null>(null);
+
+  useEffect(() => {
+    if (syncing) {
+      spinA.setValue(0);
+      spinB.setValue(0);
+      syncLoopRef.current = Animated.loop(
+        Animated.parallel([
+          Animated.timing(spinA, { toValue: 1, duration: 900,  useNativeDriver: true, isInteraction: false }),
+          Animated.timing(spinB, { toValue: 1, duration: 1400, useNativeDriver: true, isInteraction: false }),
+        ])
+      );
+      syncLoopRef.current.start();
+    } else {
+      syncLoopRef.current?.stop();
+    }
+    return () => syncLoopRef.current?.stop();
+  }, [syncing]);
+
+  function handleSync() {
+    setSyncing(true);
+    setTimeout(() => setSyncing(false), 2400);
+  }
+
+  const rotateA = spinA.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+  const rotateB = spinB.interpolate({ inputRange: [0, 1], outputRange: ['360deg', '0deg'] });
+
   const TABS: { key: FilterTab; label: string }[] = [
     { key: 'ALL',      label: `ALL (${orders.length})` },
     { key: 'ACTIVE',   label: 'ACTIVE' },
@@ -1310,7 +1344,7 @@ export default function OrdersScreen({ onBack, onTotalPress, onLoadOrder }: Prop
                     </View>
                   )}
                 </TouchableOpacity>
-                <TouchableOpacity style={s.toolBtn} activeOpacity={0.8}>
+                <TouchableOpacity style={s.toolBtn} activeOpacity={0.8} onPress={handleSync} disabled={syncing}>
                   <Text style={s.btnLabel}>SYNC</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={s.toolBtn} onPress={() => setMoreMenuVisible(true)} activeOpacity={0.8}>
@@ -1410,6 +1444,14 @@ export default function OrdersScreen({ onBack, onTotalPress, onLoadOrder }: Prop
                 )}
               </View>
             </>
+          )}
+
+          {/* ── Sync overlay ── */}
+          {syncing && (
+            <View style={s.syncOverlay} pointerEvents="none">
+              <Animated.View style={[s.syncRing, s.syncRingOuter, { transform: [{ rotate: rotateA }] }]} />
+              <Animated.View style={[s.syncRing, s.syncRingInner, { transform: [{ rotate: rotateB }] }]} />
+            </View>
           )}
         </View>
       </View>
@@ -1561,4 +1603,34 @@ const s = StyleSheet.create({
   /* Currency */
   amountRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   sarIcon:   { width: 11, height: 13, resizeMode: 'contain', opacity: 0.55 },
+
+  /* Sync overlay */
+  syncOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.80)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  syncRing: {
+    position: 'absolute',
+    borderRadius: 999,
+    borderStyle: 'solid',
+  },
+  syncRingOuter: {
+    width: 96,
+    height: 96,
+    borderWidth: 5,
+    borderColor: Colors.primary,
+    borderTopColor: 'transparent',
+    borderLeftColor: 'transparent',
+  },
+  syncRingInner: {
+    width: 64,
+    height: 64,
+    borderWidth: 5,
+    borderColor: Colors.primary,
+    borderBottomColor: 'transparent',
+    borderRightColor: 'transparent',
+    opacity: 0.55,
+  },
 });

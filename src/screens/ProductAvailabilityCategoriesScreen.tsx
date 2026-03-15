@@ -16,16 +16,18 @@ import {
 import { Colors } from '../constants/colors';
 import { CARD_GAP } from '../styles/screenLayout';
 
+import { iconSearch, catImg0, catImg1, catImg2, catImg3, catImg4 } from '../assets/icons';
+
 const ICONS = {
-  search: { uri: 'https://www.figma.com/api/mcp/asset/16716d7b-a23f-4fc3-812b-6beecf934ea2' },
+  search: iconSearch,
 };
 
 const CAT_IMG = {
-  img0: { uri: 'https://www.figma.com/api/mcp/asset/72df0395-bc08-44a3-9c27-c98c9905e5dd' },
-  img1: { uri: 'https://www.figma.com/api/mcp/asset/74d44d07-8cab-466f-b13d-99effe3ba6c1' },
-  img2: { uri: 'https://www.figma.com/api/mcp/asset/8a4cf30b-47e8-40d1-9039-7f613b120e39' },
-  img3: { uri: 'https://www.figma.com/api/mcp/asset/78219868-ae86-44f2-9c46-7225faff05af' },
-  img4: { uri: 'https://www.figma.com/api/mcp/asset/03aa7717-fe20-4911-be0a-b84feb9de66d' },
+  img0: catImg0,
+  img1: catImg1,
+  img2: catImg2,
+  img3: catImg3,
+  img4: catImg4,
 };
 
 export interface AvailCategory {
