@@ -117,8 +117,9 @@ function ProductCard({
 
   if (item.type === 'back') {
     return (
-      <TouchableOpacity style={[g.card, g.navCard, sizeStyle]} onPress={onBack} activeOpacity={0.7}>
-        <Image source={ICONS.arrowLeft} style={g.navIcon} />
+      <TouchableOpacity style={[g.card, g.backCard, sizeStyle]} onPress={onBack} activeOpacity={0.7}>
+        <Image source={ICONS.arrowLeft} style={g.backIcon} />
+        <Text style={g.backLabel}>BACK</Text>
       </TouchableOpacity>
     );
   }
@@ -356,7 +357,20 @@ const g = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: Colors.grayBorder,
   },
-  navIcon:  { width: 28, height: 28, resizeMode: 'contain', opacity: 0.5 },
+  backCard: {
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.30,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  backIcon:  { width: 28, height: 28, resizeMode: 'contain', tintColor: Colors.white },
+  backLabel: { fontSize: 12, fontWeight: '700', color: Colors.white, letterSpacing: 0.5 },
+  navIcon:   { width: 28, height: 28, resizeMode: 'contain', opacity: 0.5 },
   navGray:  { fontSize: 13, fontWeight: '600', color: Colors.grayText },
   navDark:  { fontSize: 13, fontWeight: '600', color: Colors.primary },
   productImg: { width: '100%', height: '100%', resizeMode: 'cover' },

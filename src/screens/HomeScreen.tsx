@@ -20,6 +20,8 @@ import MoreMenu from '../components/MoreMenu';
 import ConfirmDialog from '../components/ConfirmDialog';
 import TillAmountDialog from '../components/TillAmountDialog';
 import DrawerOperationsDialog from '../components/DrawerOperationsDialog';
+import ReportsMenuDialog from '../components/ReportsMenuDialog';
+import SyncDataDialog    from '../components/SyncDataDialog';
 import DiagnosticsScreen from './DiagnosticsScreen';
 import EndOfDayScreen from './EndOfDayScreen';
 
@@ -132,7 +134,9 @@ export default function HomeScreen({ onTabPress, onCategorySelect, cart, selecte
   const [tillAmountVisible, setTillAmountVisible]   = useState(false);
   const [drawerOpsVisible,  setDrawerOpsVisible]    = useState(false);
   const [diagnosticsVisible, setDiagnosticsVisible] = useState(false);
+  const [syncVisible,        setSyncVisible]        = useState(false);
   const [endOfDayVisible,    setEndOfDayVisible]    = useState(false);
+  const [reportsVisible,     setReportsVisible]     = useState(false);
 
   const rightW    = screenW - LEFT_PANEL_W;
   const available = rightW - RIGHT_PAD * 2 - CARD_GAP * (COLS - 1);
@@ -284,7 +288,9 @@ export default function HomeScreen({ onTabPress, onCategorySelect, cart, selecte
           if (key === 'availability') onAvailabilityPress?.();
           if (key === 'drawer')      setDrawerOpsVisible(true);
           if (key === 'diagnostics') setDiagnosticsVisible(true);
+          if (key === 'sync')        setSyncVisible(true);
           if (key === 'end_of_day')  setEndOfDayVisible(true);
+          if (key === 'reports')     setReportsVisible(true);
         }}
       />
 
@@ -308,6 +314,12 @@ export default function HomeScreen({ onTabPress, onCategorySelect, cart, selecte
         onClose={() => setDrawerOpsVisible(false)}
       />
 
+      <SyncDataDialog
+        visible={syncVisible}
+        onClose={() => setSyncVisible(false)}
+      />
+
+
       <DiagnosticsScreen
         visible={diagnosticsVisible}
         onClose={() => setDiagnosticsVisible(false)}
@@ -319,6 +331,11 @@ export default function HomeScreen({ onTabPress, onCategorySelect, cart, selecte
       <EndOfDayScreen
         visible={endOfDayVisible}
         onClose={() => setEndOfDayVisible(false)}
+      />
+
+      <ReportsMenuDialog
+        visible={reportsVisible}
+        onClose={() => setReportsVisible(false)}
       />
     </SafeAreaView>
   );

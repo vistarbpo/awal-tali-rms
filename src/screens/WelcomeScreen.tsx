@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,8 @@ import {
   StatusBar,
 } from 'react-native';
 import { Colors } from '../constants/colors';
-import TalabOSLogo from '../components/TalabOSLogo';
+import TalabOSLogo    from '../components/TalabOSLogo';
+import SyncDataDialog from '../components/SyncDataDialog';
 
 interface Props {
   userName?: string;
@@ -29,6 +30,8 @@ export default function WelcomeScreen({
   onAccessRegister,
   onExit,
 }: Props) {
+  const [syncUsersVisible, setSyncUsersVisible] = useState(false);
+
   const initials = userName
     .split(' ')
     .map(w => w[0])
@@ -106,6 +109,15 @@ export default function WelcomeScreen({
 
             </View>
 
+            {/* Sync Users link */}
+            <TouchableOpacity
+              style={s.linkBtn}
+              onPress={() => setSyncUsersVisible(true)}
+              activeOpacity={0.6}
+            >
+              <Text style={s.linkText}>Sync Users</Text>
+            </TouchableOpacity>
+
             {/* Exit — destructive link */}
             <TouchableOpacity
               style={s.exitBtn}
@@ -119,6 +131,12 @@ export default function WelcomeScreen({
         </View>
 
       </View>
+
+      <SyncDataDialog
+        visible={syncUsersVisible}
+        onClose={() => setSyncUsersVisible(false)}
+        title="Sync Users"
+      />
     </SafeAreaView>
   );
 }
@@ -319,6 +337,18 @@ const s = StyleSheet.create({
     fontWeight: '600',
     color: Colors.black,
     letterSpacing: -0.2,
+  },
+
+  /* Sync Users link */
+  linkBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+  },
+  linkText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.primary,
+    letterSpacing: -0.1,
   },
 
   /* Exit */

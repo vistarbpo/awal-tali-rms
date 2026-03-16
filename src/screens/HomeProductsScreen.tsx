@@ -31,6 +31,8 @@ import QuantityPadDialog from '../components/QuantityPadDialog';
 import OrderTagsDialog from '../components/OrderTagsDialog';
 import HoldTimeDialog from '../components/HoldTimeDialog';
 import DrawerOperationsDialog from '../components/DrawerOperationsDialog';
+import ReportsMenuDialog from '../components/ReportsMenuDialog';
+import SyncDataDialog    from '../components/SyncDataDialog';
 import DiagnosticsScreen from './DiagnosticsScreen';
 import EndOfDayScreen from './EndOfDayScreen';
 import { ProductAvailabilityMap } from './ProductAvailabilityProductsScreen';
@@ -297,8 +299,10 @@ export default function HomeProductsScreen({
   const [activeTags,          setActiveTags]             = useState<string[]>([]);
   const [qtyPadVisible,       setQtyPadVisible]          = useState(false);
   const [diagnosticsVisible,  setDiagnosticsVisible]     = useState(false);
+  const [syncVisible,         setSyncVisible]            = useState(false);
   const [endOfDayVisible,     setEndOfDayVisible]        = useState(false);
   const [drawerOpsVisible,    setDrawerOpsVisible]       = useState(false);
+  const [reportsVisible,      setReportsVisible]         = useState(false);
   const [holdTimeVisible,     setHoldTimeVisible]        = useState(false);
   const [currentTime,         setCurrentTime]            = useState(() => Date.now());
 
@@ -598,8 +602,10 @@ export default function HomeProductsScreen({
           if (key === 'availability') onAvailabilityPress?.();
           if (key === 'house_acct') setHouseAccountVisible(true);
           if (key === 'diagnostics') setDiagnosticsVisible(true);
+          if (key === 'sync')        setSyncVisible(true);
           if (key === 'end_of_day')  setEndOfDayVisible(true);
           if (key === 'drawer')      setDrawerOpsVisible(true);
+          if (key === 'reports')     setReportsVisible(true);
         }}
       />
 
@@ -765,6 +771,12 @@ export default function HomeProductsScreen({
         onClose={() => setDrawerOpsVisible(false)}
       />
 
+      <SyncDataDialog
+        visible={syncVisible}
+        onClose={() => setSyncVisible(false)}
+      />
+
+
       <DiagnosticsScreen
         visible={diagnosticsVisible}
         onClose={() => setDiagnosticsVisible(false)}
@@ -776,6 +788,11 @@ export default function HomeProductsScreen({
       <EndOfDayScreen
         visible={endOfDayVisible}
         onClose={() => setEndOfDayVisible(false)}
+      />
+
+      <ReportsMenuDialog
+        visible={reportsVisible}
+        onClose={() => setReportsVisible(false)}
       />
     </SafeAreaView>
   );

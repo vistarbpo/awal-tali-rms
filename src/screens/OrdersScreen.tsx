@@ -21,6 +21,8 @@ import OrderPanel, { CartItem } from '../components/OrderPanel';
 import ReturnOrderDialog, { ReturnItem } from '../components/ReturnOrderDialog';
 import ReturnReasonDialog from '../components/ReturnReasonDialog';
 import ReturnAmountDialog from '../components/ReturnAmountDialog';
+import ReceiptModal       from '../components/ReceiptModal';
+import OrdersSyncDialog   from '../components/OrdersSyncDialog';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 import { iconSearch, iconSarDark, iconSarWhite, iconArrowLeft } from '../assets/icons';
@@ -236,6 +238,7 @@ function OrderDetailView({ order, onBack }: OrderDetailViewProps) {
   const subtotal = order.items.reduce((sum, i) => sum + i.price * i.qty, 0);
   const tax      = order.status === 'VOID' ? 0 : subtotal * 0.15;
   const total    = subtotal + tax;
+  const [receiptVisible, setReceiptVisible] = useState(false);
 
   const PAYMENT_LABEL: Record<PaymentMethod, string> = {
     Cash: 'Cash', Card: 'Card', Split: 'Split', Unpaid: 'Unpaid',
@@ -244,10 +247,10 @@ function OrderDetailView({ order, onBack }: OrderDetailViewProps) {
   return (
     <>
       {/* Action bar */}
-      <View style={[layout.actionBar, s.actionBar]}>
-        <TouchableOpacity style={[layout.actionBtn, s.backBtn, dv.backBtn]} onPress={onBack} activeOpacity={0.8}>
-          <Text style={dv.backArrow}>←</Text>
-          <Text style={layout.actionLabel}>BACK</Text>
+      <View style={[s.actionBar, dv.actionBar]}>
+        <TouchableOpacity style={s.backBtn} onPress={onBack} activeOpacity={0.8}>
+          <Image source={ICONS.arrowLeft} style={s.btnIcon} />
+          <Text style={s.btnLabel}>BACK</Text>
         </TouchableOpacity>
 
         <View style={dv.titleArea}>
@@ -257,6 +260,10 @@ function OrderDetailView({ order, onBack }: OrderDetailViewProps) {
             <Text style={[dv.statusChipText, { color: STATUS_COLOR[order.status] }]}>{order.status}</Text>
           </View>
         </View>
+
+        <TouchableOpacity style={s.toolBtn} onPress={() => setReceiptVisible(true)} activeOpacity={0.8}>
+          <Text style={s.btnLabel}>VIEW RECEIPT</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Detail content card */}
@@ -330,13 +337,18 @@ function OrderDetailView({ order, onBack }: OrderDetailViewProps) {
 
         </ScrollView>
       </View>
+
+      <ReceiptModal
+        visible={receiptVisible}
+        onClose={() => setReceiptVisible(false)}
+        order={order}
+      />
     </>
   );
 }
 
 const dv = StyleSheet.create({
-  backBtn:  { flexDirection: 'row', flex: 0, paddingHorizontal: 16, gap: 6 },
-  backArrow:{ fontSize: 20, color: Colors.white, lineHeight: 22, marginTop: -1 },
+  actionBar: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
   titleArea:{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 4 },
   titleOrderNum: { fontSize: 18, fontWeight: '700', color: Colors.primary, letterSpacing: -0.4 },
   statusChip:    { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
@@ -1194,6 +1206,9 @@ export default function OrdersScreen({ onBack, onTotalPress, onLoadOrder }: Prop
   const searchRef = useRef<TextInput>(null);
   const activeFilterCount = countActiveFilters(appliedFilters);
 
+  // ── Receipt ────────────────────────────────────────────────────────────────
+  const [receiptOrder, setReceiptOrder] = useState<Order | null>(null);
+
   // ── Return flow state ──────────────────────────────────────────────────────
   const [returnStep, setReturnStep]     = useState<'select' | 'reason' | 'amount' | 'refund' | null>(null);
   const [returnItems, setReturnItems]   = useState<ReturnItem[]>([]);
@@ -1201,36 +1216,8 @@ export default function OrdersScreen({ onBack, onTotalPress, onLoadOrder }: Prop
   // Local orders copy so we can mark RETURNED without mutating the constant
   const [orders, setOrders] = useState<Order[]>(ORDERS);
 
-  // ── Sync animation ─────────────────────────────────────────────────────────
-  const [syncing, setSyncing]   = useState(false);
-  const spinA = useRef(new Animated.Value(0)).current;
-  const spinB = useRef(new Animated.Value(0)).current;
-  const syncLoopRef = useRef<Animated.CompositeAnimation | null>(null);
-
-  useEffect(() => {
-    if (syncing) {
-      spinA.setValue(0);
-      spinB.setValue(0);
-      syncLoopRef.current = Animated.loop(
-        Animated.parallel([
-          Animated.timing(spinA, { toValue: 1, duration: 900,  useNativeDriver: true, isInteraction: false }),
-          Animated.timing(spinB, { toValue: 1, duration: 1400, useNativeDriver: true, isInteraction: false }),
-        ])
-      );
-      syncLoopRef.current.start();
-    } else {
-      syncLoopRef.current?.stop();
-    }
-    return () => syncLoopRef.current?.stop();
-  }, [syncing]);
-
-  function handleSync() {
-    setSyncing(true);
-    setTimeout(() => setSyncing(false), 2400);
-  }
-
-  const rotateA = spinA.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
-  const rotateB = spinB.interpolate({ inputRange: [0, 1], outputRange: ['360deg', '0deg'] });
+  // ── Sync dialog ─────────────────────────────────────────────────────────────
+  const [syncDialogVisible, setSyncDialogVisible] = useState(false);
 
   const TABS: { key: FilterTab; label: string }[] = [
     { key: 'ALL',      label: `ALL (${orders.length})` },
@@ -1258,7 +1245,8 @@ export default function OrdersScreen({ onBack, onTotalPress, onLoadOrder }: Prop
 
   function handleMoreAction(key: string) {
     if (key === 'details' && selectedOrder) setViewMode('detail');
-    if (key === 'return' && selectedOrder) setReturnStep('select');
+    if (key === 'return'  && selectedOrder) setReturnStep('select');
+    if (key === 'receipt' && selectedOrder) setReceiptOrder(selectedOrder);
   }
 
   function handleReturnDone(items: ReturnItem[]) {
@@ -1344,7 +1332,7 @@ export default function OrdersScreen({ onBack, onTotalPress, onLoadOrder }: Prop
                     </View>
                   )}
                 </TouchableOpacity>
-                <TouchableOpacity style={s.toolBtn} activeOpacity={0.8} onPress={handleSync} disabled={syncing}>
+                <TouchableOpacity style={s.toolBtn} activeOpacity={0.8} onPress={() => setSyncDialogVisible(true)}>
                   <Text style={s.btnLabel}>SYNC</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={s.toolBtn} onPress={() => setMoreMenuVisible(true)} activeOpacity={0.8}>
@@ -1446,15 +1434,14 @@ export default function OrdersScreen({ onBack, onTotalPress, onLoadOrder }: Prop
             </>
           )}
 
-          {/* ── Sync overlay ── */}
-          {syncing && (
-            <View style={s.syncOverlay} pointerEvents="none">
-              <Animated.View style={[s.syncRing, s.syncRingOuter, { transform: [{ rotate: rotateA }] }]} />
-              <Animated.View style={[s.syncRing, s.syncRingInner, { transform: [{ rotate: rotateB }] }]} />
-            </View>
-          )}
         </View>
       </View>
+
+      {/* Sync orders dialog */}
+      <OrdersSyncDialog
+        visible={syncDialogVisible}
+        onClose={() => setSyncDialogVisible(false)}
+      />
 
       {/* Filter panel */}
       <FilterPanel
@@ -1500,6 +1487,15 @@ export default function OrdersScreen({ onBack, onTotalPress, onLoadOrder }: Prop
         onSelect={handleReturnConfirm}
         onClose={() => setReturnStep(null)}
       />
+
+      {/* ── Receipt modal ── */}
+      {receiptOrder && (
+        <ReceiptModal
+          visible={!!receiptOrder}
+          onClose={() => setReceiptOrder(null)}
+          order={receiptOrder}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -1604,33 +1600,4 @@ const s = StyleSheet.create({
   amountRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   sarIcon:   { width: 11, height: 13, resizeMode: 'contain', opacity: 0.55 },
 
-  /* Sync overlay */
-  syncOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.80)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  syncRing: {
-    position: 'absolute',
-    borderRadius: 999,
-    borderStyle: 'solid',
-  },
-  syncRingOuter: {
-    width: 96,
-    height: 96,
-    borderWidth: 5,
-    borderColor: Colors.primary,
-    borderTopColor: 'transparent',
-    borderLeftColor: 'transparent',
-  },
-  syncRingInner: {
-    width: 64,
-    height: 64,
-    borderWidth: 5,
-    borderColor: Colors.primary,
-    borderBottomColor: 'transparent',
-    borderRightColor: 'transparent',
-    opacity: 0.55,
-  },
 });
