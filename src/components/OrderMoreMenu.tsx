@@ -4,18 +4,13 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Image,
   StyleSheet,
   TouchableWithoutFeedback,
 } from 'react-native';
 import { Colors } from '../constants/colors';
 
-// Reuse same polygon asset as MoreMenu
-import { iconPolygon } from '../assets/icons';
-const POLYGON = iconPolygon;
-
 // ─── Menu definitions ─────────────────────────────────────────────────────────
-export type OrderMenuStatus = 'active' | 'voided' | 'returned';
+export type OrderMenuStatus = 'active' | 'voided' | 'returned' | 'done';
 
 interface MenuItem { key: string; label: string; danger?: boolean }
 
@@ -33,6 +28,11 @@ const ACTIVE_ITEMS: MenuItem[] = [
   { key: 'scan_loyalty_qr',  label: 'Scan Loyalty QR' },
 ];
 
+const DONE_ITEMS: MenuItem[] = [
+  { key: 'return_order',  label: 'Return order' },
+  { key: 'view_receipt',  label: 'View Receipt' },
+];
+
 const VOIDED_ITEMS: MenuItem[] = [
   { key: 'view_receipt', label: 'View Receipt' },
   { key: 'print',        label: 'Print' },
@@ -43,6 +43,7 @@ const RETURNED_ITEMS: MenuItem[] = [
 ];
 
 function getItems(status: OrderMenuStatus): MenuItem[] {
+  if (status === 'done')     return DONE_ITEMS;
   if (status === 'voided')   return VOIDED_ITEMS;
   if (status === 'returned') return RETURNED_ITEMS;
   return ACTIVE_ITEMS;
@@ -85,13 +86,12 @@ export default function OrderMoreMenu({
         style={[s.anchor, { right: anchorRight, top: anchorTop }]}
         pointerEvents="box-none"
       >
-        {/* Triangle — points UP toward the More button */}
-        <View style={s.triangleWrap}>
-          <Image source={POLYGON} style={s.triangle} />
-        </View>
-
-        {/* Card */}
+        {/* Card with embedded triangle tip */}
         <View style={s.card}>
+          {/* Triangle — absolutely positioned above the card, pointing up */}
+          <View style={s.triangleWrap} pointerEvents="none">
+            <View style={s.triangle} />
+          </View>
           {items.map((item, index) => (
             <TouchableOpacity
               key={item.key}
@@ -126,13 +126,19 @@ const s = StyleSheet.create({
     alignItems: 'flex-end',
   },
   triangleWrap: {
-    paddingRight: 28,
-    marginBottom: 2,
+    position: 'absolute',
+    top: -12,
+    right: 24,
   },
   triangle: {
-    width: 22,
-    height: 13,
-    resizeMode: 'contain',
+    width: 0,
+    height: 0,
+    borderLeftWidth: 12,
+    borderRightWidth: 12,
+    borderBottomWidth: 13,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: Colors.white,
   },
   card: {
     width: MENU_W,

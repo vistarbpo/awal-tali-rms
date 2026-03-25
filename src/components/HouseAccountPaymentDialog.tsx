@@ -3,6 +3,7 @@ import {
   Modal,
   View,
   Text,
+  Image,
   TouchableOpacity,
   StyleSheet,
   TouchableWithoutFeedback,
@@ -10,6 +11,7 @@ import {
   TextInput,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { iconSarGray, iconSarDark } from '../assets/icons';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Step = 'form' | 'customers' | 'amount' | 'payment_method';
@@ -241,7 +243,7 @@ export default function HouseAccountPaymentDialog({ visible, onClose, onSave }: 
 
             {/* Display */}
             <View style={s.amountDisplay}>
-              <Text style={s.amountCurrency}>SAR</Text>
+              <Image source={iconSarGray} style={s.amountCurrency} />
               <Text style={s.amountValue} numberOfLines={1} adjustsFontSizeToFit>
                 {amountDisplay}
               </Text>
@@ -326,9 +328,12 @@ export default function HouseAccountPaymentDialog({ visible, onClose, onSave }: 
             {/* Amount */}
             <TouchableOpacity style={s.formRow} onPress={() => setStep('amount')} activeOpacity={0.7}>
               <Text style={s.fieldLabel}>Amount</Text>
-              <Text style={[s.fieldValue, !amount && s.fieldPlaceholder]}>
-                {amount ? `SAR ${amount}` : 'SAR 0.00'}
-              </Text>
+              <View style={s.fieldAmountWrap}>
+                <Image source={iconSarDark} style={s.fieldSarIcon} />
+                <Text style={[s.fieldValue, !amount && s.fieldPlaceholder]}>
+                  {amount || '0.00'}
+                </Text>
+              </View>
               <Text style={s.chevron}>›</Text>
             </TouchableOpacity>
 
@@ -466,6 +471,17 @@ const s = StyleSheet.create({
     letterSpacing: -0.3,
     width: 150,
   },
+  fieldAmountWrap: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  fieldSarIcon: {
+    width: 14,
+    height: 15,
+    resizeMode: 'contain',
+  },
   fieldValue: {
     flex: 1,
     fontSize: 16,
@@ -534,8 +550,9 @@ const s = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1.5,
     borderColor: 'transparent',
-    paddingHorizontal: 16,
-    justifyContent: 'center',
+    overflow: 'hidden',
+    flexDirection: 'row',
+    alignItems: 'center',
     shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
@@ -547,11 +564,17 @@ const s = StyleSheet.create({
     shadowOpacity: 0.10,
   },
   searchInput: {
+    flex: 1,
+    alignSelf: 'stretch',
     fontSize: 15,
     fontWeight: '400',
     color: Colors.black,
     letterSpacing: -0.2,
-  },
+    padding: 0,
+    paddingHorizontal: 16,
+    outlineWidth: 0,
+    outlineStyle: 'none',
+  } as any,
 
   // ── Sub lists ──
   subList: {
@@ -625,11 +648,10 @@ const s = StyleSheet.create({
     gap: 8,
   },
   amountCurrency: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.grayText,
-    letterSpacing: -0.2,
-    paddingBottom: 4,
+    width: 22,
+    height: 24,
+    resizeMode: 'contain',
+    marginBottom: 4,
   },
   amountValue: {
     fontSize: 48,

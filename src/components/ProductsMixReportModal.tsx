@@ -3,11 +3,13 @@ import {
   Modal,
   View,
   Text,
+  Image,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { iconSarDark } from '../assets/icons';
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
 interface ProductRow {
@@ -68,8 +70,13 @@ const REPORT_DATA: CategoryGroup[] = [
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-function sarFmt(n: number): string {
-  return `SAR ${n.toFixed(2)}`;
+function SarAmt({ n, style }: { n: number; style?: object }) {
+  return (
+    <View style={[r.sarAmtWrap, style]}>
+      <Image source={iconSarDark} style={r.sarAmtIcon} />
+      <Text style={r.sarAmtText}>{n.toFixed(2)}</Text>
+    </View>
+  );
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
@@ -92,7 +99,7 @@ function ProductLine({ row }: { row: ProductRow }) {
     <View style={r.tableRow}>
       <Text style={r.colProduct}  numberOfLines={1}>{row.name}</Text>
       <Text style={r.colQty}>{row.qty}</Text>
-      <Text style={r.colSales}>{sarFmt(row.netSales)}</Text>
+      <SarAmt n={row.netSales} style={r.colSales} />
     </View>
   );
 }
@@ -177,7 +184,7 @@ export default function ProductsMixReportModal({ visible, onClose, dateLabel, pr
               <View style={r.totalRow}>
                 <Text style={[r.colProduct, r.totalLabel]}>Total</Text>
                 <Text style={[r.colQty,     r.totalLabel]}>{totalQty}</Text>
-                <Text style={[r.colSales,   r.totalLabel]}>{sarFmt(totalSales)}</Text>
+                <SarAmt n={totalSales} style={[r.colSales, r.totalLabel]} />
               </View>
             </View>
 
@@ -290,10 +297,13 @@ const r = StyleSheet.create({
   },
   colSales: {
     width: 88,
-    textAlign: 'right',
-    fontSize: 13,
-    color: Colors.black,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
   },
+  sarAmtWrap: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  sarAmtIcon: { width: 11, height: 12, resizeMode: 'contain' },
+  sarAmtText: { fontSize: 13, color: Colors.black },
   colHeader: {
     fontWeight: '700',
   },

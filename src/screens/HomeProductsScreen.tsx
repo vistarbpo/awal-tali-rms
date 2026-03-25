@@ -10,12 +10,13 @@ import {
   SafeAreaView,
   StatusBar,
   FlatList,
+  ScrollView,
   useWindowDimensions,
   ImageSourcePropType,
 } from 'react-native';
 import { Colors } from '../constants/colors';
 import { layout, LEFT_PANEL_W, CARD_GAP, RIGHT_PAD } from '../styles/screenLayout';
-import OrderPanel, { CartItem, Course } from '../components/OrderPanel';
+import OrderPanel, { CartItem, Course, ComboGroup, ComboOption } from '../components/OrderPanel';
 import MoreMenu from '../components/MoreMenu';
 import ConfirmDialog from '../components/ConfirmDialog';
 import TillAmountDialog from '../components/TillAmountDialog';
@@ -33,8 +34,12 @@ import HoldTimeDialog from '../components/HoldTimeDialog';
 import DrawerOperationsDialog from '../components/DrawerOperationsDialog';
 import ReportsMenuDialog from '../components/ReportsMenuDialog';
 import SyncDataDialog    from '../components/SyncDataDialog';
+import ScanLoyaltyQRModal from '../components/ScanLoyaltyQRModal';
+import RedeemRewardDialog from '../components/RedeemRewardDialog';
 import DiagnosticsScreen from './DiagnosticsScreen';
 import EndOfDayScreen from './EndOfDayScreen';
+import DevicesScreen from './DevicesScreen';
+import SupportScreen from './SupportScreen';
 import { ProductAvailabilityMap } from './ProductAvailabilityProductsScreen';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -86,11 +91,16 @@ const TABS = [
   { key: 'new',    label: 'NEW',    icon: ICONS.newOrder },
 ];
 
+// Re-export for consumers that imported from here
+export type { ComboOption, ComboGroup };
+
 interface Product {
   id: string;
   name: string;
   price: number;
   img?: ImageSourcePropType | null;
+  isCombo?: boolean;
+  comboGroups?: ComboGroup[];
 }
 
 const PRODUCTS: Product[] = [
@@ -107,6 +117,28 @@ const PRODUCTS: Product[] = [
   { id: 'p11', name: 'Mixed Grill',         price: 75, img: PROD_IMG[2] },
   { id: 'p12', name: 'Fish & Chips',        price: 35, img: PROD_IMG[3] },
   { id: 'p13', name: 'Chef\'s Special',     price: 55 },
+  {
+    id: 'p14', name: 'Combo Meal Sandwich', price: 28, img: PROD_IMG[0],
+    isCombo: true,
+    comboGroups: [
+      {
+        id: 'drink', label: 'DRINK', required: true,
+        options: [
+          { id: 'pepsi',    name: 'Pepsi'          },
+          { id: '7up',      name: '7Up'            },
+          { id: 'laban',    name: 'Laban Qariyah'  },
+        ],
+      },
+      {
+        id: 'side', label: 'SIDE', required: false,
+        options: [
+          { id: 'fries',    name: 'Fries'          },
+          { id: 'salad',    name: 'Garden Salad'   },
+          { id: 'coleslaw', name: 'Coleslaw'       },
+        ],
+      },
+    ],
+  },
 ];
 
 // ─── Grid ─────────────────────────────────────────────────────────────────────
@@ -236,6 +268,7 @@ interface Props {
   onAddCourse?:          () => void;
   onMoveItemToCourse?:   (itemId: string, courseId: string) => void;
   onHoldCourse?:         (courseId: string) => void;
+  onUpdateItemComboSelections?: (id: string, labels: string[], selections: Record<string, string>, groups: ComboGroup[]) => void;
 }
 
 export default function HomeProductsScreen({
@@ -266,6 +299,7 @@ export default function HomeProductsScreen({
   onAddCourse,
   onMoveItemToCourse,
   onHoldCourse,
+  onUpdateItemComboSelections,
 }: Props) {
   const { width: screenW }    = useWindowDimensions();
   const searchRef                         = useRef<TextInput>(null);
@@ -290,6 +324,9 @@ export default function HomeProductsScreen({
   const [itemDiscountVisible, setItemDiscountVisible] = useState(false);
   const [orderMoreVisible, setOrderMoreVisible]         = useState(false);
   const [priceTagVisible, setPriceTagVisible]           = useState(false);
+  const [scanQRVisible, setScanQRVisible]               = useState(false);
+  const [redeemVisible, setRedeemVisible]               = useState(false);
+  const [scannedCode, setScannedCode]                   = useState('');
   const [activePriceTag, setActivePriceTag]             = useState<PriceTag | null>(null);
   const [houseAccountVisible, setHouseAccountVisible]   = useState(false);
   const [notesVisible,        setNotesVisible]           = useState(false);
@@ -303,8 +340,21 @@ export default function HomeProductsScreen({
   const [endOfDayVisible,     setEndOfDayVisible]        = useState(false);
   const [drawerOpsVisible,    setDrawerOpsVisible]       = useState(false);
   const [reportsVisible,      setReportsVisible]         = useState(false);
+  const [devicesVisible,      setDevicesVisible]         = useState(false);
+  const [supportVisible,      setSupportVisible]         = useState(false);
   const [holdTimeVisible,     setHoldTimeVisible]        = useState(false);
   const [currentTime,         setCurrentTime]            = useState(() => Date.now());
+  const [comboConfig, setComboConfig] = useState<{
+    itemId: string;
+    groups: ComboGroup[];
+    selections: Record<string, string>;
+  } | null>(null);
+  const [pendingComboGroups, setPendingComboGroups] = useState<ComboGroup[] | null>(null);
+
+  // Reset local void state when a non-void order is loaded from outside
+  useEffect(() => {
+    if (status !== 'VOID') setIsVoided(false);
+  }, [status]);
 
   // Tick every second — drives countdown badges + auto-fire
   useEffect(() => {
@@ -325,16 +375,69 @@ export default function HomeProductsScreen({
   const gridData   = buildGrid(PRODUCTS, page, totalPages);
 
   function handleAddProduct(product: Product) {
-    const item: CartItem = { id: product.id, name: product.name, qty: 1, price: product.price };
+    // Use a unique ID for combo items so each addition is independent
+    const itemId = product.isCombo ? `${product.id}-${Date.now()}` : product.id;
+    const item: CartItem = {
+      id: itemId,
+      name: product.name,
+      qty: 1,
+      price: product.price,
+      isCombo: product.isCombo,
+      comboGroups: product.comboGroups,
+    };
     if (!isTillOpen) {
       setPendingItem(item);
+      if (product.isCombo) setPendingComboGroups(product.comboGroups ?? null);
       setTillGuardVisible(true);
     } else if (!orderType) {
       setPendingItem(item);
+      if (product.isCombo) setPendingComboGroups(product.comboGroups ?? null);
       setOrderTypeVisible(true);
     } else {
       onAddToCart(item);
+      if (product.isCombo && product.comboGroups) {
+        setComboConfig({ itemId: item.id, groups: product.comboGroups, selections: {} });
+      }
     }
+  }
+
+  function handleComboDone() {
+    if (!comboConfig) return;
+    const labels = comboConfig.groups
+      .map(g => {
+        const selId = comboConfig.selections[g.id];
+        return selId ? g.options.find(o => o.id === selId)?.name ?? null : null;
+      })
+      .filter((l): l is string => l !== null);
+    onUpdateItemComboSelections?.(comboConfig.itemId, labels, comboConfig.selections, comboConfig.groups);
+    setComboConfig(null);
+    setIsEditingItem(false);
+  }
+
+  function handleComboQty(delta: number) {
+    if (comboConfig) onUpdateQty?.(comboConfig.itemId, delta);
+  }
+
+  function handleComboVoid() {
+    if (comboConfig) {
+      onRemoveItem(comboConfig.itemId);
+      setComboConfig(null);
+      setIsEditingItem(false);
+    }
+  }
+
+  function toggleComboOption(groupId: string, optionId: string) {
+    setComboConfig(prev => {
+      if (!prev) return null;
+      const alreadySelected = prev.selections[groupId] === optionId;
+      const newSelections = { ...prev.selections };
+      if (alreadySelected) {
+        delete newSelections[groupId];
+      } else {
+        newSelections[groupId] = optionId;
+      }
+      return { ...prev, selections: newSelections };
+    });
   }
 
   function handleVoid() {
@@ -368,7 +471,21 @@ export default function HomeProductsScreen({
         <OrderPanel
           items={cart}
           selectedId={selectedCartId}
-          onSelectItem={id => { onSelectItem(id); setIsEditingItem(true); }}
+          onSelectItem={id => {
+            onSelectItem(id);
+            const tapped = cart.find(i => i.id === id);
+            if (tapped?.isCombo && tapped.comboGroups) {
+              setComboConfig({
+                itemId: id,
+                groups: tapped.comboGroups,
+                selections: tapped.comboSelections ?? {},
+              });
+              setIsEditingItem(false);
+            } else {
+              setComboConfig(null);
+              setIsEditingItem(true);
+            }
+          }}
           onRemoveItem={onRemoveItem}
           orderType={orderType}
           orderSeq={orderSeq}
@@ -377,7 +494,7 @@ export default function HomeProductsScreen({
           customer={deliveryCustomer}
           onAddCustomerPress={() => setCustomerFlowVisible(true)}
           onTotalPress={onTotalPress}
-          isVoided={isVoided}
+          isVoided={isVoided || status === 'VOID'}
           tableNumber={tableNumber}
           discount={orderDiscount}
           onDiscountPress={() => setDiscountVisible(true)}
@@ -392,7 +509,7 @@ export default function HomeProductsScreen({
         {/* ══ RIGHT: Content ══ */}
         <View style={layout.right}>
 
-          {isVoided ? (
+          {(isVoided || status === 'VOID') ? (
             /* ══ ORDER CANCELLED — New Order screen ══ */
             <View style={styles.cancelledScreen}>
 
@@ -426,6 +543,74 @@ export default function HomeProductsScreen({
               </TouchableOpacity>
 
             </View>
+          ) : comboConfig ? (
+            /* ══ COMBO MODIFIER SELECTION ══ */
+            <>
+              {/* Simplified action bar */}
+              <View style={layout.actionBar}>
+                <TouchableOpacity style={[layout.actionBtn, layout.actionBtnDanger, styles.itemActionBtn]} onPress={handleComboVoid} activeOpacity={0.8}>
+                  <Text style={styles.itemActionText}>Void</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[layout.actionBtn, styles.itemActionBtn]} activeOpacity={0.8} onPress={() => setDiscountVisible(true)}>
+                  <Text style={styles.itemActionText}>Discount</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[layout.actionBtn, styles.itemActionBtn]} activeOpacity={0.8} onPress={() => setNotesVisible(true)}>
+                  <Text style={styles.itemActionText}>Notes</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[layout.actionBtn, styles.itemActionBtn]} onPress={() => handleComboQty(-1)} activeOpacity={0.8}>
+                  <Text style={styles.qtySymbol}>−</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[layout.actionBtn, styles.itemActionBtn]} onPress={() => handleComboQty(1)} activeOpacity={0.8}>
+                  <Text style={styles.qtySymbol}>+</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Modifier groups */}
+              <ScrollView
+                style={{ flex: 1 }}
+                bounces={false}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.comboScrollContent}
+              >
+                {comboConfig.groups.map(group => (
+                  <View key={group.id} style={styles.comboGroup}>
+                    <View style={styles.comboGroupHeader}>
+                      <Text style={styles.comboGroupLabel}>{group.label}</Text>
+                      {group.required && <Text style={styles.comboGroupRequired}>Required</Text>}
+                    </View>
+                    <View style={styles.comboOptionsCard}>
+                      {group.options.map((opt, i) => {
+                        const selected = comboConfig.selections[group.id] === opt.id;
+                        return (
+                          <React.Fragment key={opt.id}>
+                            {i > 0 && <View style={styles.comboOptionDivider} />}
+                            <TouchableOpacity
+                              style={styles.comboOptionRow}
+                              activeOpacity={0.7}
+                              onPress={() => toggleComboOption(group.id, opt.id)}
+                            >
+                              <Text style={[styles.comboOptionText, selected && styles.comboOptionTextSelected]}>
+                                {opt.name}
+                              </Text>
+                              {selected && (
+                                <View style={styles.comboCheck}>
+                                  <Text style={styles.comboCheckMark}>✓</Text>
+                                </View>
+                              )}
+                            </TouchableOpacity>
+                          </React.Fragment>
+                        );
+                      })}
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
+
+              {/* DONE */}
+              <TouchableOpacity style={styles.doneBtn} onPress={handleComboDone} activeOpacity={0.85}>
+                <Text style={styles.doneBtnText}>DONE</Text>
+              </TouchableOpacity>
+            </>
           ) : isEditingItem && selectedCartId && cart.find(i => i.id === selectedCartId) ? (() => {
             const item = cart.find(i => i.id === selectedCartId)!;
             return (
@@ -606,6 +791,8 @@ export default function HomeProductsScreen({
           if (key === 'end_of_day')  setEndOfDayVisible(true);
           if (key === 'drawer')      setDrawerOpsVisible(true);
           if (key === 'reports')     setReportsVisible(true);
+          if (key === 'devices')     setDevicesVisible(true);
+          if (key === 'support')     setSupportVisible(true);
         }}
       />
 
@@ -641,7 +828,14 @@ export default function HomeProductsScreen({
         onClose={() => { setOrderTypeVisible(false); setPendingItem(null); }}
         onSelect={type => {
           onOrderTypeSet(type);
-          if (pendingItem) { onAddToCart(pendingItem); setPendingItem(null); }
+          if (pendingItem) {
+            onAddToCart(pendingItem);
+            if (pendingComboGroups) {
+              setComboConfig({ itemId: pendingItem.id, groups: pendingComboGroups, selections: {} });
+              setPendingComboGroups(null);
+            }
+            setPendingItem(null);
+          }
           if (type === 'Delivery') setCustomerFlowVisible(true);
         }}
       />
@@ -707,9 +901,16 @@ export default function HomeProductsScreen({
       <OrderMoreMenu
         visible={orderMoreVisible}
         onClose={() => setOrderMoreVisible(false)}
-        status={isVoided ? 'voided' : 'active'}
+        status={
+          (isVoided || status === 'VOID') ? 'voided'   :
+          status === 'RETURNED'           ? 'returned' :
+          status === 'DONE'               ? 'done'     :
+                                            'active'
+        }
         onItemPress={key => {
           if (key === 'assign_price_tag') setPriceTagVisible(true);
+          if (key === 'scan_loyalty_qr')  { setScannedCode(''); setScanQRVisible(true); }
+          if (key === 'redeem_reward')    { setScannedCode(''); setRedeemVisible(true); }
         }}
       />
 
@@ -793,6 +994,36 @@ export default function HomeProductsScreen({
       <ReportsMenuDialog
         visible={reportsVisible}
         onClose={() => setReportsVisible(false)}
+      />
+
+      <DevicesScreen
+        visible={devicesVisible}
+        onClose={() => setDevicesVisible(false)}
+      />
+
+      <SupportScreen
+        visible={supportVisible}
+        onClose={() => setSupportVisible(false)}
+      />
+
+      <ScanLoyaltyQRModal
+        visible={scanQRVisible}
+        onClose={() => setScanQRVisible(false)}
+        onScanned={code => {
+          setScanQRVisible(false);
+          setScannedCode(code);
+          setRedeemVisible(true);
+        }}
+      />
+
+      <RedeemRewardDialog
+        visible={redeemVisible}
+        code={scannedCode}
+        onClose={() => setRedeemVisible(false)}
+        onApply={code => {
+          // TODO: apply loyalty reward code `code` to the order
+          console.log('Redeem reward code:', code);
+        }}
       />
     </SafeAreaView>
   );
@@ -906,6 +1137,78 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.white,
     letterSpacing: -0.095,
+  },
+
+  // ── Combo modifier selection ──
+  comboScrollContent: {
+    padding: 20,
+    gap: 20,
+  },
+  comboGroup: {
+    gap: 10,
+  },
+  comboGroupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  comboGroupLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.grayText,
+    letterSpacing: 0.9,
+    textTransform: 'uppercase',
+  },
+  comboGroupRequired: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: Colors.red,
+    letterSpacing: 0.2,
+  },
+  comboOptionsCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  comboOptionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 17,
+  },
+  comboOptionDivider: {
+    height: 0.5,
+    backgroundColor: Colors.grayBorder,
+    marginHorizontal: 20,
+  },
+  comboOptionText: {
+    fontSize: 17,
+    fontWeight: '400',
+    color: Colors.black,
+    letterSpacing: -0.3,
+  },
+  comboOptionTextSelected: {
+    color: Colors.primary,
+    fontWeight: '600',
+  },
+  comboCheck: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: Colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  comboCheckMark: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.primary,
   },
 
   // ── Order Cancelled / New Order screen ──

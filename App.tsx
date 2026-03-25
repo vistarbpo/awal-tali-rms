@@ -11,7 +11,7 @@ import TablesScreen from './src/screens/TablesScreen';
 import ReservationsScreen from './src/screens/ReservationsScreen';
 import ProductAvailabilityCategoriesScreen from './src/screens/ProductAvailabilityCategoriesScreen';
 import ProductAvailabilityProductsScreen, { ProductAvailabilityMap } from './src/screens/ProductAvailabilityProductsScreen';
-import { CartItem, Course } from './src/components/OrderPanel';
+import { CartItem, Course, ComboGroup } from './src/components/OrderPanel';
 import { OrderType } from './src/components/OrderTypeDialog';
 import { OrderDiscount } from './src/components/DiscountDialog';
 
@@ -38,6 +38,7 @@ export default function App() {
   const [cart, setCart]                     = useState<CartItem[]>([]);
   const [selectedCartId, setSelectedCartId] = useState<string | null>(null);
   const [courses, setCourses]               = useState<Course[]>([]);
+  const [loadedOrderStatus, setLoadedOrderStatus] = useState<string>('ACTIVE');
   const [activeCourseId, setActiveCourseId] = useState<string | null>(null);
 
   function addToCart(item: CartItem) {
@@ -93,6 +94,12 @@ export default function App() {
     setCart(prev => prev.map(i => i.id === id ? { ...i, discount } : i));
   }
 
+  function updateItemComboSelections(id: string, labels: string[], selections: Record<string, string>, groups: ComboGroup[]) {
+    setCart(prev => prev.map(i =>
+      i.id === id ? { ...i, comboSelectionLabels: labels, comboSelections: selections, comboGroups: groups } : i
+    ));
+  }
+
   function toggleHold(id: string, holdTime?: number) {
     setCart(prev => prev.map(i =>
       i.id === id
@@ -132,6 +139,7 @@ export default function App() {
     onUpdateQty: updateQty,
     onToggleHold: toggleHold,
     onUpdateItemDiscount: updateItemDiscount,
+    onUpdateItemComboSelections: updateItemComboSelections,
     onDoneEditing: () => setSelectedCartId(null),
     isTillOpen,
     onTillToggle: () => setIsTillOpen(prev => !prev),
@@ -146,7 +154,7 @@ export default function App() {
       setOrderSeqMap(prev => ({ ...prev, [type]: (prev[type] ?? 0) + 1 }));
     },
     orderSeq: orderType ? (orderSeqMap[orderType] ?? 1) : undefined,
-    status: 'Active',
+    status: loadedOrderStatus,
     onTotalPress: () => setScreen('payment'),
     courses,
     onAddCourse: handleAddCourse,
@@ -159,6 +167,7 @@ export default function App() {
       setDineInTable(null);
       setCourses([]);
       setActiveCourseId(null);
+      setLoadedOrderStatus('ACTIVE');
     },
   };
 
@@ -273,6 +282,7 @@ export default function App() {
           setOrderType(typeMap[order.type] ?? null);
           setDineInTable(order.tableNumber ?? null);
           setOrderSeqMap(prev => ({ ...prev, [order.type]: (prev[order.type as OrderType] ?? 0) + 1 }));
+          setLoadedOrderStatus(order.status);
           setScreen('products');
         }}
       />

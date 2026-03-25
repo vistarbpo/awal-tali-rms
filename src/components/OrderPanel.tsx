@@ -13,6 +13,18 @@ import { Colors } from '../constants/colors';
 import { OrderDiscount } from './DiscountDialog';
 
 // ─── Shared types ─────────────────────────────────────────────────────────────
+export interface ComboOption {
+  id: string;
+  name: string;
+}
+
+export interface ComboGroup {
+  id: string;
+  label: string;
+  required: boolean;
+  options: ComboOption[];
+}
+
 export interface Course {
   id: string;
   name: string;
@@ -29,6 +41,10 @@ export interface CartItem {
   isHeld?: boolean;
   holdTime?: number;   // epoch ms when to auto-fire (Dine-In only)
   courseId?: string;   // which course this item belongs to
+  isCombo?: boolean;
+  comboGroups?: ComboGroup[];
+  comboSelections?: Record<string, string>;
+  comboSelectionLabels?: string[];  // display-ready names, e.g. ["Pepsi", "Fries"]
 }
 
 export function formatHoldCountdown(holdTime: number, now: number): string {
@@ -236,6 +252,9 @@ export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveIt
               {item.discount && (
                 <Text style={s.itemDiscountBadge}>{item.discount.label}</Text>
               )}
+              {item.comboSelectionLabels && item.comboSelectionLabels.map((label, i) => (
+                <Text key={i} style={s.comboLabel}>+ {label}</Text>
+              ))}
             </View>
           </View>
           <View style={s.itemRight}>
@@ -845,6 +864,13 @@ const s = StyleSheet.create({
     fontWeight: '600',
     color: Colors.primary,
     letterSpacing: -0.05,
+  },
+  comboLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: Colors.primary,
+    letterSpacing: -0.1,
+    marginTop: 2,
   },
   itemRight: {
     flexDirection: 'row',

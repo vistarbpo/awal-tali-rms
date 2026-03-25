@@ -1,15 +1,15 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
+  Image,
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
   StatusBar,
 } from 'react-native';
 import { Colors } from '../constants/colors';
-import TalabOSLogo    from '../components/TalabOSLogo';
-import SyncDataDialog from '../components/SyncDataDialog';
+import TalabOSLogo from '../components/TalabOSLogo';
 
 interface Props {
   userName?: string;
@@ -30,8 +30,6 @@ export default function WelcomeScreen({
   onAccessRegister,
   onExit,
 }: Props) {
-  const [syncUsersVisible, setSyncUsersVisible] = useState(false);
-
   const initials = userName
     .split(' ')
     .map(w => w[0])
@@ -48,7 +46,13 @@ export default function WelcomeScreen({
         {/* ── LEFT: Brand panel (same as Login for consistency) ── */}
         <View style={s.brand}>
           <View style={s.logoWrap}>
-            <Text style={s.brandName}>Awal & Tali</Text>
+            <View style={s.brandCircle}>
+              <Image
+                source={require('../../assets/awaltali-logo.jpg')}
+                style={s.brandCircleImg}
+                resizeMode="cover"
+              />
+            </View>
             <TalabOSLogo width={200} color={Colors.white} />
           </View>
 
@@ -109,15 +113,6 @@ export default function WelcomeScreen({
 
             </View>
 
-            {/* Sync Users link */}
-            <TouchableOpacity
-              style={s.linkBtn}
-              onPress={() => setSyncUsersVisible(true)}
-              activeOpacity={0.6}
-            >
-              <Text style={s.linkText}>Sync Users</Text>
-            </TouchableOpacity>
-
             {/* Exit — destructive link */}
             <TouchableOpacity
               style={s.exitBtn}
@@ -132,11 +127,6 @@ export default function WelcomeScreen({
 
       </View>
 
-      <SyncDataDialog
-        visible={syncUsersVisible}
-        onClose={() => setSyncUsersVisible(false)}
-        title="Sync Users"
-      />
     </SafeAreaView>
   );
 }
@@ -165,12 +155,18 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
   },
-  brandName: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.65)',
-    letterSpacing: 0.2,
-    marginBottom: 8,
+  brandCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    overflow: 'hidden',
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  brandCircleImg: {
+    width: 96,
+    height: 96,
   },
   userCard: {
     flexDirection: 'row',
@@ -337,18 +333,6 @@ const s = StyleSheet.create({
     fontWeight: '600',
     color: Colors.black,
     letterSpacing: -0.2,
-  },
-
-  /* Sync Users link */
-  linkBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-  },
-  linkText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.primary,
-    letterSpacing: -0.1,
   },
 
   /* Exit */

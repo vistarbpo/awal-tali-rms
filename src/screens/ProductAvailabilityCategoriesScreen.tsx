@@ -226,6 +226,7 @@ const s = StyleSheet.create({
     padding: 0,
     height: 36,
     outlineWidth: 0,
+    outlineStyle: 'none',
   } as any,
   card: {
     backgroundColor: Colors.white,

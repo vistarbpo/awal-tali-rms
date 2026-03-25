@@ -449,6 +449,7 @@ const s = StyleSheet.create({
     letterSpacing: -0.2,
     height: 56,
     outlineWidth: 0,
+    outlineStyle: 'none',
   },
 
   listDivider: {
@@ -584,5 +585,6 @@ const s = StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 0,
     outlineWidth: 0,
+    outlineStyle: 'none',
   },
 });

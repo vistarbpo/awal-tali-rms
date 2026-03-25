@@ -3,6 +3,7 @@ import {
   Modal,
   View,
   Text,
+  Image,
   TouchableOpacity,
   TextInput,
   ScrollView,
@@ -10,6 +11,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { iconSarDark } from '../assets/icons';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Step = 'main' | 'form' | 'type' | 'reason' | 'amount' | 'open_reason';
@@ -125,7 +127,7 @@ export default function DrawerOperationsDialog({ visible, onClose }: Props) {
     else if (step === 'open_reason') setStep('main');
   }
 
-  const displayAmount = formAmount ? `SAR ${formAmount}` : 'SAR 0.00';
+  const displayAmount = formAmount || '0.00';
 
   // ── Header render ──
   function renderHeader() {
@@ -197,7 +199,10 @@ export default function DrawerOperationsDialog({ visible, onClose }: Props) {
                         {e.reason ? <Text style={s.entryReason}>{e.reason}</Text> : null}
                       </View>
                       <View style={s.entryRight}>
-                        <Text style={s.entryAmount}>SAR {e.amount}</Text>
+                        <View style={s.entryAmountRow}>
+                          <Image source={iconSarDark} style={s.entrySarIcon} />
+                          <Text style={s.entryAmount}>{e.amount}</Text>
+                        </View>
                         <Text style={s.entryDate}>{e.date}</Text>
                       </View>
                     </View>
@@ -242,7 +247,7 @@ export default function DrawerOperationsDialog({ visible, onClose }: Props) {
             <TouchableOpacity style={s.formRow} activeOpacity={0.7} onPress={() => setStep('amount')}>
               <Text style={s.formLabel}>Amount</Text>
               <Text style={[s.formValue, formAmount && s.formValueSelected]}>
-                SAR {formAmount || '0.00'}
+                <Image source={iconSarDark} style={s.formSarIcon} />{formAmount || '0.00'}
               </Text>
             </TouchableOpacity>
 
@@ -349,6 +354,7 @@ export default function DrawerOperationsDialog({ visible, onClose }: Props) {
         <View style={s.numpadContainer}>
           {/* Display */}
           <View style={s.amountDisplay}>
+            <Image source={iconSarDark} style={s.amountDisplaySarIcon} />
             <Text style={s.amountDisplayValue}>{displayAmount}</Text>
           </View>
 
@@ -521,6 +527,9 @@ const s = StyleSheet.create({
     marginTop: 2,
   },
   entryRight: { alignItems: 'flex-end' },
+  entryAmountRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  entrySarIcon: { width: 13, height: 14, resizeMode: 'contain' },
+  formSarIcon: { width: 13, height: 14, resizeMode: 'contain', marginRight: 4 },
   entryAmount: {
     fontSize: 15,
     fontWeight: '600',
@@ -610,7 +619,9 @@ const s = StyleSheet.create({
     letterSpacing: -0.2,
     minHeight: 40,
     paddingTop: 0,
-  },
+    outlineWidth: 0,
+    outlineStyle: 'none',
+  } as any,
 
   // List picker rows (type / reason)
   listRow: {
@@ -642,11 +653,20 @@ const s = StyleSheet.create({
   numpadContainer: {
     backgroundColor: Colors.white,
   },
+  amountDisplaySarIcon: {
+    width: 18,
+    height: 20,
+    resizeMode: 'contain',
+    marginBottom: 4,
+  },
   amountDisplay: {
     paddingHorizontal: 24,
     paddingTop: 20,
     paddingBottom: 16,
+    flexDirection: 'row',
     alignItems: 'flex-end',
+    justifyContent: 'flex-end',
+    gap: 6,
   },
   amountDisplayValue: {
     fontSize: 40,

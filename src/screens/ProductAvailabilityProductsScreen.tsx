@@ -185,10 +185,10 @@ export default function ProductAvailabilityProductsScreen({
           </ScrollView>
         </View>
 
-        {/* ── CENTER: product detail ── */}
+        {/* ── RIGHT PANEL: product detail + DONE ── */}
         <View style={s.detailArea}>
           {selectedProduct ? (
-            <ScrollView contentContainerStyle={s.detailContent} showsVerticalScrollIndicator={false}>
+            <ScrollView style={s.detailScroll} contentContainerStyle={s.detailContent} showsVerticalScrollIndicator={false}>
               {/* Product title + availability badge */}
               <View style={s.detailHeader}>
                 <Text style={s.detailName}>{selectedProduct.name}</Text>
@@ -245,12 +245,14 @@ export default function ProductAvailabilityProductsScreen({
               <Text style={s.emptyText}>Select a product to set its availability</Text>
             </View>
           )}
-        </View>
 
-        {/* ── DONE button ── */}
-        <TouchableOpacity style={s.doneBtn} onPress={() => onDone(localAvail)} activeOpacity={0.8}>
-          <Text style={s.doneText}>DONE</Text>
-        </TouchableOpacity>
+          {/* ── DONE button — bottom of right panel ── */}
+          <View style={s.doneBtnWrap}>
+            <TouchableOpacity style={s.doneBtn} onPress={() => onDone(localAvail)} activeOpacity={0.8}>
+              <Text style={s.doneText}>DONE</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
       </View>
     </SafeAreaView>
@@ -261,8 +263,8 @@ export default function ProductAvailabilityProductsScreen({
 const LEFT_W = 320;
 
 const s = StyleSheet.create({
-  safe:    { flex: 1, backgroundColor: Colors.backgroundAlt },
-  row:     { flex: 1, flexDirection: 'row' },
+  safe: { flex: 1, backgroundColor: Colors.backgroundAlt },
+  row:  { flex: 1, flexDirection: 'row' },
 
   // Left panel
   leftPanel: {
@@ -342,6 +344,7 @@ const s = StyleSheet.create({
     paddingRight: 12,
     height: 40,
     outlineWidth: 0,
+    outlineStyle: 'none',
   } as any,
 
   productRow: {
@@ -373,7 +376,8 @@ const s = StyleSheet.create({
   rowBadgeText:   { fontSize: 13, fontWeight: '600', color: Colors.white },
 
   // Detail area
-  detailArea:    { flex: 1, backgroundColor: Colors.backgroundAlt },
+  detailArea:    { flex: 1, backgroundColor: Colors.backgroundAlt, flexDirection: 'column' },
+  detailScroll:  { flex: 1 },
   detailContent: { padding: 28 },
   detailHeader:  { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 },
   detailName: {
@@ -419,8 +423,7 @@ const s = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: 'transparent',
     backgroundColor: Colors.white,
-    justifyContent: 'center',
-    paddingHorizontal: 14,
+    overflow: 'hidden',
     shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
@@ -428,35 +431,44 @@ const s = StyleSheet.create({
     elevation: 3,
   },
   qtyInput: {
+    flex: 1,
+    alignSelf: 'stretch',
     fontSize: 20,
     fontWeight: '400',
     color: Colors.black,
     padding: 0,
+    paddingHorizontal: 14,
     textAlign: 'center',
     outlineWidth: 0,
+    outlineStyle: 'none',
   } as any,
 
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyText:  { fontSize: 16, color: Colors.grayText, letterSpacing: -0.3 },
 
   // DONE button
+  doneBtnWrap: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: Colors.grayBorder,
+  },
   doneBtn: {
-    width: 70,
+    height: 56,
+    borderRadius: 14,
     backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
-    margin: 8,
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.13,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.30,
+    shadowRadius: 8,
+    elevation: 4,
   },
   doneText: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
     color: Colors.white,
-    letterSpacing: -0.1,
+    letterSpacing: -0.2,
   },
 });

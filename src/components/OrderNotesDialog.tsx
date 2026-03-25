@@ -194,7 +194,9 @@ const s = StyleSheet.create({
     fontWeight: '400',
     color: Colors.black,
     letterSpacing: -0.2,
-  },
+    outlineWidth: 0,
+    outlineStyle: 'none',
+  } as any,
   textAreaFocused: {
     borderColor: Colors.primary,
     backgroundColor: Colors.white,

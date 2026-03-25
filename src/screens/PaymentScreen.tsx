@@ -26,7 +26,21 @@ const ICONS = {
 
 const TAX_RATE = 0.15;
 
-const PAYMENT_METHODS = ['House Account', 'Cash', 'Gift Card', 'Mada'];
+interface PaymentMethod {
+  key: string;
+  label: string;
+  hint: string;
+  emoji: string;
+  color: string;
+  bg: string;
+}
+
+const PAYMENT_METHODS: PaymentMethod[] = [
+  { key: 'house',  label: 'House Account', hint: 'Bill to customer account', emoji: '🏢', color: '#1D353F', bg: '#EAF0F2' },
+  { key: 'cash',   label: 'Cash',          hint: 'Accept banknotes & coins',  emoji: '💵', color: '#2E7D32', bg: '#E8F5E9' },
+  { key: 'gift',   label: 'Gift Card',     hint: 'Redeem a gift card',        emoji: '🎁', color: '#6A1B9A', bg: '#F3E5F5' },
+  { key: 'mada',   label: 'Mada',          hint: 'Saudi debit / credit card', emoji: '💳', color: '#C62828', bg: '#FFEBEE' },
+];
 
 interface AppliedPayment {
   method: string;
@@ -103,7 +117,7 @@ function CustomAmountKeypad({ visible, remaining, onSelect, onCancel }: CustomKe
             <Text style={ck.headerLabel}>Custom Amount</Text>
           </View>
           <View style={ck.amountRow}>
-            <Text style={ck.amountCurrency}>SAR</Text>
+            <Image source={ICONS.sarGray} style={ck.amountCurrency} />
             <Text style={ck.amountValue} numberOfLines={1} adjustsFontSizeToFit>{displayValue}</Text>
           </View>
           <View style={ck.remainingRow}>
@@ -201,9 +215,9 @@ export default function PaymentScreen({ cart, orderType, orderSeq, status, onBac
   const remaining = Math.max(0, total - paid);
   const isFullyPaid = remaining === 0 && appliedPayments.length > 0;
 
-  function handleMethodPress(method: string) {
+  function handleMethodPress(method: PaymentMethod) {
     if (remaining <= 0) return;
-    setPendingMethod(method);
+    setPendingMethod(method.label);
     setShowAmountPicker(true);
   }
 
@@ -256,13 +270,27 @@ export default function PaymentScreen({ cart, orderType, orderSeq, status, onBac
               <Text style={s.sectionLabel}>PAYMENT METHODS</Text>
               {PAYMENT_METHODS.map(method => (
                 <TouchableOpacity
-                  key={method}
+                  key={method.key}
                   style={s.methodCard}
                   onPress={() => handleMethodPress(method)}
-                  activeOpacity={0.7}
+                  activeOpacity={0.8}
                 >
-                  <View style={s.methodAccent} />
-                  <Text style={s.methodLabel}>{method}</Text>
+                  {/* Left accent bar */}
+                  <View style={[s.methodAccent, { backgroundColor: method.color }]} />
+
+                  {/* Icon */}
+                  <View style={[s.methodIconWrap, { backgroundColor: method.bg }]}>
+                    <Text style={s.methodIcon}>{method.emoji}</Text>
+                  </View>
+
+                  {/* Labels */}
+                  <View style={s.methodTextWrap}>
+                    <Text style={s.methodLabel}>{method.label}</Text>
+                    <Text style={s.methodHint}>{method.hint}</Text>
+                  </View>
+
+                  {/* Chevron */}
+                  <Text style={s.methodChevron}>›</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -270,10 +298,26 @@ export default function PaymentScreen({ cart, orderType, orderSeq, status, onBac
             {/* Right col: summary */}
             <View style={s.summaryCol}>
 
+              {/* Remaining card */}
+              <View style={[s.remainingCard, isFullyPaid && s.remainingCardPaid]}>
+                <Text style={[s.remainingLabel, isFullyPaid && s.remainingLabelPaid]}>
+                  {isFullyPaid ? 'Paid in full' : 'Remaining'}
+                </Text>
+                <View style={s.sarRow}>
+                  <Image
+                    source={isFullyPaid ? ICONS.sarWhite : ICONS.sarDark}
+                    style={[s.sarIcon, { width: 20, height: 22 }]}
+                  />
+                  <Text style={[s.remainingAmount, isFullyPaid && s.remainingAmountPaid]}>
+                    {remaining.toFixed(2)}
+                  </Text>
+                </View>
+              </View>
+
               {/* Applied payments */}
               {appliedPayments.length > 0 && (
                 <View style={s.summaryCard}>
-                  <Text style={s.summaryTitle}>PAYMENT METHODS</Text>
+                  <Text style={s.summaryTitle}>APPLIED</Text>
                   <ScrollView showsVerticalScrollIndicator={false}>
                     {appliedPayments.map((p, i) => (
                       <View key={i} style={[s.summaryRow, i > 0 && s.summaryRowBorder]}>
@@ -287,19 +331,6 @@ export default function PaymentScreen({ cart, orderType, orderSeq, status, onBac
                   </ScrollView>
                 </View>
               )}
-
-              {/* Remaining */}
-              <View style={s.remainingCard}>
-                <View style={[s.summaryRow, { paddingVertical: 14 }]}>
-                  <Text style={s.remainingLabel}>Remaining</Text>
-                  <View style={s.sarRow}>
-                    <Image source={ICONS.sarDark} style={[s.sarIcon, { width: 18, height: 20 }]} />
-                    <Text style={[s.remainingAmount, isFullyPaid && s.remainingZero]}>
-                      {remaining.toFixed(2)}
-                    </Text>
-                  </View>
-                </View>
-              </View>
 
             </View>
           </View>
@@ -414,38 +445,65 @@ const s = StyleSheet.create({
     gap: 10,
   },
   sectionLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: Colors.grayText,
-    letterSpacing: 1,
+    letterSpacing: 1.2,
     textTransform: 'uppercase',
     marginBottom: 4,
+    marginLeft: 2,
   },
   methodCard: {
     backgroundColor: Colors.white,
-    borderRadius: 16,
+    borderRadius: 18,
     flexDirection: 'row',
     alignItems: 'center',
     overflow: 'hidden',
-    height: 72,
+    height: 76,
     shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.07,
-    shadowRadius: 8,
+    shadowRadius: 10,
     elevation: 3,
   },
   methodAccent: {
-    width: 6,
+    width: 5,
     alignSelf: 'stretch',
-    backgroundColor: Colors.primary,
+  },
+  methodIconWrap: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 16,
+  },
+  methodIcon: {
+    fontSize: 22,
+  },
+  methodTextWrap: {
+    flex: 1,
+    paddingHorizontal: 14,
   },
   methodLabel: {
-    flex: 1,
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: Colors.black,
-    letterSpacing: -0.09,
-    paddingHorizontal: 22,
+    letterSpacing: -0.3,
+  },
+  methodHint: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: Colors.grayText,
+    marginTop: 2,
+    letterSpacing: -0.1,
+  },
+  methodChevron: {
+    fontSize: 26,
+    fontWeight: '300',
+    color: Colors.grayMid,
+    marginRight: 18,
+    lineHeight: 30,
   },
 
   /* Right: summary */
@@ -455,21 +513,21 @@ const s = StyleSheet.create({
   },
   summaryCard: {
     backgroundColor: Colors.white,
-    borderRadius: 16,
+    borderRadius: 18,
     paddingHorizontal: 18,
     paddingTop: 16,
     paddingBottom: 8,
     shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.07,
-    shadowRadius: 8,
+    shadowRadius: 10,
     elevation: 3,
   },
   summaryTitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     color: Colors.grayText,
-    letterSpacing: 1,
+    letterSpacing: 1.2,
     textTransform: 'uppercase',
     marginBottom: 6,
   },
@@ -484,13 +542,13 @@ const s = StyleSheet.create({
     borderTopColor: Colors.grayBorder,
   },
   summaryMethod: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '500',
     color: Colors.black,
     letterSpacing: -0.08,
   },
   summaryAmount: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: Colors.black,
     letterSpacing: -0.08,
@@ -509,30 +567,44 @@ const s = StyleSheet.create({
   /* Remaining */
   remainingCard: {
     backgroundColor: Colors.white,
-    borderRadius: 16,
-    paddingHorizontal: 18,
-    paddingVertical: 4,
+    borderRadius: 18,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
     shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.07,
-    shadowRadius: 8,
+    shadowRadius: 10,
     elevation: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  remainingCardPaid: {
+    backgroundColor: Colors.green,
+    shadowColor: Colors.green,
+    shadowOpacity: 0.3,
+    shadowRadius: 14,
+    elevation: 6,
   },
   remainingLabel: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '600',
-    color: Colors.black,
-    letterSpacing: -0.085,
+    color: Colors.grayText,
+    letterSpacing: -0.1,
+  },
+  remainingLabelPaid: {
+    color: 'rgba(255,255,255,0.85)',
   },
   remainingAmount: {
-    fontSize: 22,
+    fontSize: 26,
     fontWeight: '700',
     color: Colors.black,
-    letterSpacing: -0.11,
+    letterSpacing: -0.8,
   },
-  remainingZero: {
-    color: Colors.green,
+  remainingAmountPaid: {
+    color: Colors.white,
   },
+  remainingZero: { color: Colors.green }, // kept for compat
 
   /* Actions */
   actions: {
@@ -747,11 +819,10 @@ const ck = StyleSheet.create({
     gap: 8,
   },
   amountCurrency: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.grayText,
-    letterSpacing: -0.2,
-    paddingBottom: 4,
+    width: 22,
+    height: 24,
+    resizeMode: 'contain',
+    marginBottom: 4,
   },
   amountValue: {
     fontSize: 48,

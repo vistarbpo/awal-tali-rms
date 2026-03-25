@@ -3,11 +3,13 @@ import {
   Modal,
   View,
   Text,
+  Image,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { iconSarDark } from '../assets/icons';
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
 interface DriverRow {
@@ -26,8 +28,13 @@ const DRIVER_DATA: DriverRow[] = [
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-function sarFmt(n: number): string {
-  return `SAR ${n.toFixed(2)}`;
+function SarAmt({ n, style }: { n: number; style?: object }) {
+  return (
+    <View style={[r.sarAmtWrap, style]}>
+      <Image source={iconSarDark} style={r.sarAmtIcon} />
+      <Text style={r.sarAmtText}>{n.toFixed(2)}</Text>
+    </View>
+  );
 }
 
 function Divider({ thick }: { thick?: boolean }) {
@@ -108,9 +115,9 @@ export default function DriverPaymentsReportModal({ visible, onClose, dateLabel,
                   <View style={r.tableRow}>
                     <Text style={r.colDriver}    numberOfLines={1}>{d.driver}</Text>
                     <Text style={r.colOrders}>{d.orders}</Text>
-                    <Text style={r.colCollected}>{sarFmt(d.collected)}</Text>
-                    <Text style={r.colPaid}>{sarFmt(d.paid)}</Text>
-                    <Text style={r.colBalance}>{sarFmt(d.balance)}</Text>
+                    <SarAmt n={d.collected} style={r.colCollected} />
+                    <SarAmt n={d.paid}      style={r.colPaid} />
+                    <SarAmt n={d.balance}   style={r.colBalance} />
                   </View>
                   <Divider />
                 </View>
@@ -120,9 +127,9 @@ export default function DriverPaymentsReportModal({ visible, onClose, dateLabel,
               <View style={r.tableRow}>
                 <Text style={[r.colDriver,    r.totalLabel]}>Total</Text>
                 <Text style={[r.colOrders,    r.totalLabel]}>{totOrders}</Text>
-                <Text style={[r.colCollected, r.totalLabel]}>{sarFmt(totCollected)}</Text>
-                <Text style={[r.colPaid,      r.totalLabel]}>{sarFmt(totPaid)}</Text>
-                <Text style={[r.colBalance,   r.totalLabel]}>{sarFmt(totBalance)}</Text>
+                <SarAmt n={totCollected} style={[r.colCollected, r.totalLabel]} />
+                <SarAmt n={totPaid}      style={[r.colPaid,      r.totalLabel]} />
+                <SarAmt n={totBalance}   style={[r.colBalance,   r.totalLabel]} />
               </View>
             </View>
 
@@ -218,9 +225,12 @@ const r = StyleSheet.create({
   },
   colDriver:    { flex: 1,   fontSize: 12, color: Colors.black },
   colOrders:    { width: 44, fontSize: 12, color: Colors.black, textAlign: 'right' },
-  colCollected: { width: 90, fontSize: 12, color: Colors.black, textAlign: 'right' },
-  colPaid:      { width: 90, fontSize: 12, color: Colors.black, textAlign: 'right' },
-  colBalance:   { width: 80, fontSize: 12, color: Colors.black, textAlign: 'right' },
+  colCollected: { width: 90, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' },
+  colPaid:      { width: 90, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' },
+  colBalance:   { width: 80, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' },
+  sarAmtWrap:   { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  sarAmtIcon:   { width: 11, height: 12, resizeMode: 'contain' },
+  sarAmtText:   { fontSize: 12, color: Colors.black },
   colHeader:    { fontWeight: '700' },
 
   totalLabel: {

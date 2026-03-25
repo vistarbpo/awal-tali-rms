@@ -3,12 +3,14 @@ import {
   Modal,
   View,
   Text,
+  Image,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
   TouchableWithoutFeedback,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { iconSarGray } from '../assets/icons';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type DiscountKind = 'amount' | 'percentage';
@@ -96,7 +98,7 @@ export default function DiscountDialog({ visible, currentDiscount, subtotal, onC
     if (!val || val <= 0) return;
     if (openKind === 'percentage' && val > 100) return;
     onApply({
-      label: openKind === 'percentage' ? `${val}% Off` : `${val} SAR Off`,
+      label: openKind === 'percentage' ? `${val}% Off` : `${val} Off`,
       kind: openKind,
       value: val,
     });
@@ -153,7 +155,7 @@ export default function DiscountDialog({ visible, currentDiscount, subtotal, onC
                 activeOpacity={0.75}
               >
                 <Text style={s.typeRowLabel}>Amount</Text>
-                <Text style={s.typeRowHint}>Fixed SAR reduction</Text>
+                <Text style={s.typeRowHint}>Fixed riyal reduction</Text>
               </TouchableOpacity>
 
               <View style={s.hairline} />
@@ -196,12 +198,15 @@ export default function DiscountDialog({ visible, currentDiscount, subtotal, onC
                 <BackArrow />
               </TouchableOpacity>
               <Text style={s.numpadHeaderLabel}>
-                {isPercent ? 'Enter Percentage' : 'Enter Amount (SAR)'}
+                {isPercent ? 'Enter Percentage' : 'Enter Amount'}
               </Text>
             </View>
 
             <View style={s.valueRow}>
-              <Text style={s.valueSuffix}>{isPercent ? '%' : 'SAR'}</Text>
+              {isPercent
+                ? <Text style={s.valueSuffix}>%</Text>
+                : <Image source={iconSarGray} style={s.valueSuffixIcon} />
+              }
               <Text style={s.valueNum} numberOfLines={1} adjustsFontSizeToFit>
                 {displayValue}
               </Text>
@@ -209,9 +214,10 @@ export default function DiscountDialog({ visible, currentDiscount, subtotal, onC
 
             {canApply && (
               <View style={s.previewRow}>
-                <Text style={s.previewText}>
-                  Saving {previewDiscount.toFixed(2)} SAR
-                </Text>
+                <View style={s.previewInner}>
+                  <Text style={s.previewText}>Saving {previewDiscount.toFixed(2)}</Text>
+                  <Image source={iconSarGray} style={s.previewSarIcon} />
+                </View>
               </View>
             )}
 
@@ -273,7 +279,10 @@ export default function DiscountDialog({ visible, currentDiscount, subtotal, onC
                 >
                   <Text style={s.predefinedName}>{item.label}</Text>
                   <Text style={s.predefinedValue}>
-                    {item.kind === 'percentage' ? `${item.value}.0 %` : `${item.value}.0 SAR`}
+                    {item.kind === 'percentage'
+                      ? `${item.value}.0 %`
+                      : <View style={s.predefinedAmountRow}><Text style={s.predefinedValue}>{item.value}.0</Text><Image source={iconSarGray} style={s.predefinedSarIcon} /></View>
+                    }
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -534,6 +543,12 @@ const s = StyleSheet.create({
     color: Colors.grayText,
     letterSpacing: -0.2,
   },
+  valueSuffixIcon: {
+    width: 22,
+    height: 24,
+    resizeMode: 'contain',
+    marginBottom: 6,
+  },
   valueNum: {
     fontSize: 44,
     fontWeight: '700',
@@ -546,6 +561,26 @@ const s = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 12,
     alignItems: 'flex-end',
+  },
+  previewInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  previewSarIcon: {
+    width: 13,
+    height: 14,
+    resizeMode: 'contain',
+  },
+  predefinedAmountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  predefinedSarIcon: {
+    width: 14,
+    height: 15,
+    resizeMode: 'contain',
   },
   previewText: {
     fontSize: 13,

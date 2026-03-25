@@ -17,6 +17,7 @@ import { Colors } from '../constants/colors';
 import { layout, LEFT_PANEL_W, CARD_GAP, RIGHT_PAD } from '../styles/screenLayout';
 import OrderPanel, { CartItem, Course } from '../components/OrderPanel';
 import MoreMenu from '../components/MoreMenu';
+import OrderMoreMenu from '../components/OrderMoreMenu';
 import ConfirmDialog from '../components/ConfirmDialog';
 import TillAmountDialog from '../components/TillAmountDialog';
 import DrawerOperationsDialog from '../components/DrawerOperationsDialog';
@@ -24,6 +25,10 @@ import ReportsMenuDialog from '../components/ReportsMenuDialog';
 import SyncDataDialog    from '../components/SyncDataDialog';
 import DiagnosticsScreen from './DiagnosticsScreen';
 import EndOfDayScreen from './EndOfDayScreen';
+import DevicesScreen from './DevicesScreen';
+import SupportScreen from './SupportScreen';
+import ScanLoyaltyQRModal from '../components/ScanLoyaltyQRModal';
+import RedeemRewardDialog from '../components/RedeemRewardDialog';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 import {
@@ -130,6 +135,10 @@ export default function HomeScreen({ onTabPress, onCategorySelect, cart, selecte
   const [activeTab, setActiveTab]   = useState('home');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [homeMenuVisible, setHomeMenuVisible]       = useState(false);
+  const [orderMoreVisible, setOrderMoreVisible]     = useState(false);
+  const [scanQRVisible, setScanQRVisible]           = useState(false);
+  const [redeemVisible, setRedeemVisible]           = useState(false);
+  const [scannedCode, setScannedCode]               = useState('');
   const [confirmTillVisible, setConfirmTillVisible] = useState(false);
   const [tillAmountVisible, setTillAmountVisible]   = useState(false);
   const [drawerOpsVisible,  setDrawerOpsVisible]    = useState(false);
@@ -137,6 +146,8 @@ export default function HomeScreen({ onTabPress, onCategorySelect, cart, selecte
   const [syncVisible,        setSyncVisible]        = useState(false);
   const [endOfDayVisible,    setEndOfDayVisible]    = useState(false);
   const [reportsVisible,     setReportsVisible]     = useState(false);
+  const [devicesVisible,     setDevicesVisible]     = useState(false);
+  const [supportVisible,     setSupportVisible]     = useState(false);
 
   const rightW    = screenW - LEFT_PANEL_W;
   const available = rightW - RIGHT_PAD * 2 - CARD_GAP * (COLS - 1);
@@ -180,7 +191,10 @@ export default function HomeScreen({ onTabPress, onCategorySelect, cart, selecte
                 key={btn.key}
                 style={[layout.actionBtn, btn.danger && layout.actionBtnDanger]}
                 activeOpacity={0.8}
-                onPress={btn.key === 'void' && selectedCartId ? () => onRemoveItem(selectedCartId) : undefined}
+                onPress={
+                  btn.key === 'more' ? () => setOrderMoreVisible(true) :
+                  btn.key === 'void' && selectedCartId ? () => onRemoveItem(selectedCartId) : undefined
+                }
               >
                 <Image source={btn.icon} style={layout.actionIcon} />
                 <Text style={layout.actionLabel}>{btn.label}</Text>
@@ -291,6 +305,8 @@ export default function HomeScreen({ onTabPress, onCategorySelect, cart, selecte
           if (key === 'sync')        setSyncVisible(true);
           if (key === 'end_of_day')  setEndOfDayVisible(true);
           if (key === 'reports')     setReportsVisible(true);
+          if (key === 'devices')     setDevicesVisible(true);
+          if (key === 'support')     setSupportVisible(true);
         }}
       />
 
@@ -336,6 +352,50 @@ export default function HomeScreen({ onTabPress, onCategorySelect, cart, selecte
       <ReportsMenuDialog
         visible={reportsVisible}
         onClose={() => setReportsVisible(false)}
+      />
+
+      <DevicesScreen
+        visible={devicesVisible}
+        onClose={() => setDevicesVisible(false)}
+      />
+
+      <SupportScreen
+        visible={supportVisible}
+        onClose={() => setSupportVisible(false)}
+      />
+
+      <OrderMoreMenu
+        visible={orderMoreVisible}
+        onClose={() => setOrderMoreVisible(false)}
+        status={
+          status === 'VOID'     ? 'voided'   :
+          status === 'RETURNED' ? 'returned' :
+          status === 'DONE'     ? 'done'     :
+                                  'active'
+        }
+        onItemPress={key => {
+          if (key === 'scan_loyalty_qr') { setScannedCode(''); setScanQRVisible(true); }
+          if (key === 'redeem_reward')   { setScannedCode(''); setRedeemVisible(true); }
+        }}
+      />
+
+      <ScanLoyaltyQRModal
+        visible={scanQRVisible}
+        onClose={() => setScanQRVisible(false)}
+        onScanned={code => {
+          setScanQRVisible(false);
+          setScannedCode(code);
+          setRedeemVisible(true);
+        }}
+      />
+
+      <RedeemRewardDialog
+        visible={redeemVisible}
+        code={scannedCode}
+        onClose={() => setRedeemVisible(false)}
+        onApply={code => {
+          console.log('Redeem reward code:', code);
+        }}
       />
     </SafeAreaView>
   );

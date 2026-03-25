@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
+  Image,
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
   StatusBar,
 } from 'react-native';
 import { Colors } from '../constants/colors';
-import TalabOSLogo from '../components/TalabOSLogo';
+import TalabOSLogo    from '../components/TalabOSLogo';
+import SyncDataDialog from '../components/SyncDataDialog';
 
 const PIN_LENGTH = 5;
 
@@ -26,6 +28,7 @@ interface Props {
 
 export default function LoginScreen({ onLoginSuccess, onDesignSystem }: Props) {
   const [pin, setPin] = useState('');
+  const [syncUsersVisible, setSyncUsersVisible] = useState(false);
 
   function handleKey(key: string) {
     if (key === 'C') {
@@ -51,7 +54,13 @@ export default function LoginScreen({ onLoginSuccess, onDesignSystem }: Props) {
         <View style={s.brand}>
           {/* Logo block */}
           <View style={s.logoWrap}>
-            <Text style={s.brandName}>Awal & Tali</Text>
+            <View style={s.brandCircle}>
+              <Image
+                source={require('../../assets/awaltali-logo.jpg')}
+                style={s.brandCircleImg}
+                resizeMode="cover"
+              />
+            </View>
             <TalabOSLogo width={200} color={Colors.white} />
           </View>
 
@@ -110,13 +119,19 @@ export default function LoginScreen({ onLoginSuccess, onDesignSystem }: Props) {
             ))}
 
             {/* Sync */}
-            <TouchableOpacity style={s.syncBtn} activeOpacity={0.7}>
+            <TouchableOpacity style={s.syncBtn} activeOpacity={0.7} onPress={() => setSyncUsersVisible(true)}>
               <Text style={s.syncText}>Sync Users</Text>
             </TouchableOpacity>
           </View>
 
         </View>
       </View>
+
+      <SyncDataDialog
+        visible={syncUsersVisible}
+        onClose={() => setSyncUsersVisible(false)}
+        title="Sync Users"
+      />
 
       {/* ── Design System icon — top right ── */}
       {onDesignSystem && (
@@ -156,12 +171,18 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
   },
-  brandName: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.65)',
-    letterSpacing: 0.2,
-    marginBottom: 8,
+  brandCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    overflow: 'hidden',
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  brandCircleImg: {
+    width: 96,
+    height: 96,
   },
   dsBtn: {
     position: 'absolute',

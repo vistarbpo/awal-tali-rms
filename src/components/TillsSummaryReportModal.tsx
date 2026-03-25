@@ -3,11 +3,13 @@ import {
   Modal,
   View,
   Text,
+  Image,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { iconSarDark } from '../assets/icons';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface TillRow {
@@ -16,9 +18,16 @@ interface TillRow {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-function fmt(val: number | string): string {
-  if (typeof val === 'number') return `SAR ${val.toFixed(2)}`;
-  return String(val);
+function FmtAmt({ val, style }: { val: number | string; style?: object }) {
+  if (typeof val === 'number') {
+    return (
+      <View style={[r.sarAmtWrap, style]}>
+        <Image source={iconSarDark} style={r.sarAmtIcon} />
+        <Text style={r.sarAmtText}>{val.toFixed(2)}</Text>
+      </View>
+    );
+  }
+  return <Text style={[r.rowAmount, style]}>{String(val)}</Text>;
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
@@ -38,7 +47,7 @@ function Row({ label, amount, bold }: TillRow & { bold?: boolean }) {
   return (
     <View style={r.row}>
       <Text style={[r.rowLabel, bold && r.rowBold]}>{label}</Text>
-      <Text style={[r.rowAmount, bold && r.rowBold]}>{fmt(amount)}</Text>
+      <FmtAmt val={amount} style={bold ? r.rowBold : undefined} />
     </View>
   );
 }
@@ -275,6 +284,9 @@ const r = StyleSheet.create({
     fontWeight: '400',
     flex: 1,
   },
+  sarAmtWrap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 3 },
+  sarAmtIcon: { width: 11, height: 12, resizeMode: 'contain' },
+  sarAmtText: { fontSize: 13, color: Colors.black },
   rowAmount: {
     fontSize: 13,
     color: Colors.black,

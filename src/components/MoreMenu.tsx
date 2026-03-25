@@ -15,8 +15,9 @@ import { Colors } from '../constants/colors';
 import {
   iconKeyRound, iconCalendarArrowDown, iconInbox, iconCircleDollarSign,
   iconPackageCheck, iconChartColumnBig, iconRefreshCcw, iconWrench,
-  iconCable, iconHeadset, iconLogOut, iconPolygon,
+  iconCable, iconHeadset, iconLogOut,
 } from '../assets/icons';
+
 
 const ICONS: Record<string, ImageSourcePropType> = {
   keyRound:          iconKeyRound,
@@ -30,7 +31,6 @@ const ICONS: Record<string, ImageSourcePropType> = {
   cable:             iconCable,
   headset:           iconHeadset,
   logOut:            iconLogOut,
-  polygon:           iconPolygon,
 };
 
 // ─── Menu items ───────────────────────────────────────────────────────────────
@@ -99,6 +99,11 @@ export default function MoreMenu({
       >
         {/* White card */}
         <View style={s.card}>
+          {/* Triangle — points down toward the HOME tab */}
+          <View style={s.triangleWrap} pointerEvents="none">
+            <View style={s.triangle} />
+          </View>
+
           {menuItems.map((item, index) => (
             <TouchableOpacity
               key={item.key}
@@ -117,11 +122,6 @@ export default function MoreMenu({
               </View>
             </TouchableOpacity>
           ))}
-        </View>
-
-        {/* Triangle — points down toward the HOME tab */}
-        <View style={s.triangleWrap}>
-          <Image source={ICONS.polygon} style={s.triangle} />
         </View>
       </View>
     </Modal>
@@ -179,13 +179,18 @@ const s = StyleSheet.create({
     color: Colors.red,
   },
   triangleWrap: {
-    paddingLeft: 40,
-    marginTop: 2,
+    position: 'absolute',
+    bottom: -12,
+    left: 40,
   },
   triangle: {
-    width: 22,
-    height: 13,
-    resizeMode: 'contain',
-    transform: [{ rotate: '180deg' }],
+    width: 0,
+    height: 0,
+    borderLeftWidth: 12,
+    borderRightWidth: 12,
+    borderTopWidth: 13,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: Colors.white,
   },
 });

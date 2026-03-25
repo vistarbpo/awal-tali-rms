@@ -250,7 +250,7 @@ export default function EndOfDayScreen({ visible, onClose, onEndDay }: Props) {
 
             {/* Amount display */}
             <View style={s.amountRow}>
-              <Text style={s.amountCurrency}>SAR</Text>
+              <Image source={iconSarGray} style={s.amountCurrency} />
               <Text style={s.amountValue} numberOfLines={1} adjustsFontSizeToFit>
                 {cashInput || '0'}
               </Text>
@@ -580,10 +580,10 @@ const s = StyleSheet.create({
     backgroundColor: Colors.white,
   },
   amountCurrency: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.grayText,
-    paddingBottom: 4,
+    width: 22,
+    height: 24,
+    resizeMode: 'contain',
+    marginBottom: 4,
   },
   amountValue: {
     fontSize: 46,

@@ -1,8 +1,9 @@
 import React from 'react';
 import {
-  View, Text, TouchableOpacity, TouchableWithoutFeedback, Modal, StyleSheet,
+  View, Text, Image, TouchableOpacity, TouchableWithoutFeedback, Modal, StyleSheet,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { iconSarDark } from '../assets/icons';
 
 interface Props {
   visible: boolean;
@@ -30,7 +31,7 @@ export default function ReturnAmountDialog({ visible, amount, orderNumber, onClo
           {/* Amount */}
           <View style={s.amountRow}>
             <Text style={s.amount}>{amount.toFixed(2)}</Text>
-            <Text style={s.currency}>SAR</Text>
+            <Image source={iconSarDark} style={s.currency} />
           </View>
 
           <View style={s.divider} />
@@ -97,9 +98,9 @@ const s = StyleSheet.create({
     letterSpacing: -0.5,
   },
   currency: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: Colors.grayText,
+    width: 18,
+    height: 20,
+    resizeMode: 'contain',
   },
 
   divider: {

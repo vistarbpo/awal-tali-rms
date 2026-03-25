@@ -3,11 +3,13 @@ import {
   Modal,
   View,
   Text,
+  Image,
   TouchableOpacity,
   StyleSheet,
   TouchableWithoutFeedback,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { iconSarGray } from '../assets/icons';
 
 interface Props {
   visible: boolean;
@@ -66,7 +68,7 @@ export default function TillAmountDialog({ visible, onClose, onDone, ctaLabel = 
 
           {/* Amount display */}
           <View style={s.amountRow}>
-            <Text style={s.amountCurrency}>SAR</Text>
+            <Image source={iconSarGray} style={s.amountCurrency} />
             <Text style={s.amountValue} numberOfLines={1} adjustsFontSizeToFit>
               {displayValue}
             </Text>
@@ -160,11 +162,10 @@ const s = StyleSheet.create({
     gap: 8,
   },
   amountCurrency: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.grayText,
-    letterSpacing: -0.2,
-    paddingBottom: 4,
+    width: 22,
+    height: 24,
+    resizeMode: 'contain',
+    marginBottom: 4,
   },
   amountValue: {
     fontSize: 48,

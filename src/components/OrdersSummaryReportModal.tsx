@@ -3,11 +3,13 @@ import {
   Modal,
   View,
   Text,
+  Image,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { iconSarDark } from '../assets/icons';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface ReportRow {
@@ -90,10 +92,17 @@ function buildReportData(dateLabel: string): ReportSection[] {
   ];
 }
 
-function formatAmount(val: number | string): string {
-  if (val === '-') return '—';
-  if (typeof val === 'number') return `SAR ${val.toFixed(2)}`;
-  return String(val);
+function AmtCell({ val, style }: { val: number | string; style?: object }) {
+  if (val === '-') return <Text style={[r.colValText, style]}>—</Text>;
+  if (typeof val === 'number') {
+    return (
+      <View style={[r.sarAmtWrap, style]}>
+        <Image source={iconSarDark} style={r.sarAmtIcon} />
+        <Text style={r.sarAmtText}>{val.toFixed(2)}</Text>
+      </View>
+    );
+  }
+  return <Text style={[r.colValText, style]}>{String(val)}</Text>;
 }
 
 function formatQty(val: number | string): string {
@@ -125,7 +134,7 @@ function TableRow({ row, last }: { row: ReportRow; last?: boolean }) {
     <View style={[r.tableRow, !last && r.tableRowBorder]}>
       <Text style={r.colName}>{row.name}</Text>
       <Text style={[r.colQty, r.colValText]}>{formatQty(row.qty)}</Text>
-      <Text style={[r.colAmt, r.colValText]}>{formatAmount(row.amount)}</Text>
+      <AmtCell val={row.amount} style={r.colAmt} />
     </View>
   );
 }
@@ -328,11 +337,14 @@ const r = StyleSheet.create({
     fontSize: 13,
     color: Colors.black,
   },
+  sarAmtWrap: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  sarAmtIcon: { width: 11, height: 12, resizeMode: 'contain' },
+  sarAmtText: { fontSize: 13, color: Colors.black },
   colAmt: {
     width: 84,
-    textAlign: 'right',
-    fontSize: 13,
-    color: Colors.black,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
   },
   colHeaderText: {
     fontWeight: '700',

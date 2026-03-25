@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Colors } from '../constants/colors';
+import { iconSarGray, iconSarWhite, iconSarDark } from '../assets/icons';
 import ConfirmDialog from '../components/ConfirmDialog';
 import VoidReasonDialog from '../components/VoidReasonDialog';
 import OrderTypeDialog from '../components/OrderTypeDialog';
@@ -798,12 +799,12 @@ export default function DesignSystemScreen({ onClose }: Props) {
               {/* Taxes */}
               <View style={s.taxesRow}>
                 <Text style={s.taxesLabel}>Taxes</Text>
-                <Text style={s.taxesVal}>SAR 11.40</Text>
+                <View style={s.taxesValRow}><Image source={iconSarGray} style={s.sarIconSm} /><Text style={s.taxesVal}>11.40</Text></View>
               </View>
               {/* Total */}
               <View style={s.totalBtn}>
                 <Text style={s.totalLabel}>TOTAL  ›</Text>
-                <Text style={s.totalAmount}>SAR 87.40</Text>
+                <View style={s.totalAmountRow}><Image source={iconSarWhite} style={s.sarIconMd} /><Text style={s.totalAmount}>87.40</Text></View>
               </View>
             </View>
             <View style={s.actionSpecGrid}>
@@ -1168,7 +1169,7 @@ function OrderItemRow({ label, qty, price, state }: { label: string; qty: number
         <Text style={h.itemQty}>{qty}</Text>
         <View style={h.itemX}><View style={h.itemXDot} /></View>
         <Text style={h.itemName} numberOfLines={1}>{label}</Text>
-        <Text style={h.itemPrice}>SAR {price}</Text>
+        <View style={h.itemPriceRow}><Image source={iconSarDark} style={h.sarIcon} /><Text style={h.itemPrice}>{price}</Text></View>
       </View>
     </View>
   );
@@ -1197,8 +1198,8 @@ const h = StyleSheet.create({
 
   formRowPreview: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, minHeight: 68, gap: 16 },
   formRowLabel: { fontSize: 16, fontWeight: '500', color: Colors.black, letterSpacing: -0.25, minWidth: 110 },
-  formRowInputBox: { flex: 1, height: 44, borderRadius: 10, backgroundColor: Colors.grayLight, borderWidth: 1.5, borderColor: 'transparent', paddingHorizontal: 12, justifyContent: 'center', outlineWidth: 0 },
-  formRowInput: { fontSize: 15, fontWeight: '400', color: Colors.primary, letterSpacing: -0.2, textAlign: 'right', flex: 1, paddingHorizontal: 4, paddingVertical: 0, outlineWidth: 0 },
+  formRowInputBox: { flex: 1, height: 44, borderRadius: 10, backgroundColor: Colors.grayLight, borderWidth: 1.5, borderColor: 'transparent', paddingHorizontal: 12, justifyContent: 'center', outlineWidth: 0, outlineStyle: 'none' } as any,
+  formRowInput: { fontSize: 15, fontWeight: '400', color: Colors.primary, letterSpacing: -0.2, textAlign: 'right', flex: 1, paddingHorizontal: 4, paddingVertical: 0, outlineWidth: 0, outlineStyle: 'none' } as any,
 
   cursor: { width: 2, height: 18, backgroundColor: Colors.primary, borderRadius: 1 },
 
@@ -1211,6 +1212,8 @@ const h = StyleSheet.create({
   itemX: { width: 16, height: 16, borderRadius: 8, backgroundColor: Colors.grayBorder, alignItems: 'center', justifyContent: 'center' },
   itemXDot: { width: 6, height: 1, backgroundColor: Colors.grayText },
   itemName: { flex: 1, fontSize: 14, fontWeight: '400', color: Colors.black, letterSpacing: -0.07 },
+  itemPriceRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  sarIcon: { width: 13, height: 14, resizeMode: 'contain' },
   itemPrice: { fontSize: 18, fontWeight: '600', color: Colors.black, letterSpacing: -0.09 },
 });
 
@@ -1379,9 +1382,13 @@ const s = StyleSheet.create({
   addCourseText: { fontSize: 14, fontWeight: '600', color: Colors.grayText },
   taxesRow: { backgroundColor: Colors.grayLight, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 14, borderTopWidth: 1, borderTopColor: Colors.grayBorder },
   taxesLabel: { fontSize: 15, fontWeight: '500', color: Colors.grayText },
+  taxesValRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  sarIconSm: { width: 12, height: 13, resizeMode: 'contain' },
   taxesVal: { fontSize: 15, fontWeight: '500', color: Colors.grayText },
   totalBtn: { backgroundColor: Colors.primary, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 20 },
   totalLabel: { fontSize: 23, fontWeight: '600', color: Colors.white, letterSpacing: -0.115 },
+  totalAmountRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  sarIconMd: { width: 16, height: 18, resizeMode: 'contain' },
   totalAmount: { fontSize: 23, fontWeight: '600', color: Colors.white, letterSpacing: -0.115 },
 
   /* Dialogs */

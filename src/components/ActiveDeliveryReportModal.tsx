@@ -3,11 +3,13 @@ import {
   Modal,
   View,
   Text,
+  Image,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { iconSarDark } from '../assets/icons';
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
 interface DeliveryOrder {
@@ -27,8 +29,13 @@ const DELIVERY_ORDERS: DeliveryOrder[] = [
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-function sarFmt(n: number): string {
-  return `SAR ${n.toFixed(2)}`;
+function SarAmt({ n, style }: { n: number; style?: object }) {
+  return (
+    <View style={[r.sarAmtWrap, style]}>
+      <Image source={iconSarDark} style={r.sarAmtIcon} />
+      <Text style={r.sarAmtText}>{n.toFixed(2)}</Text>
+    </View>
+  );
 }
 
 function Divider({ thick }: { thick?: boolean }) {
@@ -108,7 +115,7 @@ export default function ActiveDeliveryReportModal({ visible, onClose, dateLabel,
                     <Text style={r.colCustomer} numberOfLines={1}>{o.customer}</Text>
                     <Text style={r.colDriver}   numberOfLines={1}>{o.driver}</Text>
                     <Text style={r.colStatus}   numberOfLines={1}>{o.status}</Text>
-                    <Text style={r.colAmount}>{sarFmt(o.amount)}</Text>
+                    <SarAmt n={o.amount} style={r.colAmount} />
                   </View>
                   <Divider />
                 </View>
@@ -120,7 +127,7 @@ export default function ActiveDeliveryReportModal({ visible, onClose, dateLabel,
                 <Text style={[r.colCustomer, r.totalLabel]}>{DELIVERY_ORDERS.length} orders</Text>
                 <View style={r.colDriver} />
                 <View style={r.colStatus} />
-                <Text style={[r.colAmount, r.totalLabel]}>{sarFmt(total)}</Text>
+                <SarAmt n={total} style={[r.colAmount, r.totalLabel]} />
               </View>
             </View>
 
@@ -218,7 +225,10 @@ const r = StyleSheet.create({
   colCustomer: { flex: 1,    fontSize: 12, color: Colors.black },
   colDriver:   { width: 60,  fontSize: 12, color: Colors.black },
   colStatus:   { width: 110, fontSize: 12, color: Colors.black },
-  colAmount:   { width: 80,  fontSize: 12, color: Colors.black, textAlign: 'right' },
+  colAmount:   { width: 80, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' },
+  sarAmtWrap:  { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  sarAmtIcon:  { width: 11, height: 12, resizeMode: 'contain' },
+  sarAmtText:  { fontSize: 12, color: Colors.black },
   colHeader:   { fontWeight: '700' },
 
   totalRow: {

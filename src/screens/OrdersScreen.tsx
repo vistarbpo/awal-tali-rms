@@ -111,22 +111,32 @@ const STATUS_BG: Record<OrderStatus, string> = {
 };
 
 // ─── More menu ────────────────────────────────────────────────────────────────
-const MORE_ACTIONS = [
-  { key: 'return',   label: 'Return Order' },
+const ALL_MORE_ACTIONS = [
   { key: 'receipt',  label: 'View Receipt' },
   { key: 'print',    label: 'Print' },
   { key: 'kitchen',  label: 'Send To Kitchen' },
-  { key: 'ready',    label: 'Mark Ready' },
+  { key: 'return',   label: 'Return Order' },
   { key: 'details',  label: 'View Order Details' },
 ];
+
+const STATUS_MORE_KEYS: Record<OrderStatus, string[]> = {
+  ACTIVE:   ['receipt', 'print', 'kitchen', 'details'],
+  PENDING:  ['receipt', 'print', 'kitchen', 'details'],
+  DONE:     ['receipt', 'print', 'return',  'details'],
+  VOID:     ['receipt', 'print', 'details'],
+  RETURNED: ['receipt', 'print', 'details'],
+};
 
 interface MoreMenuProps {
   visible: boolean;
   onClose: () => void;
   onAction: (key: string) => void;
+  orderStatus: OrderStatus | undefined;
 }
 
-function MoreMenu({ visible, onClose, onAction }: MoreMenuProps) {
+function MoreMenu({ visible, onClose, onAction, orderStatus }: MoreMenuProps) {
+  const allowedKeys = orderStatus ? STATUS_MORE_KEYS[orderStatus] : STATUS_MORE_KEYS.ACTIVE;
+  const actions = ALL_MORE_ACTIONS.filter(a => allowedKeys.includes(a.key));
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={onClose}>
@@ -134,7 +144,7 @@ function MoreMenu({ visible, onClose, onAction }: MoreMenuProps) {
       </TouchableWithoutFeedback>
       <View style={mm.container} pointerEvents="box-none">
         <View style={mm.card}>
-          {MORE_ACTIONS.map((action, i) => (
+          {actions.map((action, i) => (
             <React.Fragment key={action.key}>
               {i > 0 && <View style={mm.divider} />}
               <TouchableOpacity
@@ -349,7 +359,7 @@ function OrderDetailView({ order, onBack }: OrderDetailViewProps) {
 
 const dv = StyleSheet.create({
   actionBar: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
-  titleArea:{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 4 },
+  titleArea:{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 4 },
   titleOrderNum: { fontSize: 18, fontWeight: '700', color: Colors.primary, letterSpacing: -0.4 },
   statusChip:    { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
   statusDot:     { width: 7, height: 7, borderRadius: 4 },
@@ -1456,6 +1466,7 @@ export default function OrdersScreen({ onBack, onTotalPress, onLoadOrder }: Prop
         visible={moreMenuVisible}
         onClose={() => setMoreMenuVisible(false)}
         onAction={handleMoreAction}
+        orderStatus={selectedOrder?.status}
       />
 
       {/* ── Return Order: Step 1 — Select products ── */}
