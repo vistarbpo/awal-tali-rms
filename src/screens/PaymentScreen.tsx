@@ -37,9 +37,9 @@ interface PaymentMethod {
 
 const PAYMENT_METHODS: PaymentMethod[] = [
   { key: 'house',  label: 'House Account', hint: 'Bill to customer account', emoji: '🏢', color: '#1D353F', bg: '#EAF0F2' },
-  { key: 'cash',   label: 'Cash',          hint: 'Accept banknotes & coins',  emoji: '💵', color: '#2E7D32', bg: '#E8F5E9' },
-  { key: 'gift',   label: 'Gift Card',     hint: 'Redeem a gift card',        emoji: '🎁', color: '#6A1B9A', bg: '#F3E5F5' },
-  { key: 'mada',   label: 'Mada',          hint: 'Saudi debit / credit card', emoji: '💳', color: '#C62828', bg: '#FFEBEE' },
+  { key: 'cash',   label: 'Cash',          hint: 'Accept banknotes & coins',  emoji: '💵', color: '#1D353F', bg: '#EAF0F2' },
+  { key: 'gift',   label: 'Gift Card',     hint: 'Redeem a gift card',        emoji: '🎁', color: '#1D353F', bg: '#EAF0F2' },
+  { key: 'mada',   label: 'Mada',          hint: 'Saudi debit / credit card', emoji: '💳', color: '#1D353F', bg: '#EAF0F2' },
 ];
 
 interface AppliedPayment {
@@ -174,25 +174,48 @@ function AmountPicker({ visible, remaining, onSelect, onCustom, onCancel }: Amou
 
       <View style={ap.center} pointerEvents="box-none">
         <View style={ap.card}>
-          {quickAmounts.map((amt, i) => (
-            <React.Fragment key={String(amt)}>
-              {i > 0 && <View style={ap.divider} />}
-              <TouchableOpacity style={ap.row} onPress={() => onSelect(amt as number)} activeOpacity={0.6}>
-                <View style={ap.amountRow}>
-                  <Image source={ICONS.sarGray} style={ap.sar} />
-                  <Text style={ap.amountText}>{(amt as number).toFixed(2)}</Text>
+
+          {/* Header */}
+          <View style={ap.header}>
+            <Text style={ap.headerTitle}>Select Amount</Text>
+            <Text style={ap.headerSub}>Remaining: {remaining.toFixed(2)}</Text>
+          </View>
+
+          {/* Amount buttons */}
+          <View style={ap.amountList}>
+            {quickAmounts.map((amt, i) => (
+              <TouchableOpacity
+                key={String(amt)}
+                style={[ap.amountBtn, i === 0 && ap.amountBtnExact]}
+                onPress={() => onSelect(amt as number)}
+                activeOpacity={0.8}
+              >
+                <View style={ap.amountInner}>
+                  <Image
+                    source={i === 0 ? ICONS.sarWhite : ICONS.sarDark}
+                    style={ap.sar}
+                  />
+                  <Text style={[ap.amountText, i === 0 && ap.amountTextExact]}>
+                    {(amt as number).toFixed(2)}
+                  </Text>
                 </View>
+                {i === 0 && (
+                  <Text style={ap.exactBadge}>Exact</Text>
+                )}
               </TouchableOpacity>
-            </React.Fragment>
-          ))}
-          <View style={ap.divider} />
-          <TouchableOpacity style={ap.row} onPress={onCustom} activeOpacity={0.6}>
-            <Text style={ap.customText}>Custom</Text>
+            ))}
+          </View>
+
+          {/* Custom */}
+          <TouchableOpacity style={ap.customBtn} onPress={onCustom} activeOpacity={0.8}>
+            <Text style={ap.customText}>Enter Custom Amount</Text>
           </TouchableOpacity>
-          <View style={ap.divider} />
-          <TouchableOpacity style={ap.row} onPress={onCancel} activeOpacity={0.6}>
+
+          {/* Cancel */}
+          <TouchableOpacity style={ap.cancelBtn} onPress={onCancel} activeOpacity={0.7}>
             <Text style={ap.cancelText}>Cancel</Text>
           </TouchableOpacity>
+
         </View>
       </View>
     </Modal>
@@ -709,7 +732,7 @@ const s = StyleSheet.create({
 const ap = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   center: {
     ...StyleSheet.absoluteFillObject,
@@ -717,58 +740,122 @@ const ap = StyleSheet.create({
     justifyContent: 'center',
   },
   card: {
-    width: 320,
+    width: 340,
     backgroundColor: Colors.white,
-    borderRadius: 24,
+    borderRadius: 28,
     overflow: 'hidden',
     shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 24,
-    elevation: 12,
-    paddingVertical: 8,
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.22,
+    shadowRadius: 32,
+    elevation: 16,
   },
-  divider: {
-    height: 0.5,
-    backgroundColor: 'rgba(60,60,67,0.29)',
-    marginLeft: 24,
-  },
-  row: {
-    paddingHorizontal: 26,
-    paddingVertical: 20,
+
+  // Header
+  header: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 28,
+    paddingVertical: 22,
     alignItems: 'center',
   },
-  amountRow: {
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.white,
+    letterSpacing: -0.4,
+    marginBottom: 4,
+  },
+  headerSub: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.6)',
+    letterSpacing: -0.1,
+  },
+
+  // Amount buttons list
+  amountList: {
+    paddingHorizontal: 18,
+    paddingTop: 16,
+    gap: 10,
+  },
+  amountBtn: {
+    backgroundColor: Colors.grayLight,
+    borderRadius: 16,
+    height: 64,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+  },
+  amountBtnExact: {
+    backgroundColor: Colors.primary,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  amountInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  sar: {
+    width: 16,
+    height: 18,
+    resizeMode: 'contain',
   },
   amountText: {
     fontSize: 22,
-    fontWeight: '500',
-    color: Colors.grayText,
-    letterSpacing: -0.11,
-    textAlign: 'center',
+    fontWeight: '700',
+    color: Colors.black,
+    letterSpacing: -0.5,
   },
-  sar: {
-    width: 15,
-    height: 17,
-    resizeMode: 'contain',
-    opacity: 0.5,
+  amountTextExact: {
+    color: Colors.white,
+  },
+  exactBadge: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.75)',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+  },
+
+  // Custom button
+  customBtn: {
+    marginHorizontal: 18,
+    marginTop: 10,
+    height: 52,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   customText: {
-    fontSize: 22,
-    fontWeight: '500',
-    color: Colors.grayText,
-    letterSpacing: -0.11,
-    textAlign: 'center',
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.primary,
+    letterSpacing: -0.2,
+  },
+
+  // Cancel button
+  cancelBtn: {
+    marginHorizontal: 18,
+    marginTop: 10,
+    marginBottom: 18,
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: '#FEF2F2',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cancelText: {
-    fontSize: 22,
-    fontWeight: '500',
+    fontSize: 15,
+    fontWeight: '600',
     color: Colors.red,
-    letterSpacing: -0.11,
-    textAlign: 'center',
+    letterSpacing: -0.2,
   },
 });
 

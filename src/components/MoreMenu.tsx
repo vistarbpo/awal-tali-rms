@@ -15,7 +15,7 @@ import { Colors } from '../constants/colors';
 import {
   iconKeyRound, iconCalendarArrowDown, iconInbox, iconCircleDollarSign,
   iconPackageCheck, iconChartColumnBig, iconRefreshCcw, iconWrench,
-  iconCable, iconHeadset, iconLogOut,
+  iconCable, iconHeadset, iconLogOut, iconTags,
 } from '../assets/icons';
 
 
@@ -31,6 +31,7 @@ const ICONS: Record<string, ImageSourcePropType> = {
   cable:             iconCable,
   headset:           iconHeadset,
   logOut:            iconLogOut,
+  tags:              iconTags,
 };
 
 // ─── Menu items ───────────────────────────────────────────────────────────────
@@ -48,6 +49,7 @@ function buildMenuItems(isTillOpen: boolean): MenuItem[] {
       icon: ICONS.keyRound },
     { key: 'end_of_day',   label: 'End of Day (30/06/2025)', icon: ICONS.calendarArrowDown },
     { key: 'drawer',       label: 'Drawer Operations',       icon: ICONS.inbox             },
+    { key: 'coupon',       label: 'Apply Coupon',            icon: ICONS.tags              },
     { key: 'house_acct',   label: 'House Account Payment',   icon: ICONS.circleDollarSign  },
     { key: 'availability', label: 'Product Availability',    icon: ICONS.packageCheck      },
     { key: 'reports',      label: 'Reports',                 icon: ICONS.chartColumnBig    },

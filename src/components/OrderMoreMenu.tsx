@@ -19,6 +19,7 @@ const ACTIVE_ITEMS: MenuItem[] = [
   { key: 'add_due_time',     label: 'Add Due Time' },
   { key: 'add_charge',       label: 'Add Charge' },
   { key: 'add_call_name',    label: 'Add Call Name' },
+  { key: 'remove_customer',  label: 'Remove Customer' },
   { key: 'assign_price_tag', label: 'Assign Price Tag' },
   { key: 'assign_table',     label: 'Assign Table' },
   { key: 'add_coupon',       label: 'Add Coupon' },
@@ -55,6 +56,7 @@ interface Props {
   onClose:      () => void;
   onItemPress?: (key: string) => void;
   status:       OrderMenuStatus;
+  hasCustomer?: boolean;
   anchorRight?: number;
   anchorTop?:   number;
 }
@@ -65,10 +67,13 @@ export default function OrderMoreMenu({
   onClose,
   onItemPress,
   status,
+  hasCustomer = false,
   anchorRight = 20,
   anchorTop   = 130,
 }: Props) {
-  const items = getItems(status);
+  const items = getItems(status).filter(
+    item => item.key !== 'remove_customer' || hasCustomer,
+  );
 
   return (
     <Modal

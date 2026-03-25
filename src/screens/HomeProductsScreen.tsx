@@ -33,6 +33,9 @@ import OrderTagsDialog from '../components/OrderTagsDialog';
 import HoldTimeDialog from '../components/HoldTimeDialog';
 import DrawerOperationsDialog from '../components/DrawerOperationsDialog';
 import ReportsMenuDialog from '../components/ReportsMenuDialog';
+import CouponDialog from '../components/CouponDialog';
+import SetGuestsDialog from '../components/SetGuestsDialog';
+import DueTimeDialog from '../components/DueTimeDialog';
 import SyncDataDialog    from '../components/SyncDataDialog';
 import ScanLoyaltyQRModal from '../components/ScanLoyaltyQRModal';
 import RedeemRewardDialog from '../components/RedeemRewardDialog';
@@ -342,6 +345,11 @@ export default function HomeProductsScreen({
   const [reportsVisible,      setReportsVisible]         = useState(false);
   const [devicesVisible,      setDevicesVisible]         = useState(false);
   const [supportVisible,      setSupportVisible]         = useState(false);
+  const [couponVisible,       setCouponVisible]          = useState(false);
+  const [guestsVisible,       setGuestsVisible]          = useState(false);
+  const [guestCount,          setGuestCount]             = useState(0);
+  const [dueTimeVisible,      setDueTimeVisible]         = useState(false);
+  const [dueTime,             setDueTime]                = useState<Date | null>(null);
   const [holdTimeVisible,     setHoldTimeVisible]        = useState(false);
   const [currentTime,         setCurrentTime]            = useState(() => Date.now());
   const [comboConfig, setComboConfig] = useState<{
@@ -504,6 +512,8 @@ export default function HomeProductsScreen({
           onAddCourse={onAddCourse}
           onMoveItemToCourse={onMoveItemToCourse}
           onHoldCourse={onHoldCourse}
+          guestCount={guestCount}
+          dueTime={dueTime}
         />
 
         {/* ══ RIGHT: Content ══ */}
@@ -793,6 +803,7 @@ export default function HomeProductsScreen({
           if (key === 'reports')     setReportsVisible(true);
           if (key === 'devices')     setDevicesVisible(true);
           if (key === 'support')     setSupportVisible(true);
+          if (key === 'coupon')      setCouponVisible(true);
         }}
       />
 
@@ -901,6 +912,7 @@ export default function HomeProductsScreen({
       <OrderMoreMenu
         visible={orderMoreVisible}
         onClose={() => setOrderMoreVisible(false)}
+        hasCustomer={!!deliveryCustomer}
         status={
           (isVoided || status === 'VOID') ? 'voided'   :
           status === 'RETURNED'           ? 'returned' :
@@ -909,6 +921,10 @@ export default function HomeProductsScreen({
         }
         onItemPress={key => {
           if (key === 'assign_price_tag') setPriceTagVisible(true);
+          if (key === 'add_coupon')        setCouponVisible(true);
+          if (key === 'remove_customer')  setDeliveryCustomer(null);
+          if (key === 'set_guests')       setGuestsVisible(true);
+          if (key === 'add_due_time')    setDueTimeVisible(true);
           if (key === 'scan_loyalty_qr')  { setScannedCode(''); setScanQRVisible(true); }
           if (key === 'redeem_reward')    { setScannedCode(''); setRedeemVisible(true); }
         }}
@@ -1006,6 +1022,29 @@ export default function HomeProductsScreen({
         onClose={() => setSupportVisible(false)}
       />
 
+      <CouponDialog
+        visible={couponVisible}
+        onClose={() => setCouponVisible(false)}
+        onApply={discount => {
+          setOrderDiscount(discount);
+          setCouponVisible(false);
+        }}
+      />
+
+      <SetGuestsDialog
+        visible={guestsVisible}
+        current={guestCount}
+        onClose={() => setGuestsVisible(false)}
+        onConfirm={n => setGuestCount(n)}
+      />
+
+      <DueTimeDialog
+        visible={dueTimeVisible}
+        current={dueTime}
+        onClose={() => setDueTimeVisible(false)}
+        onSave={date => setDueTime(date)}
+      />
+
       <ScanLoyaltyQRModal
         visible={scanQRVisible}
         onClose={() => setScanQRVisible(false)}
@@ -1020,6 +1059,7 @@ export default function HomeProductsScreen({
         visible={redeemVisible}
         code={scannedCode}
         onClose={() => setRedeemVisible(false)}
+        onScanPress={() => { setScannedCode(''); setScanQRVisible(true); }}
         onApply={code => {
           // TODO: apply loyalty reward code `code` to the order
           console.log('Redeem reward code:', code);

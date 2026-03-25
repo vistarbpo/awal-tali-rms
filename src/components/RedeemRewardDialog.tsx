@@ -12,14 +12,15 @@ import { Colors } from '../constants/colors';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface Props {
-  visible:  boolean;
-  code:     string;           // pre-filled from QR scan (may be empty for manual entry)
-  onClose:  () => void;
-  onApply:  (code: string) => void;
+  visible:     boolean;
+  code:        string;
+  onClose:     () => void;
+  onApply:     (code: string) => void;
+  onScanPress?: () => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export default function RedeemRewardDialog({ visible, code, onClose, onApply }: Props) {
+export default function RedeemRewardDialog({ visible, code, onClose, onApply, onScanPress }: Props) {
   const [value, setValue] = useState('');
 
   useEffect(() => {
@@ -84,7 +85,13 @@ export default function RedeemRewardDialog({ visible, code, onClose, onApply }: 
 
           {/* Empty hint area */}
           <View style={s.hint}>
-            <Text style={s.hintText}>Scan the customer's loyalty QR code or enter the code manually.</Text>
+            <Text style={s.hintText}>
+              <Text
+                style={s.hintScanLink}
+                onPress={() => { onClose(); onScanPress?.(); }}
+              >Scan</Text>
+              {' the customer\'s loyalty QR code or enter the code manually.'}
+            </Text>
           </View>
 
         </View>
@@ -187,5 +194,9 @@ const s = StyleSheet.create({
     color: Colors.grayText,
     textAlign: 'center',
     letterSpacing: -0.2,
+  },
+  hintScanLink: {
+    fontWeight: '700',
+    color: Colors.primary,
   },
 });

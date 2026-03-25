@@ -95,6 +95,8 @@ interface Props {
   onAddCourse?: () => void;
   onMoveItemToCourse?: (itemId: string, courseId: string) => void;
   onHoldCourse?: (courseId: string, holdUntil?: number) => void;
+  guestCount?: number;
+  dueTime?: Date | null;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -114,7 +116,7 @@ function statusBg(s: string) {
   return map[s.toUpperCase()] ?? Colors.grayLight;
 }
 
-export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveItem, orderType, onOrderTypePress, customer, onAddCustomerPress, onTotalPress, onCountPress, orderSeq, isPaymentOpen, isVoided, isReturned, tableNumber, status, discount, onDiscountPress, priceTagMultiplier = 1, currentTime, courses, onAddCourse, onMoveItemToCourse, onHoldCourse }: Props) {
+export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveItem, orderType, onOrderTypePress, customer, onAddCustomerPress, onTotalPress, onCountPress, orderSeq, isPaymentOpen, isVoided, isReturned, tableNumber, status, discount, onDiscountPress, priceTagMultiplier = 1, currentTime, courses, onAddCourse, onMoveItemToCourse, onHoldCourse, guestCount, dueTime }: Props) {
   const subtotal       = items.reduce((sum, i) => sum + itemEffectiveTotal(i, priceTagMultiplier), 0);
   const discountAmount = discount
     ? discount.kind === 'percentage'
@@ -309,6 +311,16 @@ export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveIt
             )}
           </View>
 
+          {dueTime && (
+            <View style={s.dueTimeRow}>
+              <Text style={s.dueTimeLabel}>Due:</Text>
+              <Text style={s.dueTimeValue}>
+                {dueTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                {' '}
+                {dueTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+              </Text>
+            </View>
+          )}
           <View style={s.headerRow}>
             <TouchableOpacity onPress={onOrderTypePress} activeOpacity={0.6} disabled={!onOrderTypePress}>
               <Text style={s.pickup}>{orderType ?? 'Order Type'}</Text>
@@ -331,7 +343,14 @@ export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveIt
         <BlurView intensity={60} tint="light">
           <View style={s.itemsTitle}>
             <Text style={s.itemsTitleText}>Items</Text>
-            <Text style={s.itemsCount}>{items.reduce((sum, i) => sum + i.qty, 0)}</Text>
+            <View style={s.itemsTitleRight}>
+              {guestCount != null && guestCount > 0 && (
+                <View style={s.guestBadge}>
+                  <Text style={s.guestBadgeText}>{guestCount} guests</Text>
+                </View>
+              )}
+              <Text style={s.itemsCount}>{items.reduce((sum, i) => sum + i.qty, 0)}</Text>
+            </View>
           </View>
         </BlurView>
 
@@ -624,6 +643,45 @@ const s = StyleSheet.create({
   },
   itemsTitleText: {
     fontSize: 13,
+    fontWeight: '600',
+    color: Colors.primary,
+    letterSpacing: -0.1,
+  },
+  itemsTitleRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  guestBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primaryLight,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  guestBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.primary,
+    letterSpacing: -0.1,
+  },
+  dueTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 20,
+    paddingBottom: 6,
+  },
+  dueTimeLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.grayText,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  dueTimeValue: {
+    fontSize: 12,
     fontWeight: '600',
     color: Colors.primary,
     letterSpacing: -0.1,
