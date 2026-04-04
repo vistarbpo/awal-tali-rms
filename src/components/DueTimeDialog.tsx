@@ -3,6 +3,7 @@ import {
   Modal,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { useI18n } from '../i18n';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -196,6 +198,7 @@ const drum = StyleSheet.create({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function DueTimeDialog({ visible, current, onClose, onSave }: Props) {
+  const { t, af } = useI18n();
   const today = useMemo(() => new Date(), []);
 
   // ── Calendar state ──────────────────────────────────────────────────────────
@@ -328,33 +331,19 @@ export default function DueTimeDialog({ visible, current, onClose, onSave }: Pro
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      statusBarTranslucent
-      onRequestClose={onClose}
-    >
-      {/* Backdrop */}
-      <TouchableWithoutFeedback onPress={onClose}>
-        <View style={s.backdrop} />
-      </TouchableWithoutFeedback>
-
-      {/* Centered card */}
-      <View style={s.center} pointerEvents="box-none">
+  const cardJSX = (
         <View style={s.card}>
 
           {/* ── Header ── */}
           <View style={s.header}>
             <TouchableOpacity onPress={onClose} style={s.headerSideBtn} hitSlop={8}>
-              <Text style={s.cancelText}>Cancel</Text>
+              <Text style={[s.cancelText, { fontFamily: af('medium') }]}>{t('cancel')}</Text>
             </TouchableOpacity>
 
-            <Text style={s.headerTitle}>Select Date</Text>
+            <Text style={[s.headerTitle, { fontFamily: af('bold') }]}>{t('dueTimeTitle')}</Text>
 
             <TouchableOpacity onPress={handleSave} style={s.headerSideBtn} hitSlop={8}>
-              <Text style={s.saveText}>Save</Text>
+              <Text style={[s.saveText, { fontFamily: af('bold') }]}>{t('save')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -455,7 +444,7 @@ export default function DueTimeDialog({ visible, current, onClose, onSave }: Pro
               onPress={() => setShowDrum((v) => !v)}
               activeOpacity={0.7}
             >
-              <Text style={s.timeLabel}>Time</Text>
+              <Text style={[s.timeLabel, { fontFamily: af('semibold') }]}>Time</Text>
               <View style={s.timePill}>
                 <Text style={s.timePillText}>{formattedTime}</Text>
               </View>
@@ -463,6 +452,30 @@ export default function DueTimeDialog({ visible, current, onClose, onSave }: Pro
 
           </View>
         </View>
+  );
+
+  if (Platform.OS === 'web') {
+    if (!visible) return null;
+    return (
+      <View style={s.inlineOverlay}>
+        {cardJSX}
+      </View>
+    );
+  }
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
+      <TouchableWithoutFeedback onPress={onClose}>
+        <View style={s.backdrop} />
+      </TouchableWithoutFeedback>
+      <View style={s.center} pointerEvents="box-none">
+        {cardJSX}
       </View>
     </Modal>
   );
@@ -482,6 +495,13 @@ const s = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  inlineOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
 
   // Card

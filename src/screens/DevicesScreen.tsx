@@ -11,6 +11,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { useI18n } from '../i18n';
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -110,6 +111,7 @@ const BLANK_SUB_CASHIER: SubCashierDevice = { id: '', ipAddress: '' };
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function DevicesScreen({ visible, onClose }: Props) {
+  const { t, af, isRTL } = useI18n();
   const [subView, setSubView]         = useState<SubView>('list');
   const [addMenuOpen, setAddMenuOpen] = useState(false);
 
@@ -199,7 +201,7 @@ export default function DevicesScreen({ visible, onClose }: Props) {
             <>
               <View style={s.header}>
                 <TouchableOpacity onPress={handleClose} style={s.headerSide} activeOpacity={0.7}>
-                  <Text style={s.headerAction}>Close</Text>
+                  <Text style={[s.headerAction, { fontFamily: af() }]}>{t('close')}</Text>
                 </TouchableOpacity>
                 <Text style={s.headerTitle}>Devices</Text>
                 <TouchableOpacity onPress={() => setAddMenuOpen(p => !p)} style={s.headerSideRight} activeOpacity={0.7}>
@@ -279,7 +281,7 @@ export default function DevicesScreen({ visible, onClose }: Props) {
               </ScrollView>
 
               {addMenuOpen && (
-                <View style={s.addMenu}>
+                <View style={[s.addMenu, isRTL ? { right: undefined, left: 16 } : {}]}>
                   {ADD_DEVICE_OPTIONS.map((opt, i) => (
                     <React.Fragment key={opt}>
                       {i > 0 && <Hairline />}
@@ -298,11 +300,11 @@ export default function DevicesScreen({ visible, onClose }: Props) {
             <>
               <View style={s.header}>
                 <TouchableOpacity onPress={() => setSubView('list')} style={s.headerSide} activeOpacity={0.7}>
-                  <Text style={s.headerAction}>Back</Text>
+                  <Text style={[s.headerAction, { fontFamily: af() }]}>{t('back')}</Text>
                 </TouchableOpacity>
                 <Text style={s.headerTitle}>Printer Info</Text>
                 <TouchableOpacity onPress={handleSavePrinter} style={s.headerSideRight} activeOpacity={0.7}>
-                  <Text style={s.headerAction}>Save</Text>
+                  <Text style={[s.headerAction, { fontFamily: af() }]}>{t('save')}</Text>
                 </TouchableOpacity>
               </View>
 
@@ -352,7 +354,7 @@ export default function DevicesScreen({ visible, onClose }: Props) {
             <>
               <View style={s.header}>
                 <TouchableOpacity onPress={() => setSubView('printer-info')} style={s.headerSide} activeOpacity={0.7}>
-                  <Text style={s.headerAction}>Back</Text>
+                  <Text style={[s.headerAction, { fontFamily: af() }]}>{t('back')}</Text>
                 </TouchableOpacity>
                 <Text style={s.headerTitle}>Model</Text>
                 <View style={s.headerSideRight} />
@@ -386,7 +388,7 @@ export default function DevicesScreen({ visible, onClose }: Props) {
             <>
               <View style={s.header}>
                 <TouchableOpacity onPress={() => setSubView('printer-info')} style={s.headerSide} activeOpacity={0.7}>
-                  <Text style={s.headerAction}>Back</Text>
+                  <Text style={[s.headerAction, { fontFamily: af() }]}>{t('back')}</Text>
                 </TouchableOpacity>
                 <Text style={s.headerTitle}>Type</Text>
                 <View style={s.headerSideRight} />
@@ -415,7 +417,7 @@ export default function DevicesScreen({ visible, onClose }: Props) {
             <>
               <View style={s.header}>
                 <TouchableOpacity onPress={() => setSubView('printer-info')} style={s.headerSide} activeOpacity={0.7}>
-                  <Text style={s.headerAction}>Back</Text>
+                  <Text style={[s.headerAction, { fontFamily: af() }]}>{t('back')}</Text>
                 </TouchableOpacity>
                 <Text style={s.headerTitle}>Enabled order types</Text>
                 <View style={s.headerSideRight} />
@@ -444,11 +446,11 @@ export default function DevicesScreen({ visible, onClose }: Props) {
             <>
               <View style={s.header}>
                 <TouchableOpacity onPress={() => setSubView('list')} style={s.headerSide} activeOpacity={0.7}>
-                  <Text style={s.headerAction}>Back</Text>
+                  <Text style={[s.headerAction, { fontFamily: af() }]}>{t('back')}</Text>
                 </TouchableOpacity>
                 <Text style={s.headerTitle}>Kds info</Text>
                 <TouchableOpacity onPress={handleSaveKDS} style={s.headerSideRight} activeOpacity={0.7}>
-                  <Text style={s.headerAction}>Save</Text>
+                  <Text style={[s.headerAction, { fontFamily: af() }]}>{t('save')}</Text>
                 </TouchableOpacity>
               </View>
 
@@ -504,7 +506,7 @@ export default function DevicesScreen({ visible, onClose }: Props) {
             <>
               <View style={s.header}>
                 <TouchableOpacity onPress={() => setSubView('kds-info')} style={s.headerSide} activeOpacity={0.7}>
-                  <Text style={s.headerAction}>Back</Text>
+                  <Text style={[s.headerAction, { fontFamily: af() }]}>{t('back')}</Text>
                 </TouchableOpacity>
                 <Text style={s.headerTitle}>Type</Text>
                 <View style={s.headerSideRight} />
@@ -533,7 +535,7 @@ export default function DevicesScreen({ visible, onClose }: Props) {
             <>
               <View style={s.header}>
                 <TouchableOpacity onPress={() => setSubView('kds-info')} style={s.headerSide} activeOpacity={0.7}>
-                  <Text style={s.headerAction}>Back</Text>
+                  <Text style={[s.headerAction, { fontFamily: af() }]}>{t('back')}</Text>
                 </TouchableOpacity>
                 <Text style={s.headerTitle}>Enabled order types</Text>
                 <View style={s.headerSideRight} />
@@ -562,11 +564,11 @@ export default function DevicesScreen({ visible, onClose }: Props) {
             <>
               <View style={s.header}>
                 <TouchableOpacity onPress={() => setSubView('list')} style={s.headerSide} activeOpacity={0.7}>
-                  <Text style={s.headerAction}>Back</Text>
+                  <Text style={[s.headerAction, { fontFamily: af() }]}>{t('back')}</Text>
                 </TouchableOpacity>
                 <Text style={s.headerTitle}>Sub Cashier Info</Text>
                 <TouchableOpacity onPress={handleSaveSubCashier} style={s.headerSideRight} activeOpacity={0.7}>
-                  <Text style={s.headerAction}>Save</Text>
+                  <Text style={[s.headerAction, { fontFamily: af() }]}>{t('save')}</Text>
                 </TouchableOpacity>
               </View>
 
@@ -729,7 +731,7 @@ const s = StyleSheet.create({
   chevron: {
     fontSize: 20,
     color: Colors.grayText,
-    marginLeft: 2,
+    marginStart: 2,
   },
   checkmark: {
     fontSize: 17,
@@ -739,7 +741,7 @@ const s = StyleSheet.create({
   hairline: {
     height: 0.5,
     backgroundColor: 'rgba(60,60,67,0.18)',
-    marginLeft: 18,
+    marginStart: 18,
   },
 
   // ── Add device dropdown ──

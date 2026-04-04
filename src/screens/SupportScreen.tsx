@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Colors } from '../constants/colors';
 import { iconHeadset } from '../assets/icons';
+import { useI18n } from '../i18n';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const SUPPORT_PHONE    = '+966 50 123 4567';
@@ -74,6 +75,7 @@ interface Props {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function SupportScreen({ visible, onClose }: Props) {
+  const { t, af, isRTL } = useI18n();
   return (
     <Modal
       visible={visible}
@@ -94,7 +96,7 @@ export default function SupportScreen({ visible, onClose }: Props) {
             <TouchableOpacity onPress={onClose} style={s.closeBtn} activeOpacity={0.7}>
               <Text style={s.closeText}>✕</Text>
             </TouchableOpacity>
-            <Text style={s.headerTitle}>Support</Text>
+            <Text style={[s.headerTitle, { fontFamily: af('bold') }]}>Support</Text>
             <View style={s.closeBtn} />
           </View>
 
@@ -106,8 +108,8 @@ export default function SupportScreen({ visible, onClose }: Props) {
               </View>
             </View>
             <View style={s.heroRight}>
-              <Text style={s.heroTitle}>How can we help?</Text>
-              <Text style={s.heroSub}>
+              <Text style={[s.heroTitle, { fontFamily: af('bold') }]}>How can we help?</Text>
+              <Text style={[s.heroSub, { fontFamily: af() }]}>
                 Our support team is available around the clock to keep your business running smoothly.
               </Text>
               <View style={s.heroOnline}>
@@ -116,9 +118,6 @@ export default function SupportScreen({ visible, onClose }: Props) {
               </View>
             </View>
           </View>
-
-          {/* ── Divider ── */}
-          <View style={s.divider} />
 
           {/* ── Contact Methods ── */}
           <View style={s.contactRow}>
@@ -189,15 +188,15 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   card: {
-    width: 700,
+    width: 660,
     backgroundColor: Colors.white,
-    borderRadius: 24,
+    borderRadius: 20,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.24,
-    shadowRadius: 40,
-    elevation: 20,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.20,
+    shadowRadius: 32,
+    elevation: 16,
   },
 
   // ── Header ──
@@ -234,72 +233,62 @@ const s = StyleSheet.create({
   hero: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 32,
-    paddingVertical: 26,
-    gap: 20,
+    backgroundColor: Colors.primaryLight,
+    paddingHorizontal: 28,
+    paddingVertical: 20,
+    gap: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.grayBorder,
   },
   heroLeft: {
     alignItems: 'center',
   },
   heroIconRing: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.22)',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   heroIcon: {
-    width: 34,
-    height: 34,
+    width: 28,
+    height: 28,
     resizeMode: 'contain',
     tintColor: '#fff',
   },
   heroRight: { flex: 1 },
   heroTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '700',
-    color: Colors.white,
-    letterSpacing: -0.5,
-    marginBottom: 6,
+    color: Colors.black,
+    letterSpacing: -0.4,
+    marginBottom: 4,
   },
   heroSub: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '400',
-    color: 'rgba(255,255,255,0.72)',
-    letterSpacing: -0.2,
-    lineHeight: 20,
-    marginBottom: 12,
+    color: Colors.grayText,
+    letterSpacing: -0.1,
+    lineHeight: 18,
+    marginBottom: 10,
   },
   heroOnline: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
+    gap: 6,
   },
   onlineDot: {
-    width: 8,
-    height: 8,
+    width: 7,
+    height: 7,
     borderRadius: 4,
-    backgroundColor: '#4ADE80',
-    shadowColor: '#4ADE80',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 4,
+    backgroundColor: '#22C55E',
   },
   onlineText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500',
-    color: 'rgba(255,255,255,0.85)',
+    color: '#15803D',
     letterSpacing: -0.1,
-  },
-
-  // ── Divider ──
-  divider: {
-    height: 1,
-    backgroundColor: Colors.grayBorder,
   },
 
   // ── Contact row ──
@@ -309,8 +298,8 @@ const s = StyleSheet.create({
   },
   contactCard: {
     flex: 1,
-    paddingHorizontal: 28,
-    paddingVertical: 28,
+    paddingHorizontal: 24,
+    paddingVertical: 22,
     alignItems: 'center',
   },
   vertSep: {

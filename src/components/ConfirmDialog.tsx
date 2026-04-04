@@ -8,6 +8,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { useI18n } from '../i18n';
 
 interface Props {
   visible: boolean;
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export default function ConfirmDialog({ visible, title, message, onNo, onYes }: Props) {
+  const { t, af } = useI18n();
   return (
     <Modal
       visible={visible}
@@ -45,10 +47,10 @@ export default function ConfirmDialog({ visible, title, message, onNo, onYes }: 
           {/* Actions */}
           <View style={s.actions}>
             <TouchableOpacity style={s.btnNo} onPress={onNo} activeOpacity={0.7}>
-              <Text style={s.btnNoText}>Cancel</Text>
+              <Text style={[s.btnNoText, { fontFamily: af('semibold') }]}>{t('no')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={s.btnYes} onPress={onYes} activeOpacity={0.8}>
-              <Text style={s.btnYesText}>Confirm</Text>
+              <Text style={[s.btnYesText, { fontFamily: af('bold') }]}>{t('yes')}</Text>
             </TouchableOpacity>
           </View>
 

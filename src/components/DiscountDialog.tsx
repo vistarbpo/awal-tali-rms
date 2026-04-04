@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Colors } from '../constants/colors';
 import { iconSarGray } from '../assets/icons';
+import { useI18n } from '../i18n';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type DiscountKind = 'amount' | 'percentage';
@@ -28,6 +29,9 @@ interface Props {
   onClose: () => void;
   onApply: (discount: OrderDiscount) => void;
   onClear: () => void;
+  initialStep?: Step;
+  initialKind?: DiscountKind;
+  initialAmount?: string;
 }
 
 type Step = 'type' | 'numpad' | 'predefined';
@@ -71,15 +75,17 @@ const icon = StyleSheet.create({
 });
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export default function DiscountDialog({ visible, currentDiscount, subtotal, onClose, onApply, onClear }: Props) {
-  const [step, setStep]         = useState<Step>('type');
-  const [openKind, setOpenKind] = useState<DiscountKind>('amount');
-  const [amount, setAmount]     = useState('');
+export default function DiscountDialog({ visible, currentDiscount, subtotal, onClose, onApply, onClear, initialStep, initialKind, initialAmount }: Props) {
+  const { t, af, isRTL, rtlLeft } = useI18n();
+  const [step, setStep]         = useState<Step>(initialStep ?? 'type');
+  const [openKind, setOpenKind] = useState<DiscountKind>(initialKind ?? 'amount');
+  const [amount, setAmount]     = useState(initialAmount ?? '');
 
   useEffect(() => {
     if (visible) {
-      setStep('type');
-      setAmount('');
+      setStep(initialStep ?? 'type');
+      setOpenKind(initialKind ?? 'amount');
+      setAmount(initialAmount ?? '');
     }
   }, [visible]);
 
@@ -130,7 +136,7 @@ export default function DiscountDialog({ visible, currentDiscount, subtotal, onC
 
             {/* Header */}
             <View style={s.typeHeader}>
-              <Text style={s.typeHeaderTitle}>Discount</Text>
+              <Text style={[s.typeHeaderTitle, { fontFamily: af('semibold') }]}>{t('discountTitle')}</Text>
             </View>
 
             {/* Current discount badge */}
@@ -141,7 +147,7 @@ export default function DiscountDialog({ visible, currentDiscount, subtotal, onC
                   <Text style={s.currentLabel}>{currentDiscount.label}</Text>
                 </View>
                 <TouchableOpacity style={s.clearBtn} onPress={onClear} activeOpacity={0.75}>
-                  <Text style={s.clearBtnText}>Clear</Text>
+                  <Text style={[s.clearBtnText, { fontFamily: af('semibold') }]}>{t('remove')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -154,8 +160,8 @@ export default function DiscountDialog({ visible, currentDiscount, subtotal, onC
                 onPress={() => { setOpenKind('amount'); setAmount(''); setStep('numpad'); }}
                 activeOpacity={0.75}
               >
-                <Text style={s.typeRowLabel}>Amount</Text>
-                <Text style={s.typeRowHint}>Fixed riyal reduction</Text>
+                <Text style={[s.typeRowLabel, { fontFamily: af('regular') }]}>{t('discountAmount')}</Text>
+                <Text style={[s.typeRowHint, { fontFamily: af('regular') }]}>Fixed riyal reduction</Text>
               </TouchableOpacity>
 
               <View style={s.hairline} />
@@ -165,8 +171,8 @@ export default function DiscountDialog({ visible, currentDiscount, subtotal, onC
                 onPress={() => { setOpenKind('percentage'); setAmount(''); setStep('numpad'); }}
                 activeOpacity={0.75}
               >
-                <Text style={s.typeRowLabel}>Percent</Text>
-                <Text style={s.typeRowHint}>Percentage reduction</Text>
+                <Text style={[s.typeRowLabel, { fontFamily: af('regular') }]}>{t('discountPercent')}</Text>
+                <Text style={[s.typeRowHint, { fontFamily: af('regular') }]}>Percentage reduction</Text>
               </TouchableOpacity>
 
               <View style={s.hairline} />
@@ -176,14 +182,14 @@ export default function DiscountDialog({ visible, currentDiscount, subtotal, onC
                 onPress={() => setStep('predefined')}
                 activeOpacity={0.75}
               >
-                <Text style={s.typeRowLabel}>Predefined</Text>
-                <Text style={s.typeRowHint}>Manager-configured discounts</Text>
+                <Text style={[s.typeRowLabel, { fontFamily: af('regular') }]}>Predefined</Text>
+                <Text style={[s.typeRowHint, { fontFamily: af('regular') }]}>Manager-configured discounts</Text>
               </TouchableOpacity>
 
             </View>
 
             <TouchableOpacity style={s.cancelRow} onPress={onClose} activeOpacity={0.75}>
-              <Text style={s.cancelText}>Cancel</Text>
+              <Text style={[s.cancelText, { fontFamily: af('medium') }]}>{t('cancel')}</Text>
             </TouchableOpacity>
 
           </View>
@@ -194,11 +200,11 @@ export default function DiscountDialog({ visible, currentDiscount, subtotal, onC
           <View style={s.numpadCard}>
 
             <View style={s.numpadHeader}>
-              <TouchableOpacity style={s.backBtn} onPress={() => setStep('type')} activeOpacity={0.7}>
+              <TouchableOpacity style={[s.backBtn, rtlLeft(16)]} onPress={() => setStep('type')} activeOpacity={0.7}>
                 <BackArrow />
               </TouchableOpacity>
-              <Text style={s.numpadHeaderLabel}>
-                {isPercent ? 'Enter Percentage' : 'Enter Amount'}
+              <Text style={[s.numpadHeaderLabel, { fontFamily: af('semibold') }]}>
+                {isPercent ? t('enterPercentage') : t('enterAmount')}
               </Text>
             </View>
 
@@ -215,7 +221,7 @@ export default function DiscountDialog({ visible, currentDiscount, subtotal, onC
             {canApply && (
               <View style={s.previewRow}>
                 <View style={s.previewInner}>
-                  <Text style={s.previewText}>Saving {previewDiscount.toFixed(2)}</Text>
+                  <Text style={[s.previewText, { fontFamily: af('medium') }]}>Saving {previewDiscount.toFixed(2)}</Text>
                   <Image source={iconSarGray} style={s.previewSarIcon} />
                 </View>
               </View>
@@ -248,7 +254,7 @@ export default function DiscountDialog({ visible, currentDiscount, subtotal, onC
                 activeOpacity={canApply ? 0.85 : 1}
                 disabled={!canApply}
               >
-                <Text style={s.applyBtnText}>Apply Discount</Text>
+                <Text style={[s.applyBtnText, { fontFamily: af('bold') }]}>{t('apply')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -262,9 +268,9 @@ export default function DiscountDialog({ visible, currentDiscount, subtotal, onC
             {/* Header — Cancel | Discount */}
             <View style={s.predefinedHeader}>
               <TouchableOpacity onPress={onClose} activeOpacity={0.75} style={s.predefinedCancelTouch}>
-                <Text style={s.predefinedCancel}>Cancel</Text>
+                <Text style={[s.predefinedCancel, { fontFamily: af('regular') }]}>{t('cancel')}</Text>
               </TouchableOpacity>
-              <Text style={s.predefinedTitle}>Discount</Text>
+              <Text style={[s.predefinedTitle, { fontFamily: af('medium') }]}>{t('discountTitle')}</Text>
               <View style={s.predefinedSpacer} />
             </View>
 
@@ -277,7 +283,7 @@ export default function DiscountDialog({ visible, currentDiscount, subtotal, onC
                   onPress={() => handleApplyPredefined(item)}
                   activeOpacity={0.7}
                 >
-                  <Text style={s.predefinedName}>{item.label}</Text>
+                  <Text style={[s.predefinedName, { fontFamily: af('regular') }]}>{item.label}</Text>
                   <Text style={s.predefinedValue}>
                     {item.kind === 'percentage'
                       ? `${item.value}.0 %`
@@ -406,7 +412,7 @@ const s = StyleSheet.create({
   hairline: {
     height: 0.5,
     backgroundColor: 'rgba(60,60,67,0.29)',
-    marginLeft: 18,
+    marginStart: 18,
   },
   cancelRow: {
     borderTopWidth: 1,
@@ -488,7 +494,6 @@ const s = StyleSheet.create({
     fontWeight: '400',
     color: Colors.black,
     letterSpacing: -0.35,
-    textAlign: 'right',
   },
 
   // ── Numpad card ──
@@ -522,7 +527,6 @@ const s = StyleSheet.create({
   },
   backBtn: {
     position: 'absolute',
-    left: 16,
     top: 0,
     bottom: 0,
     justifyContent: 'center',

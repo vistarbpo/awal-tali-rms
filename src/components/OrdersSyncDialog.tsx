@@ -9,6 +9,7 @@ import {
   Animated,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { useI18n } from '../i18n';
 
 // ─── Calendar helpers ─────────────────────────────────────────────────────────
 const MONTHS = [
@@ -32,6 +33,9 @@ function formatDateLabel(year: number, month: number, day: number): string {
   });
 }
 
+// ─── Preview mode (Figma capture) — 'syncing' | 'done' | null ────────────────
+const PREVIEW_PHASE: 'syncing' | 'done' | null = null;
+
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface Props {
   visible: boolean;
@@ -40,6 +44,7 @@ interface Props {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function OrdersSyncDialog({ visible, onClose }: Props) {
+  const { t, af, isRTL } = useI18n();
   const today = new Date();
   const [viewYear,  setViewYear]  = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
@@ -47,7 +52,7 @@ export default function OrdersSyncDialog({ visible, onClose }: Props) {
   const [selMonth,  setSelMonth]  = useState(today.getMonth());
   const [selYear,   setSelYear]   = useState(today.getFullYear());
 
-  const [phase, setPhase] = useState<'pick' | 'syncing' | 'done'>('pick');
+  const [phase, setPhase] = useState<'pick' | 'syncing' | 'done'>(PREVIEW_PHASE ?? 'pick');
 
   const spinA    = useRef(new Animated.Value(0)).current;
   const spinB    = useRef(new Animated.Value(0)).current;
@@ -56,7 +61,7 @@ export default function OrdersSyncDialog({ visible, onClose }: Props) {
 
   // Reset when dialog opens
   useEffect(() => {
-    if (visible) {
+    if (visible && !PREVIEW_PHASE) {
       setPhase('pick');
       setSelDay(today.getDate());
       setViewYear(today.getFullYear());
@@ -142,17 +147,17 @@ export default function OrdersSyncDialog({ visible, onClose }: Props) {
         <View style={s.card}>
 
           {/* ── Header ── */}
-          <View style={s.header}>
+          <View style={[s.header, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <TouchableOpacity
               style={s.headerSide}
               onPress={handleClose}
               disabled={phase === 'syncing'}
               activeOpacity={0.7}
             >
-              <Text style={[s.cancelText, phase === 'syncing' && s.textDisabled]}>Cancel</Text>
+              <Text style={[s.cancelText, phase === 'syncing' && s.textDisabled, { fontFamily: af('regular') }]}>{t('cancel')}</Text>
             </TouchableOpacity>
 
-            <Text style={s.title}>Sync Orders</Text>
+            <Text style={[s.title, { fontFamily: af('semibold') }]}>{t('syncDataTitle')}</Text>
 
             <TouchableOpacity
               style={s.headerSide}
@@ -160,17 +165,17 @@ export default function OrdersSyncDialog({ visible, onClose }: Props) {
               disabled={!syncReady}
               activeOpacity={0.7}
             >
-              <Text style={[s.syncText, !syncReady && s.textDisabled]}>Sync</Text>
+              <Text style={[s.syncText, !syncReady && s.textDisabled, { fontFamily: af('bold') }]}>{t('syncBtn')}</Text>
             </TouchableOpacity>
           </View>
 
           <View style={s.headerDivider} />
 
           {/* ── Date row ── */}
-          <View style={s.dateRow}>
-            <Text style={s.dateRowLabel}>Business date</Text>
+          <View style={[s.dateRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <Text style={s.dateRowLabel}>{t('businessDate')}</Text>
             <Text style={[s.dateRowValue, !selDay && s.dateRowPlaceholder]}>
-              {selDay ? dateLabel : 'Select a date'}
+              {selDay ? dateLabel : t('selectADate')}
             </Text>
           </View>
 
@@ -228,16 +233,16 @@ export default function OrdersSyncDialog({ visible, onClose }: Props) {
                 <>
                   <Animated.View style={[s.ring, s.ringOuter, { transform: [{ rotate: rotateA }] }]} />
                   <Animated.View style={[s.ring, s.ringInner, { transform: [{ rotate: rotateB }] }]} />
-                  <Text style={s.overlayText}>Syncing orders…</Text>
+                  <Text style={[s.overlayText, { fontFamily: af('semibold') }]}>{t('syncingData')}</Text>
                 </>
               ) : (
                 <>
                   <View style={s.checkCircle}>
                     <Text style={s.checkMark}>✓</Text>
                   </View>
-                  <Text style={[s.overlayText, s.doneText]}>Sync complete</Text>
+                  <Text style={[s.overlayText, s.doneText, { fontFamily: af('semibold') }]}>{t('syncComplete')}</Text>
                   <TouchableOpacity style={s.doneBtn} onPress={handleClose} activeOpacity={0.8}>
-                    <Text style={s.doneBtnText}>Close</Text>
+                    <Text style={[s.doneBtnText, { fontFamily: af('bold') }]}>{t('close')}</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -304,7 +309,6 @@ const s = StyleSheet.create({
     fontWeight: '700',
     color: Colors.primary,
     letterSpacing: -0.2,
-    textAlign: 'right',
   },
   textDisabled: {
     color: Colors.grayMid,

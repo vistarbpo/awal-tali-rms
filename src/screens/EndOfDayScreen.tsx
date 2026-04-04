@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Colors } from '../constants/colors';
 import { iconSarGray, iconSarWhite } from '../assets/icons';
+import { useI18n } from '../i18n';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Step = 'summary' | 'cash-count' | 'done';
@@ -94,6 +95,7 @@ function SarRow({ label, amount, bold, green, red }: { label: string; amount: nu
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function EndOfDayScreen({ visible, onClose, onEndDay }: Props) {
+  const { t, af, isRTL } = useI18n();
   const [step,        setStep]        = useState<Step>('summary');
   const [cashInput,   setCashInput]   = useState('');
 
@@ -139,9 +141,9 @@ export default function EndOfDayScreen({ visible, onClose, onEndDay }: Props) {
 
             <View style={s.header}>
               <TouchableOpacity onPress={handleClose} activeOpacity={0.7} style={s.headerSide}>
-                <Text style={s.headerClose}>Close</Text>
+                <Text style={[s.headerClose, { fontFamily: af() }]}>{t('close')}</Text>
               </TouchableOpacity>
-              <Text style={s.headerTitle}>End of Day</Text>
+              <Text style={[s.headerTitle, { fontFamily: af('semibold') }]}>{t('endOfDayTitle')}</Text>
               <View style={s.headerSide}>
                 <Text style={s.headerDate}>{DAY_DATA.date}</Text>
               </View>
@@ -201,7 +203,7 @@ export default function EndOfDayScreen({ visible, onClose, onEndDay }: Props) {
 
             <View style={s.ctaWrap}>
               <TouchableOpacity style={s.ctaBtn} onPress={() => setStep('cash-count')} activeOpacity={0.85}>
-                <Text style={s.ctaBtnText}>Count Cash & Close Day</Text>
+                <Text style={[s.ctaBtnText, { fontFamily: af('bold') }]}>Count Cash & Close Day</Text>
               </TouchableOpacity>
             </View>
 
@@ -224,9 +226,9 @@ export default function EndOfDayScreen({ visible, onClose, onEndDay }: Props) {
 
             <View style={s.header}>
               <TouchableOpacity onPress={() => setStep('summary')} activeOpacity={0.7} style={s.headerSide}>
-                <Text style={s.headerClose}>‹ Back</Text>
+                <Text style={[s.headerClose, { fontFamily: af() }]}>‹ {t('back')}</Text>
               </TouchableOpacity>
-              <Text style={s.headerTitle}>Count Cash</Text>
+              <Text style={[s.headerTitle, { fontFamily: af('semibold') }]}>Count Cash</Text>
               <View style={s.headerSide} />
             </View>
 
@@ -283,7 +285,7 @@ export default function EndOfDayScreen({ visible, onClose, onEndDay }: Props) {
                 onPress={() => setStep('done')}
                 activeOpacity={0.85}
               >
-                <Text style={s.ctaBtnText}>End of Day</Text>
+                <Text style={[s.ctaBtnText, { fontFamily: af('bold') }]}>{t('endOfDayTitle')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -310,7 +312,7 @@ export default function EndOfDayScreen({ visible, onClose, onEndDay }: Props) {
               <View style={s.doneTick2} />
             </View>
 
-            <Text style={s.doneTitle}>Business Day Closed</Text>
+            <Text style={[s.doneTitle, { fontFamily: af('bold') }]}>Business Day Closed</Text>
             <Text style={s.doneDate}>{DAY_DATA.date}</Text>
 
             <View style={s.doneSummaryCard}>
@@ -343,7 +345,7 @@ export default function EndOfDayScreen({ visible, onClose, onEndDay }: Props) {
               onPress={() => { reset(); onEndDay?.(); onClose(); }}
               activeOpacity={0.85}
             >
-              <Text style={s.ctaBtnText}>Start New Day</Text>
+              <Text style={[s.ctaBtnText, { fontFamily: af('bold') }]}>Start New Day</Text>
             </TouchableOpacity>
           </View>
 
@@ -469,7 +471,7 @@ const s = StyleSheet.create({
     color: Colors.grayText,
     letterSpacing: -0.2,
     textAlign: 'right',
-    marginLeft: 12,
+    marginStart: 12,
     flexShrink: 1,
   },
   rowValueBold: {
@@ -479,7 +481,7 @@ const s = StyleSheet.create({
   hairline: {
     height: 0.5,
     backgroundColor: 'rgba(60,60,67,0.18)',
-    marginLeft: 20,
+    marginStart: 20,
   },
   sarRow: {
     flexDirection: 'row',
@@ -701,7 +703,7 @@ const s = StyleSheet.create({
   doneSummaryDivider: {
     height: 0.5,
     backgroundColor: Colors.grayBorder,
-    marginLeft: 20,
+    marginStart: 20,
   },
   doneSummaryLabel: {
     fontSize: 15,

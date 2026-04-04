@@ -3,6 +3,7 @@ import {
   View, Text, TouchableOpacity, Modal, ScrollView, StyleSheet,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { useI18n } from '../i18n';
 
 export interface ReturnItem {
   name: string;
@@ -45,15 +46,19 @@ const icon = StyleSheet.create({
   barV:    { width: 2.5, height: 14, backgroundColor: Colors.white, borderRadius: 2, position: 'absolute' },
 });
 
+// ─── Preview flag (Figma capture) ─────────────────────────────────────────────
+const PREVIEW_ALL_WASTE = false;
+
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function ReturnOrderDialog({ visible, items, onClose, onDone }: Props) {
+  const { t, af, isRTL } = useI18n();
   const [returnQtys, setReturnQtys] = useState<number[]>([]);
   const [wastes, setWastes]         = useState<boolean[]>([]);
 
   useEffect(() => {
     if (visible) {
-      setReturnQtys(items.map(() => 0));
-      setWastes(items.map(() => false));
+      setReturnQtys(PREVIEW_ALL_WASTE ? items.map(item => item.qty) : items.map(() => 0));
+      setWastes(items.map(() => PREVIEW_ALL_WASTE));
     }
   }, [visible]);
 
@@ -101,22 +106,22 @@ export default function ReturnOrderDialog({ visible, items, onClose, onDone }: P
 
           {/* Header */}
           <View style={s.header}>
-            <Text style={s.headerTitle}>Select products to return</Text>
-            <Text style={s.headerSub}>Choose qty and mark wasted items</Text>
+            <Text style={[s.headerTitle, { fontFamily: af('bold') }]}>{t('selectReturnItems')}</Text>
+            <Text style={[s.headerSub, { fontFamily: af('regular') }]}>{t('chooseQtyAndWaste')}</Text>
           </View>
 
           {/* Select / Deselect All */}
           <View style={s.selectAllRow}>
             <TouchableOpacity
-              style={[s.selectAllBtn, allSelected && s.selectAllBtnOn]}
+              style={[s.selectAllBtn, allSelected && s.selectAllBtnOn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
               onPress={selectAll}
               activeOpacity={0.75}
             >
               <View style={[s.checkbox, allSelected && s.checkboxOn]}>
                 {allSelected && <View style={s.checkmark} />}
               </View>
-              <Text style={[s.selectAllText, allSelected && s.selectAllTextOn]}>
-                {allSelected ? 'Deselect All' : 'Select All'}
+              <Text style={[s.selectAllText, allSelected && s.selectAllTextOn, { fontFamily: af('semibold') }]}>
+                {allSelected ? t('deselectAll') : t('selectAll')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -132,7 +137,7 @@ export default function ReturnOrderDialog({ visible, items, onClose, onDone }: P
               return (
                 <View key={i}>
                   {i > 0 && <View style={s.divider} />}
-                  <View style={s.row}>
+                  <View style={[s.row, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
 
                     {/* Name + note */}
                     <View style={s.nameCol}>
@@ -166,12 +171,12 @@ export default function ReturnOrderDialog({ visible, items, onClose, onDone }: P
 
                     {/* Waste toggle */}
                     <TouchableOpacity
-                      style={[s.wasteBtn, isWaste && s.wasteBtnOn]}
+                      style={[s.wasteBtn, isWaste && s.wasteBtnOn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
                       onPress={() => toggleWaste(i)}
                       activeOpacity={0.7}
                     >
                       <View style={[s.wasteDot, isWaste && s.wasteDotOn]} />
-                      <Text style={[s.wasteLabel, isWaste && s.wasteLabelOn]}>Waste</Text>
+                      <Text style={[s.wasteLabel, isWaste && s.wasteLabelOn]}>{t('waste')}</Text>
                     </TouchableOpacity>
 
                   </View>
@@ -184,11 +189,11 @@ export default function ReturnOrderDialog({ visible, items, onClose, onDone }: P
           {/* Footer */}
           <View style={s.footer}>
             <TouchableOpacity style={s.cancelBtn} onPress={onClose} activeOpacity={0.8}>
-              <Text style={s.cancelText}>Cancel</Text>
+              <Text style={s.cancelText}>{t('cancel')}</Text>
             </TouchableOpacity>
             <View style={s.footerDivider} />
             <TouchableOpacity style={s.doneBtn} onPress={handleDone} activeOpacity={0.8}>
-              <Text style={s.footerText}>Done</Text>
+              <Text style={s.footerText}>{t('done')}</Text>
             </TouchableOpacity>
           </View>
 

@@ -11,6 +11,8 @@ import {
 import { Colors } from '../constants/colors';
 import TalabOSLogo    from '../components/TalabOSLogo';
 import SyncDataDialog from '../components/SyncDataDialog';
+import LangToggle from '../components/LangToggle';
+import { useI18n } from '../i18n';
 
 const PIN_LENGTH = 5;
 
@@ -29,6 +31,7 @@ interface Props {
 export default function LoginScreen({ onLoginSuccess, onDesignSystem }: Props) {
   const [pin, setPin] = useState('');
   const [syncUsersVisible, setSyncUsersVisible] = useState(false);
+  const { t, af, isRTL, rtlRight } = useI18n();
 
   function handleKey(key: string) {
     if (key === 'C') {
@@ -78,11 +81,14 @@ export default function LoginScreen({ onLoginSuccess, onDesignSystem }: Props) {
 
         {/* ── RIGHT: PIN entry ── */}
         <View style={s.pinPanel}>
+          <View style={s.langRow}>
+            <LangToggle variant="dark" />
+          </View>
 
           {/* Header */}
           <View style={s.pinHeader}>
-            <Text style={s.pinTitle}>Welcome back!</Text>
-            <Text style={s.pinSubtitle}>Enter your 5-digit PIN to continue</Text>
+            <Text style={[s.pinTitle, { fontFamily: af('bold') }]}>{t('welcomeBack')}</Text>
+            <Text style={[s.pinSubtitle, { fontFamily: af() }]}>{t('enterPin')}</Text>
           </View>
 
           {/* PIN dots */}
@@ -120,7 +126,7 @@ export default function LoginScreen({ onLoginSuccess, onDesignSystem }: Props) {
 
             {/* Sync */}
             <TouchableOpacity style={s.syncBtn} activeOpacity={0.7} onPress={() => setSyncUsersVisible(true)}>
-              <Text style={s.syncText}>Sync Users</Text>
+              <Text style={[s.syncText, { fontFamily: af('medium') }]}>{t('syncUsers')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -130,12 +136,12 @@ export default function LoginScreen({ onLoginSuccess, onDesignSystem }: Props) {
       <SyncDataDialog
         visible={syncUsersVisible}
         onClose={() => setSyncUsersVisible(false)}
-        title="Sync Users"
+        title={t('syncUsers')}
       />
 
       {/* ── Design System icon — top right ── */}
       {onDesignSystem && (
-        <TouchableOpacity style={s.dsBtn} onPress={onDesignSystem} activeOpacity={0.7}>
+        <TouchableOpacity style={[s.dsBtn, rtlRight(16)]} onPress={onDesignSystem} activeOpacity={0.7}>
           <Text style={s.dsBtnText}>⬡</Text>
         </TouchableOpacity>
       )}
@@ -187,7 +193,7 @@ const s = StyleSheet.create({
   dsBtn: {
     position: 'absolute',
     top: 16,
-    right: 16,
+    right: 16, // RTL handled inline via rtlRight()
     width: 36,
     height: 36,
     borderRadius: 10,
@@ -235,6 +241,12 @@ const s = StyleSheet.create({
     fontWeight: '400',
     color: 'rgba(255,255,255,0.55)',
     letterSpacing: 0.1,
+  },
+
+  langRow: {
+    position: 'absolute',
+    top: 20,
+    right: 62, // clear the ⬡ dsBtn (36px wide + 16px margin + 10px gap)
   },
 
   /* ── PIN panel ── */

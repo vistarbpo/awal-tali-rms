@@ -9,6 +9,7 @@ import {
   Animated,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { useI18n } from '../i18n';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface Props {
@@ -18,7 +19,9 @@ interface Props {
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export default function SyncDataDialog({ visible, onClose, title = 'Sync Data' }: Props) {
+export default function SyncDataDialog({ visible, onClose, title }: Props) {
+  const { t, af } = useI18n();
+  const resolvedTitle = title ?? t('syncData');
   const [phase, setPhase] = useState<'syncing' | 'done'>('syncing');
 
   const spinA       = useRef(new Animated.Value(0)).current;
@@ -85,14 +88,14 @@ export default function SyncDataDialog({ visible, onClose, title = 'Sync Data' }
           {/* ── Header ── */}
           <View style={s.header}>
             <View style={s.headerSide} />
-            <Text style={s.headerTitle}>{title}</Text>
+            <Text style={[s.headerTitle, { fontFamily: af('semibold') }]}>{resolvedTitle}</Text>
             <TouchableOpacity
               style={s.headerSide}
               onPress={handleClose}
               disabled={isSyncing}
               activeOpacity={0.7}
             >
-              <Text style={[s.closeText, isSyncing && s.closeDisabled]}>Close</Text>
+              <Text style={[s.closeText, isSyncing && s.closeDisabled, { fontFamily: af('medium') }]}>{t('close')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -114,13 +117,13 @@ export default function SyncDataDialog({ visible, onClose, title = 'Sync Data' }
             </View>
 
             {/* Status text */}
-            <Text style={[s.statusText, !isSyncing && s.statusDone]}>
-              {isSyncing ? 'Syncing data…' : 'Sync complete'}
+            <Text style={[s.statusText, !isSyncing && s.statusDone, { fontFamily: af('semibold') }]}>
+              {isSyncing ? t('syncingData') : t('syncComplete')}
             </Text>
 
             {isSyncing && (
-              <Text style={s.subText}>
-                Please wait while updates are applied.
+              <Text style={[s.subText, { fontFamily: af('regular') }]}>
+                {t('syncWait')}
               </Text>
             )}
 

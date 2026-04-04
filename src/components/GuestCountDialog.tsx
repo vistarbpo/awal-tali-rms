@@ -8,6 +8,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { useI18n } from '../i18n';
 
 interface Props {
   visible:    boolean;
@@ -25,6 +26,7 @@ const NUMPAD: string[][] = [
 ];
 
 export default function GuestCountDialog({ visible, tableName, section, onClose, onConfirm }: Props) {
+  const { t, af, isRTL } = useI18n();
   const [value, setValue] = useState('');
 
   useEffect(() => {
@@ -67,8 +69,8 @@ export default function GuestCountDialog({ visible, tableName, section, onClose,
 
           {/* Header */}
           <View style={s.header}>
-            <Text style={s.headerSub}>{section}</Text>
-            <Text style={s.headerTitle}>{tableName}</Text>
+            <Text style={[s.headerTitle, { fontFamily: af('bold') }]}>{t('guestCount')}</Text>
+            <Text style={[s.headerSub, { fontFamily: af('regular') }]}>{section} · {tableName}</Text>
           </View>
 
           {/* Numpad */}
@@ -97,7 +99,7 @@ export default function GuestCountDialog({ visible, tableName, section, onClose,
               onPress={canConfirm ? handleConfirm : undefined}
               activeOpacity={0.85}
             >
-              <Text style={s.confirmBtnText}>Start Order</Text>
+              <Text style={[s.confirmBtnText, { fontFamily: af('bold') }]}>{t('confirm')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -144,18 +146,18 @@ const s = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.grayBorder,
   },
-  headerSub: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: Colors.grayText,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-  },
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
     color: Colors.primary,
     letterSpacing: -0.4,
+  },
+  headerSub: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: Colors.grayText,
+    letterSpacing: -0.1,
+    marginTop: 2,
   },
 
   /* Numpad */

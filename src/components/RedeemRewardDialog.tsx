@@ -9,6 +9,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { useI18n } from '../i18n';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface Props {
@@ -21,6 +22,7 @@ interface Props {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function RedeemRewardDialog({ visible, code, onClose, onApply, onScanPress }: Props) {
+  const { t, af, isRTL } = useI18n();
   const [value, setValue] = useState('');
 
   useEffect(() => {
@@ -49,13 +51,13 @@ export default function RedeemRewardDialog({ visible, code, onClose, onApply, on
         <View style={s.card}>
 
           {/* Header */}
-          <View style={s.header}>
+          <View style={[s.header, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <TouchableOpacity onPress={onClose} activeOpacity={0.7} style={s.sideBtn}>
-              <Text style={s.cancelText}>Cancel</Text>
+              <Text style={[s.cancelText, { fontFamily: af('medium') }]}>{t('cancel')}</Text>
             </TouchableOpacity>
-            <Text style={s.title}>Redeem Reward</Text>
+            <Text style={[s.title, { fontFamily: af('semibold') }]}>{t('redeemTitle')}</Text>
             <TouchableOpacity onPress={handleApply} activeOpacity={0.7} style={s.sideBtn}>
-              <Text style={[s.applyText, !value.trim() && s.applyDisabled]}>Apply</Text>
+              <Text style={[s.applyText, !value.trim() && s.applyDisabled, { fontFamily: af('semibold') }]}>{t('apply')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -75,8 +77,6 @@ export default function RedeemRewardDialog({ visible, code, onClose, onApply, on
               textAlign="center"
               returnKeyType="done"
               onSubmitEditing={handleApply}
-              outlineWidth={0}
-              outlineStyle="none"
             />
           </View>
 
@@ -154,7 +154,6 @@ const s = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: Colors.primary,
-    textAlign: 'right',
     letterSpacing: -0.3,
   },
   applyDisabled: {

@@ -11,11 +11,10 @@ import {
   StatusBar,
   FlatList,
   ScrollView,
-  useWindowDimensions,
   ImageSourcePropType,
 } from 'react-native';
 import { Colors } from '../constants/colors';
-import { layout, LEFT_PANEL_W, CARD_GAP, RIGHT_PAD } from '../styles/screenLayout';
+import { layout, LEFT_PANEL_W, CARD_GAP, RIGHT_PAD, IPAD_W } from '../styles/screenLayout';
 import OrderPanel, { CartItem, Course, ComboGroup, ComboOption } from '../components/OrderPanel';
 import MoreMenu from '../components/MoreMenu';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -23,11 +22,13 @@ import TillAmountDialog from '../components/TillAmountDialog';
 import OrderTypeDialog, { OrderType } from '../components/OrderTypeDialog';
 import VoidReasonDialog from '../components/VoidReasonDialog';
 import CustomerFlowDialogs, { DeliveryCustomer } from '../components/CustomerFlowDialogs';
+import SelectDriverDialog from '../components/SelectDriverDialog';
 import DiscountDialog, { OrderDiscount } from '../components/DiscountDialog';
 import OrderMoreMenu, { OrderMenuStatus } from '../components/OrderMoreMenu';
 import AssignPriceTagDialog, { PriceTag } from '../components/AssignPriceTagDialog';
 import HouseAccountPaymentDialog from '../components/HouseAccountPaymentDialog';
 import OrderNotesDialog from '../components/OrderNotesDialog';
+import ItemNoteDialog from '../components/ItemNoteDialog';
 import QuantityPadDialog from '../components/QuantityPadDialog';
 import OrderTagsDialog from '../components/OrderTagsDialog';
 import HoldTimeDialog from '../components/HoldTimeDialog';
@@ -36,6 +37,12 @@ import ReportsMenuDialog from '../components/ReportsMenuDialog';
 import CouponDialog from '../components/CouponDialog';
 import SetGuestsDialog from '../components/SetGuestsDialog';
 import DueTimeDialog from '../components/DueTimeDialog';
+import ChargesSheet from '../components/ChargesSheet';
+import AddChargeDialog, { OrderCharge } from '../components/AddChargeDialog';
+import CallNameDialog from '../components/CallNameDialog';
+import AssignTableView from '../components/AssignTableView';
+import JoinOrderView, { JOIN_ORDERS } from '../components/JoinOrderView';
+import SplitOrderView, { SplitData } from '../components/SplitOrderView';
 import SyncDataDialog    from '../components/SyncDataDialog';
 import ScanLoyaltyQRModal from '../components/ScanLoyaltyQRModal';
 import RedeemRewardDialog from '../components/RedeemRewardDialog';
@@ -44,6 +51,21 @@ import EndOfDayScreen from './EndOfDayScreen';
 import DevicesScreen from './DevicesScreen';
 import SupportScreen from './SupportScreen';
 import { ProductAvailabilityMap } from './ProductAvailabilityProductsScreen';
+import { useI18n } from '../i18n';
+
+// ─── Preview mode (Figma capture) ────────────────────────────────────────────
+// Set to: 'charges-sheet' | 'add-charge' | 'call-name' | 'assign-table' | 'join-order' | 'join-order-selected' | 'split-order' | 'split-order-split'
+//       | 'more-menu-active' | 'more-menu-done' | 'more-menu-voided' | 'void-reason'
+//       | 'hold-time' | 'qty-pad' | 'notes' | 'tags' | 'set-guests' | 'due-time'
+//       | 'scan-loyalty-qr' | 'order-type' | 'home-menu'
+//       | 'customer-list' | 'customer-create' | 'customer-addresses' | 'customer-new-address'
+//       | 'last-item-void' | 'select-driver'
+//       | 'discount-type' | 'discount-numpad' | 'discount-numpad-pct' | 'discount-predefined' | 'discount-applied'
+//       | 'coupon' | 'item-note' | 'price-tag' | 'redeem' | 'house-account'
+//       | 'reports' | 'drawer-ops' | 'sync' | 'end-of-day' | 'diagnostics' | 'till-amount'
+//       | 'item-discount-type' | 'item-discount-numpad' | 'item-discount-applied'
+//       | 'page-2' | null
+const PREVIEW_DIALOG: string | null = null;
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 import {
@@ -272,6 +294,15 @@ interface Props {
   onMoveItemToCourse?:   (itemId: string, courseId: string) => void;
   onHoldCourse?:         (courseId: string) => void;
   onUpdateItemComboSelections?: (id: string, labels: string[], selections: Record<string, string>, groups: ComboGroup[]) => void;
+  onUpdateItemNote?:            (id: string, note: string) => void;
+  charges?:                     OrderCharge[];
+  onAddCharge?:                 (charge: OrderCharge) => void;
+  onRemoveCharge?:              (id: string) => void;
+  onAssignTable?:               (tableName: string | null) => void;
+  splits?:                      SplitData[];
+  activeSplitIndex?:            number;
+  onSplitsChange?:              (splits: SplitData[]) => void;
+  onSplitNavigate?:             (index: number) => void;
 }
 
 export default function HomeProductsScreen({
@@ -303,54 +334,95 @@ export default function HomeProductsScreen({
   onMoveItemToCourse,
   onHoldCourse,
   onUpdateItemComboSelections,
+  onUpdateItemNote,
+  charges,
+  onAddCharge,
+  onRemoveCharge,
+  onAssignTable,
+  splits,
+  activeSplitIndex = 0,
+  onSplitsChange,
+  onSplitNavigate,
 }: Props) {
-  const { width: screenW }    = useWindowDimensions();
+  const { t, af, isRTL } = useI18n();
+  const TAB_KEY_MAP: Record<string, string> = { home: 'tabHome', orders: 'tabOrders', tables: 'tabTables', new: 'tabNew' };
+  const [rightW, setRightW] = useState(IPAD_W - LEFT_PANEL_W);
   const searchRef                         = useRef<TextInput>(null);
   const [search, setSearch]               = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const [activeTab, setActiveTab]   = useState('home');
-  const [homeMenuVisible, setHomeMenuVisible]       = useState(false);
-  const [confirmTillVisible, setConfirmTillVisible] = useState(false);
-  const [tillAmountVisible, setTillAmountVisible]   = useState(false);
+  const [homeMenuVisible, setHomeMenuVisible]       = useState(PREVIEW_DIALOG === 'home-menu');
+  const [confirmTillVisible, setConfirmTillVisible] = useState(PREVIEW_DIALOG === 'close-till-confirm');
+  const [lastItemDialogVisible, setLastItemDialogVisible] = useState(PREVIEW_DIALOG === 'last-item-void');
+  const [lastItemPendingFn, setLastItemPendingFn]   = useState<(() => void) | null>(null);
+  const [tillAmountVisible, setTillAmountVisible]   = useState(PREVIEW_DIALOG === 'till-amount');
   const [tillGuardVisible, setTillGuardVisible]     = useState(false);
-  const [orderTypeVisible, setOrderTypeVisible]     = useState(false);
+  const [orderTypeVisible, setOrderTypeVisible]     = useState(PREVIEW_DIALOG === 'order-type');
   const [pendingItem, setPendingItem]               = useState<CartItem | null>(null);
-  const [isEditingItem, setIsEditingItem]           = useState(false);
-  const [voidReasonVisible, setVoidReasonVisible]   = useState(false);
-  const [isVoided, setIsVoided]                     = useState(false);
+  const [isEditingItem, setIsEditingItem]           = useState(
+    PREVIEW_DIALOG === 'item-discount-type' ||
+    PREVIEW_DIALOG === 'item-discount-numpad' ||
+    PREVIEW_DIALOG === 'item-discount-applied'
+  );
+  const [voidReasonVisible, setVoidReasonVisible]   = useState(PREVIEW_DIALOG === 'void-reason');
+  const [isVoided, setIsVoided]                     = useState(PREVIEW_DIALOG === 'more-menu-voided');
   const [voidedReason, setVoidedReason]             = useState<string>('');
-  const [page, setPage]                             = useState(0);
-  const [customerFlowVisible, setCustomerFlowVisible] = useState(false);
+  const [page, setPage]                             = useState(PREVIEW_DIALOG === 'page-2' ? 1 : 0);
+  const CUSTOMER_FLOW_STEPS = ['customer-list', 'customer-create', 'customer-addresses', 'customer-new-address'];
+  const [customerFlowVisible, setCustomerFlowVisible] = useState(CUSTOMER_FLOW_STEPS.includes(PREVIEW_DIALOG ?? ''));
   const [deliveryCustomer, setDeliveryCustomer]       = useState<DeliveryCustomer | null>(null);
-  const [discountVisible, setDiscountVisible]         = useState(false);
-  const [orderDiscount, setOrderDiscount]             = useState<OrderDiscount | null>(null);
-  const [itemDiscountVisible, setItemDiscountVisible] = useState(false);
-  const [orderMoreVisible, setOrderMoreVisible]         = useState(false);
-  const [priceTagVisible, setPriceTagVisible]           = useState(false);
-  const [scanQRVisible, setScanQRVisible]               = useState(false);
-  const [redeemVisible, setRedeemVisible]               = useState(false);
+  const DISCOUNT_DIALOGS = ['discount-type', 'discount-numpad', 'discount-numpad-pct', 'discount-predefined'];
+  const [discountVisible, setDiscountVisible]         = useState(DISCOUNT_DIALOGS.includes(PREVIEW_DIALOG ?? ''));
+  const [orderDiscount, setOrderDiscount]             = useState<OrderDiscount | null>(
+    PREVIEW_DIALOG === 'discount-applied'
+      ? { label: 'Special Discount', kind: 'percentage', value: 50 }
+      : null
+  );
+  const [itemDiscountVisible, setItemDiscountVisible] = useState(
+    PREVIEW_DIALOG === 'item-discount-type' || PREVIEW_DIALOG === 'item-discount-numpad'
+  );
+  const [itemNoteVisible, setItemNoteVisible]         = useState(PREVIEW_DIALOG === 'item-note');
+  const [orderMoreVisible, setOrderMoreVisible]         = useState(
+    PREVIEW_DIALOG === 'more-menu-active' || PREVIEW_DIALOG === 'more-menu-done' || PREVIEW_DIALOG === 'more-menu-voided'
+  );
+  const [priceTagVisible, setPriceTagVisible]           = useState(PREVIEW_DIALOG === 'price-tag');
+  const [scanQRVisible, setScanQRVisible]               = useState(PREVIEW_DIALOG === 'scan-loyalty-qr');
+  const [redeemVisible, setRedeemVisible]               = useState(PREVIEW_DIALOG === 'redeem');
   const [scannedCode, setScannedCode]                   = useState('');
   const [activePriceTag, setActivePriceTag]             = useState<PriceTag | null>(null);
-  const [houseAccountVisible, setHouseAccountVisible]   = useState(false);
-  const [notesVisible,        setNotesVisible]           = useState(false);
+  const [houseAccountVisible, setHouseAccountVisible]   = useState(PREVIEW_DIALOG === 'house-account');
+  const [notesVisible,        setNotesVisible]           = useState(PREVIEW_DIALOG === 'notes');
   const [receiptNotes,        setReceiptNotes]           = useState('');
   const [kitchenNotes,        setKitchenNotes]           = useState('');
-  const [tagsVisible,         setTagsVisible]            = useState(false);
+  const [tagsVisible,         setTagsVisible]            = useState(PREVIEW_DIALOG === 'tags');
   const [activeTags,          setActiveTags]             = useState<string[]>([]);
-  const [qtyPadVisible,       setQtyPadVisible]          = useState(false);
-  const [diagnosticsVisible,  setDiagnosticsVisible]     = useState(false);
-  const [syncVisible,         setSyncVisible]            = useState(false);
-  const [endOfDayVisible,     setEndOfDayVisible]        = useState(false);
-  const [drawerOpsVisible,    setDrawerOpsVisible]       = useState(false);
-  const [reportsVisible,      setReportsVisible]         = useState(false);
+  const [qtyPadVisible,       setQtyPadVisible]          = useState(PREVIEW_DIALOG === 'qty-pad');
+  const [diagnosticsVisible,  setDiagnosticsVisible]     = useState(PREVIEW_DIALOG === 'diagnostics');
+  const [syncVisible,         setSyncVisible]            = useState(PREVIEW_DIALOG === 'sync');
+  const [endOfDayVisible,     setEndOfDayVisible]        = useState(PREVIEW_DIALOG === 'end-of-day');
+  const [drawerOpsVisible,    setDrawerOpsVisible]       = useState(PREVIEW_DIALOG === 'drawer-ops');
+  const [reportsVisible,      setReportsVisible]         = useState(PREVIEW_DIALOG === 'reports');
   const [devicesVisible,      setDevicesVisible]         = useState(false);
   const [supportVisible,      setSupportVisible]         = useState(false);
-  const [couponVisible,       setCouponVisible]          = useState(false);
-  const [guestsVisible,       setGuestsVisible]          = useState(false);
+  const [couponVisible,       setCouponVisible]          = useState(PREVIEW_DIALOG === 'coupon');
+  const [selectDriverVisible, setSelectDriverVisible]    = useState(PREVIEW_DIALOG === 'select-driver');
+  const [assignedDriver,      setAssignedDriver]         = useState<{ id: string; name: string } | null>(null);
+  const [guestsVisible,       setGuestsVisible]          = useState(PREVIEW_DIALOG === 'set-guests');
   const [guestCount,          setGuestCount]             = useState(0);
-  const [dueTimeVisible,      setDueTimeVisible]         = useState(false);
+  const [dueTimeVisible,      setDueTimeVisible]         = useState(PREVIEW_DIALOG === 'due-time');
+  const [chargesSheetVisible, setChargesSheetVisible]    = useState(PREVIEW_DIALOG === 'charges-sheet');
+  const [addChargeVisible,    setAddChargeVisible]       = useState(PREVIEW_DIALOG === 'add-charge');
+  const [selectedChargeName,  setSelectedChargeName]     = useState('');
+  const [callNameVisible,     setCallNameVisible]        = useState(PREVIEW_DIALOG === 'call-name');
+  const [callName,            setCallName]               = useState('');
+  const [assignTableMode,     setAssignTableMode]        = useState(PREVIEW_DIALOG === 'assign-table');
+  const [assignedTableId,     setAssignedTableId]        = useState<string | null>(null);
+  const [joinMode,            setJoinMode]               = useState(PREVIEW_DIALOG === 'join-order' || PREVIEW_DIALOG === 'join-order-selected');
+  const [splitMode,           setSplitMode]              = useState(PREVIEW_DIALOG === 'split-order' || PREVIEW_DIALOG === 'split-order-split');
+  const [localSplits,         setLocalSplits]            = useState<SplitData[]>([]);
+  const [localSplitIndex,     setLocalSplitIndex]        = useState(0);
   const [dueTime,             setDueTime]                = useState<Date | null>(null);
-  const [holdTimeVisible,     setHoldTimeVisible]        = useState(false);
+  const [holdTimeVisible,     setHoldTimeVisible]        = useState(PREVIEW_DIALOG === 'hold-time');
   const [currentTime,         setCurrentTime]            = useState(() => Date.now());
   const [comboConfig, setComboConfig] = useState<{
     itemId: string;
@@ -358,6 +430,7 @@ export default function HomeProductsScreen({
     selections: Record<string, string>;
   } | null>(null);
   const [pendingComboGroups, setPendingComboGroups] = useState<ComboGroup[] | null>(null);
+  const [comboErrors, setComboErrors]               = useState(false);
 
   // Reset local void state when a non-void order is loaded from outside
   useEffect(() => {
@@ -383,8 +456,8 @@ export default function HomeProductsScreen({
   const gridData   = buildGrid(PRODUCTS, page, totalPages);
 
   function handleAddProduct(product: Product) {
-    // Use a unique ID for combo items so each addition is independent
-    const itemId = product.isCombo ? `${product.id}-${Date.now()}` : product.id;
+    // Each tap creates a separate line item (same product can appear multiple times for multi-course use)
+    const itemId = `${product.id}-${Date.now()}`;
     const item: CartItem = {
       id: itemId,
       name: product.name,
@@ -411,6 +484,8 @@ export default function HomeProductsScreen({
 
   function handleComboDone() {
     if (!comboConfig) return;
+    const hasUnmet = comboConfig.groups.some(g => g.required && !comboConfig.selections[g.id]);
+    if (hasUnmet) { setComboErrors(true); return; }
     const labels = comboConfig.groups
       .map(g => {
         const selId = comboConfig.selections[g.id];
@@ -418,6 +493,7 @@ export default function HomeProductsScreen({
       })
       .filter((l): l is string => l !== null);
     onUpdateItemComboSelections?.(comboConfig.itemId, labels, comboConfig.selections, comboConfig.groups);
+    setComboErrors(false);
     setComboConfig(null);
     setIsEditingItem(false);
   }
@@ -435,6 +511,7 @@ export default function HomeProductsScreen({
   }
 
   function toggleComboOption(groupId: string, optionId: string) {
+    setComboErrors(false);
     setComboConfig(prev => {
       if (!prev) return null;
       const alreadySelected = prev.selections[groupId] === optionId;
@@ -448,16 +525,39 @@ export default function HomeProductsScreen({
     });
   }
 
-  function handleVoid() {
-    if (selectedCartId) {
-      onRemoveItem(selectedCartId);
-      setIsEditingItem(false);
-      onDoneEditing?.();
+  function safeRemoveItem(id: string) {
+    if (cart.length === 1) {
+      setLastItemPendingFn(() => () => {
+        onRemoveItem(id);
+        setIsEditingItem(false);
+        onDoneEditing?.();
+      });
+      setLastItemDialogVisible(true);
+    } else {
+      onRemoveItem(id);
     }
   }
 
+  function safeUpdateQty(id: string, delta: number) {
+    const item = cart.find(i => i.id === id);
+    if (item && item.qty + delta <= 0 && cart.length === 1) {
+      setLastItemPendingFn(() => () => {
+        onUpdateQty?.(id, delta);
+        setIsEditingItem(false);
+        onDoneEditing?.();
+      });
+      setLastItemDialogVisible(true);
+    } else {
+      onUpdateQty?.(id, delta);
+    }
+  }
+
+  function handleVoid() {
+    if (selectedCartId) safeRemoveItem(selectedCartId);
+  }
+
   function handleQty(delta: number) {
-    if (selectedCartId) onUpdateQty?.(selectedCartId, delta);
+    if (selectedCartId) safeUpdateQty(selectedCartId, delta);
   }
 
   function handleDone() {
@@ -465,9 +565,58 @@ export default function HomeProductsScreen({
     onDoneEditing?.();
   }
 
-  const rightW    = screenW - LEFT_PANEL_W;
   const available = rightW - RIGHT_PAD * 2 - CARD_GAP * (COLS - 1);
   const cardSize  = Math.floor(available / COLS);
+
+  // ── Full-screen modes ─────────────────────────────────────────────────────
+  if (assignTableMode) {
+    return (
+      <SafeAreaView style={layout.safe}>
+        <StatusBar barStyle="dark-content" backgroundColor={Colors.backgroundAlt} />
+        <AssignTableView
+          currentTableId={assignedTableId}
+          onAssign={(id, name, section) => {
+            setAssignedTableId(id);
+            onOrderTypeSet('Dine in' as any);
+            onAssignTable?.(name);
+            setAssignTableMode(false);
+          }}
+          onClear={() => {
+            setAssignedTableId(null);
+            onAssignTable?.(null);
+          }}
+          onBack={() => setAssignTableMode(false)}
+        />
+      </SafeAreaView>
+    );
+  }
+
+  if (splitMode) {
+    return (
+      <SafeAreaView style={layout.safe}>
+        <StatusBar barStyle="dark-content" backgroundColor={Colors.backgroundAlt} />
+        <SplitOrderView
+          items={cart}
+          orderType={orderType}
+          tableNumber={tableNumber}
+          initialSplits={PREVIEW_DIALOG === 'split-order-split' ? [
+            { id: 's0', label: `Table ${tableNumber ?? '5'}/1`, itemIds: ['bs-1', 'gr-1'] },
+            { id: 's1', label: `Table ${tableNumber ?? '5'}/2`, itemIds: ['cm-1'] },
+          ] : undefined}
+          onDone={newSplits => {
+            if (onSplitsChange) {
+              onSplitsChange(newSplits);
+            } else {
+              setLocalSplits(newSplits);
+              setLocalSplitIndex(0);
+            }
+            setSplitMode(false);
+          }}
+          onCancel={() => setSplitMode(false)}
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={layout.safe}>
@@ -488,13 +637,14 @@ export default function HomeProductsScreen({
                 groups: tapped.comboGroups,
                 selections: tapped.comboSelections ?? {},
               });
+              setComboErrors(false);
               setIsEditingItem(false);
             } else {
               setComboConfig(null);
               setIsEditingItem(true);
             }
           }}
-          onRemoveItem={onRemoveItem}
+          onRemoveItem={safeRemoveItem}
           orderType={orderType}
           orderSeq={orderSeq}
           status={status}
@@ -514,12 +664,33 @@ export default function HomeProductsScreen({
           onHoldCourse={onHoldCourse}
           guestCount={guestCount}
           dueTime={dueTime}
+          charges={charges}
+          onRemoveCharge={onRemoveCharge}
+          callName={callName}
+          onCallNamePress={() => setCallNameVisible(true)}
+          splits={splits && splits.length > 0 ? splits : (localSplits.length > 0 ? localSplits : undefined)}
+          activeSplitIndex={splits && splits.length > 0 ? (activeSplitIndex ?? 0) : localSplitIndex}
+          onSplitNavigate={idx => {
+            if (onSplitNavigate) onSplitNavigate(idx);
+            else setLocalSplitIndex(idx);
+          }}
         />
 
         {/* ══ RIGHT: Content ══ */}
-        <View style={layout.right}>
+        <View style={layout.right} onLayout={e => setRightW(e.nativeEvent.layout.width)}>
 
-          {(isVoided || status === 'VOID') ? (
+          {joinMode ? (
+            <JoinOrderView
+              onJoin={newItems => {
+                newItems.forEach(item => onAddToCart(item));
+                setJoinMode(false);
+              }}
+              onBack={() => setJoinMode(false)}
+              initialSelected={PREVIEW_DIALOG === 'join-order-selected'
+                ? (JOIN_ORDERS.find(o => o.id === 'j3') ?? null)
+                : null}
+            />
+          ) : (isVoided || status === 'VOID') ? (
             /* ══ ORDER CANCELLED — New Order screen ══ */
             <View style={styles.cancelledScreen}>
 
@@ -531,9 +702,9 @@ export default function HomeProductsScreen({
               </View>
 
               {/* Text */}
-              <Text style={styles.cancelledTitle}>Order Cancelled</Text>
-              <Text style={styles.cancelledReason}>"{voidedReason}"</Text>
-              <Text style={styles.cancelledHint}>
+              <Text style={[styles.cancelledTitle, { fontFamily: af('bold') }]}>Order Cancelled</Text>
+              <Text style={[styles.cancelledReason, { fontFamily: af() }]}>"{voidedReason}"</Text>
+              <Text style={[styles.cancelledHint, { fontFamily: af() }]}>
                 The order has been voided and cannot be edited.{'\n'}Start a new order below.
               </Text>
 
@@ -549,7 +720,7 @@ export default function HomeProductsScreen({
                   setOrderDiscount(null);
                 }}
               >
-                <Text style={styles.newOrderBtnText}>+ New Order</Text>
+                <Text style={[styles.newOrderBtnText, { fontFamily: af('bold') }]}>+ {t('newOrder')}</Text>
               </TouchableOpacity>
 
             </View>
@@ -559,13 +730,13 @@ export default function HomeProductsScreen({
               {/* Simplified action bar */}
               <View style={layout.actionBar}>
                 <TouchableOpacity style={[layout.actionBtn, layout.actionBtnDanger, styles.itemActionBtn]} onPress={handleComboVoid} activeOpacity={0.8}>
-                  <Text style={styles.itemActionText}>Void</Text>
+                  <Text style={[styles.itemActionText, { fontFamily: af() }]}>{t('void')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[layout.actionBtn, styles.itemActionBtn]} activeOpacity={0.8} onPress={() => setDiscountVisible(true)}>
-                  <Text style={styles.itemActionText}>Discount</Text>
+                  <Text style={[styles.itemActionText, { fontFamily: af() }]}>{t('discount')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[layout.actionBtn, styles.itemActionBtn]} activeOpacity={0.8} onPress={() => setNotesVisible(true)}>
-                  <Text style={styles.itemActionText}>Notes</Text>
+                  <Text style={[styles.itemActionText, { fontFamily: af() }]}>{t('notes')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[layout.actionBtn, styles.itemActionBtn]} onPress={() => handleComboQty(-1)} activeOpacity={0.8}>
                   <Text style={styles.qtySymbol}>−</Text>
@@ -582,13 +753,21 @@ export default function HomeProductsScreen({
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.comboScrollContent}
               >
-                {comboConfig.groups.map(group => (
+                {comboConfig.groups.map(group => {
+                  const hasError = comboErrors && group.required && !comboConfig.selections[group.id];
+                  return (
                   <View key={group.id} style={styles.comboGroup}>
                     <View style={styles.comboGroupHeader}>
-                      <Text style={styles.comboGroupLabel}>{group.label}</Text>
-                      {group.required && <Text style={styles.comboGroupRequired}>Required</Text>}
+                      <Text style={[styles.comboGroupLabel, hasError && styles.comboGroupLabelError]}>
+                        {group.label}
+                      </Text>
+                      {group.required && (
+                        <Text style={[styles.comboGroupRequired, hasError && styles.comboGroupRequiredError]}>
+                          {hasError ? '— Select one' : 'Required'}
+                        </Text>
+                      )}
                     </View>
-                    <View style={styles.comboOptionsCard}>
+                    <View style={[styles.comboOptionsCard, hasError && styles.comboOptionsCardError]}>
                       {group.options.map((opt, i) => {
                         const selected = comboConfig.selections[group.id] === opt.id;
                         return (
@@ -599,7 +778,11 @@ export default function HomeProductsScreen({
                               activeOpacity={0.7}
                               onPress={() => toggleComboOption(group.id, opt.id)}
                             >
-                              <Text style={[styles.comboOptionText, selected && styles.comboOptionTextSelected]}>
+                              <Text style={[
+                                styles.comboOptionText,
+                                selected && styles.comboOptionTextSelected,
+                                hasError && styles.comboOptionTextError,
+                              ]}>
                                 {opt.name}
                               </Text>
                               {selected && (
@@ -613,12 +796,13 @@ export default function HomeProductsScreen({
                       })}
                     </View>
                   </View>
-                ))}
+                  );
+                })}
               </ScrollView>
 
               {/* DONE */}
               <TouchableOpacity style={styles.doneBtn} onPress={handleComboDone} activeOpacity={0.85}>
-                <Text style={styles.doneBtnText}>DONE</Text>
+                <Text style={[styles.doneBtnText, { fontFamily: af('bold') }]}>{t('done')}</Text>
               </TouchableOpacity>
             </>
           ) : isEditingItem && selectedCartId && cart.find(i => i.id === selectedCartId) ? (() => {
@@ -628,7 +812,7 @@ export default function HomeProductsScreen({
                 {/* ── Item-detail action bar (Figma 75-2901) — text only ── */}
                 <View style={layout.actionBar}>
                   <TouchableOpacity style={[layout.actionBtn, layout.actionBtnDanger, styles.itemActionBtn]} onPress={handleVoid} activeOpacity={0.8}>
-                    <Text style={styles.itemActionText}>Void</Text>
+                    <Text style={[styles.itemActionText, { fontFamily: af() }]}>{t('void')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[layout.actionBtn, styles.itemActionBtn, item.isHeld && styles.itemActionBtnFire]}
@@ -645,15 +829,15 @@ export default function HomeProductsScreen({
                     }}
                     delayLongPress={400}
                   >
-                    <Text style={[styles.itemActionText, item.isHeld && styles.itemActionTextFire]}>
+                    <Text style={[styles.itemActionText, item.isHeld && styles.itemActionTextFire, { fontFamily: af() }]}>
                       {item.isHeld ? 'Fire' : 'Hold'}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[layout.actionBtn, styles.itemActionBtn]} activeOpacity={0.8} onPress={() => setItemDiscountVisible(true)}>
-                    <Text style={styles.itemActionText}>Discount</Text>
+                    <Text style={[styles.itemActionText, { fontFamily: af() }]}>{t('discount')}</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[layout.actionBtn, styles.itemActionBtn]} activeOpacity={0.8}>
-                    <Text style={styles.itemActionText}>Notes</Text>
+                  <TouchableOpacity style={[layout.actionBtn, styles.itemActionBtn]} activeOpacity={0.8} onPress={() => setItemNoteVisible(true)}>
+                    <Text style={[styles.itemActionText, { fontFamily: af() }]}>{t('notes')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[layout.actionBtn, styles.itemActionBtn]} onPress={() => handleQty(-1)} onLongPress={() => setQtyPadVisible(true)} delayLongPress={400} activeOpacity={0.8}>
                     <Text style={styles.qtySymbol}>−</Text>
@@ -666,19 +850,19 @@ export default function HomeProductsScreen({
                 {/* ── Selected item card ── */}
                 <View style={styles.itemDetailBody}>
                   <View style={styles.itemDetailCard}>
-                    <Text style={styles.itemDetailName}>{item.name}</Text>
+                    <Text style={[styles.itemDetailName, { fontFamily: af('semibold') }]}>{item.name}</Text>
                     <View style={styles.itemDetailMeta}>
-                      <Text style={styles.itemDetailQty}>{item.qty}×</Text>
-                      <Text style={styles.itemDetailPrice}>{item.price.toFixed(2)}</Text>
+                      <Text style={[styles.itemDetailQty, { fontFamily: af() }]}>{item.qty}×</Text>
+                      <Text style={[styles.itemDetailPrice, { fontFamily: af('medium') }]}>{item.price.toFixed(2)}</Text>
                       <Image source={ICONS.sarDark} style={styles.itemDetailSar} />
                     </View>
-                    <Text style={styles.itemDetailTotal}>{(item.qty * item.price).toFixed(2)}</Text>
+                    <Text style={[styles.itemDetailTotal, { fontFamily: af('bold') }]}>{(item.qty * item.price).toFixed(2)}</Text>
                   </View>
                 </View>
 
                 {/* ── DONE button ── */}
                 <TouchableOpacity style={styles.doneBtn} onPress={handleDone} activeOpacity={0.85}>
-                  <Text style={styles.doneBtnText}>DONE</Text>
+                  <Text style={[styles.doneBtnText, { fontFamily: af('bold') }]}>{t('done')}</Text>
                 </TouchableOpacity>
               </>
             );
@@ -700,7 +884,7 @@ export default function HomeProductsScreen({
                     }
                   >
                     <Image source={btn.icon} style={layout.actionIcon} />
-                    <Text style={layout.actionLabel}>{btn.label}</Text>
+                    <Text style={[layout.actionLabel, { fontFamily: af() }]}>{t(btn.key as any)}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -714,7 +898,7 @@ export default function HomeProductsScreen({
                   <TextInput
                     ref={searchRef}
                     style={layout.searchInput}
-                    placeholder="Search Products"
+                    placeholder={t('searchProducts')}
                     placeholderTextColor={Colors.placeholder}
                     value={search}
                     onChangeText={setSearch}
@@ -774,7 +958,7 @@ export default function HomeProductsScreen({
                       activeOpacity={0.7}
                     >
                       <Image source={tab.icon} style={[layout.tabIcon, active && layout.tabIconActive]} />
-                      <Text style={[layout.tabLabel, active && layout.tabLabelActive]}>{tab.label}</Text>
+                      <Text style={[layout.tabLabel, active && layout.tabLabelActive, { fontFamily: af() }]}>{t(TAB_KEY_MAP[tab.key] as any)}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -788,7 +972,7 @@ export default function HomeProductsScreen({
       <MoreMenu
         visible={homeMenuVisible}
         onClose={() => setHomeMenuVisible(false)}
-        leftPanelWidth={LEFT_PANEL_W + 14}
+        leftPanelWidth={LEFT_PANEL_W + RIGHT_PAD + 8}
         tabBarBottomOffset={76}
         isTillOpen={isTillOpen}
         onItemPress={key => {
@@ -809,8 +993,8 @@ export default function HomeProductsScreen({
 
       <ConfirmDialog
         visible={confirmTillVisible}
-        title={isTillOpen ? 'Close Till' : 'Open Till'}
-        message={isTillOpen ? 'Are you sure you want to close Till?' : 'Are you sure you want to open Till?'}
+        title={isTillOpen ? t('closeTill') : t('openTill')}
+        message={isTillOpen ? t('closeTillConfirm') : t('openTillConfirm')}
         onNo={() => setConfirmTillVisible(false)}
         onYes={() => { setConfirmTillVisible(false); setTillAmountVisible(true); }}
       />
@@ -823,13 +1007,13 @@ export default function HomeProductsScreen({
           onTillToggle();
           if (pendingItem) setOrderTypeVisible(true);
         }}
-        ctaLabel={isTillOpen ? 'Close Till' : 'Open Till'}
+        ctaLabel={isTillOpen ? t('closeTill') : t('openTill')}
       />
 
       <ConfirmDialog
         visible={tillGuardVisible}
-        title="Till Not Open"
-        message="Would you like to open the till to start taking orders?"
+        title={t('tillNotOpen')}
+        message={t('tillOpenPrompt')}
         onNo={() => { setTillGuardVisible(false); setPendingItem(null); }}
         onYes={() => { setTillGuardVisible(false); setTillAmountVisible(true); }}
       />
@@ -851,6 +1035,19 @@ export default function HomeProductsScreen({
         }}
       />
 
+      <ConfirmDialog
+        visible={lastItemDialogVisible}
+        title="Void Entire Order?"
+        message={"Voiding the last product will void the entire order and you can't add more products to the order. Are you sure?"}
+        onNo={() => { setLastItemDialogVisible(false); setLastItemPendingFn(null); }}
+        onYes={() => {
+          setLastItemDialogVisible(false);
+          lastItemPendingFn?.();
+          setLastItemPendingFn(null);
+          setVoidReasonVisible(true);
+        }}
+      />
+
       <VoidReasonDialog
         visible={voidReasonVisible}
         onClose={() => setVoidReasonVisible(false)}
@@ -867,6 +1064,13 @@ export default function HomeProductsScreen({
         visible={discountVisible}
         currentDiscount={orderDiscount}
         subtotal={cart.reduce((sum, i) => sum + i.price * i.qty, 0)}
+        initialStep={
+          PREVIEW_DIALOG === 'discount-numpad' || PREVIEW_DIALOG === 'discount-numpad-pct' ? 'numpad'     :
+          PREVIEW_DIALOG === 'discount-predefined'                                          ? 'predefined' :
+          'type'
+        }
+        initialKind={PREVIEW_DIALOG === 'discount-numpad-pct' ? 'percentage' : 'amount'}
+        initialAmount={PREVIEW_DIALOG === 'discount-numpad' || PREVIEW_DIALOG === 'discount-numpad-pct' ? '50' : undefined}
         onClose={() => setDiscountVisible(false)}
         onApply={discount => {
           setOrderDiscount(discount);
@@ -887,6 +1091,8 @@ export default function HomeProductsScreen({
             visible={itemDiscountVisible}
             currentDiscount={item.discount ?? null}
             subtotal={item.price * item.qty}
+            initialStep={PREVIEW_DIALOG === 'item-discount-numpad' ? 'numpad' : 'type'}
+            initialAmount={PREVIEW_DIALOG === 'item-discount-numpad' ? '10' : undefined}
             onClose={() => setItemDiscountVisible(false)}
             onApply={discount => {
               onUpdateItemDiscount?.(item.id, discount);
@@ -900,8 +1106,29 @@ export default function HomeProductsScreen({
         );
       })()}
 
+      {/* Item-level kitchen note dialog */}
+      {(() => {
+        const item = selectedCartId ? cart.find(i => i.id === selectedCartId) : null;
+        if (!item) return null;
+        return (
+          <ItemNoteDialog
+            visible={itemNoteVisible}
+            itemName={item.name}
+            note={item.kitchenNote ?? ''}
+            onClose={() => setItemNoteVisible(false)}
+            onSave={note => onUpdateItemNote?.(item.id, note)}
+          />
+        );
+      })()}
+
       <CustomerFlowDialogs
         visible={customerFlowVisible}
+        initialStep={
+          PREVIEW_DIALOG === 'customer-create'      ? 'create-customer' :
+          PREVIEW_DIALOG === 'customer-addresses'   ? 'addresses'       :
+          PREVIEW_DIALOG === 'customer-new-address' ? 'create-address'  :
+          'customers'
+        }
         onClose={() => setCustomerFlowVisible(false)}
         onCustomerAssigned={customer => {
           setDeliveryCustomer(customer);
@@ -909,10 +1136,20 @@ export default function HomeProductsScreen({
         }}
       />
 
+      <SelectDriverDialog
+        visible={selectDriverVisible}
+        onClose={() => setSelectDriverVisible(false)}
+        onSelectDriver={driver => {
+          setAssignedDriver(driver);
+          setSelectDriverVisible(false);
+        }}
+      />
+
       <OrderMoreMenu
         visible={orderMoreVisible}
         onClose={() => setOrderMoreVisible(false)}
         hasCustomer={!!deliveryCustomer}
+        orderType={orderType}
         status={
           (isVoided || status === 'VOID') ? 'voided'   :
           status === 'RETURNED'           ? 'returned' :
@@ -920,13 +1157,20 @@ export default function HomeProductsScreen({
                                             'active'
         }
         onItemPress={key => {
-          if (key === 'assign_price_tag') setPriceTagVisible(true);
-          if (key === 'add_coupon')        setCouponVisible(true);
-          if (key === 'remove_customer')  setDeliveryCustomer(null);
-          if (key === 'set_guests')       setGuestsVisible(true);
-          if (key === 'add_due_time')    setDueTimeVisible(true);
-          if (key === 'scan_loyalty_qr')  { setScannedCode(''); setScanQRVisible(true); }
-          if (key === 'redeem_reward')    { setScannedCode(''); setRedeemVisible(true); }
+          if (key === 'assign_price_tag')      setPriceTagVisible(true);
+          if (key === 'add_coupon')            setCouponVisible(true);
+          if (key === 'remove_customer')       setDeliveryCustomer(null);
+          if (key === 'set_guests')            setGuestsVisible(true);
+          if (key === 'add_due_time')          setDueTimeVisible(true);
+          if (key === 'add_charge')            setChargesSheetVisible(true);
+          if (key === 'add_call_name')         setCallNameVisible(true);
+          if (key === 'assign_table')          setAssignTableMode(true);
+          if (key === 'join_order')            setJoinMode(true);
+          if (key === 'split_order')           setSplitMode(true);
+          if (key === 'scan_loyalty_qr')       { setScannedCode(''); setScanQRVisible(true); }
+          if (key === 'redeem_reward')         { setScannedCode(''); setRedeemVisible(true); }
+          if (key === 'add_delivery_address')  setCustomerFlowVisible(true);
+          if (key === 'add_driver')            setSelectDriverVisible(true);
         }}
       />
 
@@ -1044,6 +1288,33 @@ export default function HomeProductsScreen({
         onClose={() => setDueTimeVisible(false)}
         onSave={date => setDueTime(date)}
       />
+
+      <ChargesSheet
+        visible={chargesSheetVisible}
+        onClose={() => setChargesSheetVisible(false)}
+        onSelectCharge={name => {
+          setSelectedChargeName(name);
+          setAddChargeVisible(true);
+        }}
+      />
+
+      <AddChargeDialog
+        visible={addChargeVisible}
+        chargeName={selectedChargeName}
+        onClose={() => setAddChargeVisible(false)}
+        onApply={charge => {
+          onAddCharge?.(charge);
+          setAddChargeVisible(false);
+        }}
+      />
+
+      <CallNameDialog
+        visible={callNameVisible}
+        current={callName}
+        onClose={() => setCallNameVisible(false)}
+        onSave={name => setCallName(name)}
+      />
+
 
       <ScanLoyaltyQRModal
         visible={scanQRVisible}
@@ -1199,11 +1470,17 @@ const styles = StyleSheet.create({
     letterSpacing: 0.9,
     textTransform: 'uppercase',
   },
+  comboGroupLabelError: {
+    color: Colors.red,
+  },
   comboGroupRequired: {
     fontSize: 11,
     fontWeight: '500',
     color: Colors.red,
     letterSpacing: 0.2,
+  },
+  comboGroupRequiredError: {
+    fontWeight: '700',
   },
   comboOptionsCard: {
     backgroundColor: Colors.white,
@@ -1214,6 +1491,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 6,
     elevation: 2,
+  },
+  comboOptionsCardError: {
+    borderWidth: 1.5,
+    borderColor: Colors.red,
+    shadowColor: Colors.red,
+    shadowOpacity: 0.12,
   },
   comboOptionRow: {
     flexDirection: 'row',
@@ -1236,6 +1519,9 @@ const styles = StyleSheet.create({
   comboOptionTextSelected: {
     color: Colors.primary,
     fontWeight: '600',
+  },
+  comboOptionTextError: {
+    color: Colors.red,
   },
   comboCheck: {
     width: 26,

@@ -11,6 +11,8 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { useI18n } from '../i18n';
+import type { TKey } from '../i18n/translations';
 import GuestCountDialog from '../components/GuestCountDialog';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -31,6 +33,11 @@ interface TableData {
 // ─── Constants ────────────────────────────────────────────────────────────────
 const CARD   = 130; // square size in px
 const SECTIONS = ['VIP', 'Family Section', 'Single Section'];
+const SECTION_I18N_KEY: Record<string, TKey> = {
+  'VIP':            'vip',
+  'Family Section': 'family',
+  'Single Section': 'single',
+};
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
 const INITIAL_TABLES: TableData[] = [
@@ -133,6 +140,7 @@ interface CardProps {
 }
 
 function DraggableCard({ table, editMode, canvasDims, onMove, onPress }: CardProps) {
+  const { t, af, isRTL } = useI18n();
   const editRef  = useRef(editMode);
   editRef.current = editMode;
 
@@ -189,18 +197,18 @@ function DraggableCard({ table, editMode, canvasDims, onMove, onPress }: CardPro
       >
         {/* Drag grip — edit only */}
         {editMode && (
-          <View style={s.gripWrap}>
+          <View style={[s.gripWrap, isRTL ? { right: undefined, left: 8 } : { right: 8 }]}>
             <GripDots />
           </View>
         )}
 
         {/* Name + timer */}
         <View style={s.cardTop}>
-          <Text style={s.tableName}>{table.name}</Text>
+          <Text style={[s.tableName, { fontFamily: af('semibold') }]}>{table.name}</Text>
           {table.timer && (
             <View style={s.row}>
               <ClockIcon />
-              <Text style={s.timerText}>{table.timer}</Text>
+              <Text style={[s.timerText, { fontFamily: af('regular') }]}>{table.timer}</Text>
             </View>
           )}
         </View>
@@ -209,25 +217,39 @@ function DraggableCard({ table, editMode, canvasDims, onMove, onPress }: CardPro
         <View style={s.cardBottom}>
           {table.status === 'paid' && (
             <View style={s.paidBadge}>
-              <Text style={s.paidText}>Paid</Text>
+              <Text style={[s.paidText, { fontFamily: af('semibold') }]}>Paid</Text>
             </View>
           )}
           {table.waiter && (
             <View style={s.row}>
               <PersonIcon />
-              <Text style={s.waiterText} numberOfLines={1}>{table.waiter}</Text>
+              <Text style={[s.waiterText, { fontFamily: af('regular') }]} numberOfLines={1}>{table.waiter}</Text>
             </View>
           )}
           <View style={s.cardDivider} />
           <View style={s.row}>
             <SeatsIcon />
-            <Text style={s.seatsText}>{table.seats}</Text>
+            <Text style={[s.seatsText, { fontFamily: af('medium') }]}>{table.seats}</Text>
           </View>
         </View>
       </TouchableOpacity>
     </Animated.View>
   );
 }
+
+// ─── Preview mode (Figma capture) ────────────────────────────────────────────
+// Set to: 'vip' | 'family' | 'single' | 'tooltip' | 'edit' | 'edit-rearranged' | 'guest-dialog' | null
+const PREVIEW_DIALOG: string | null = null;
+
+// Rearranged VIP positions for the 'edit-rearranged' preview
+const REARRANGED_VIP: Record<string, { x: number; y: number }> = {
+  t1: { x: 290, y: 210 },
+  t2: { x: 55,  y: 130 },
+  t3: { x: 470, y: 60  },
+  t4: { x: 150, y: 310 },
+  t5: { x: 380, y: 280 },
+  t6: { x: 560, y: 170 },
+};
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 interface Props {
@@ -237,12 +259,27 @@ interface Props {
 }
 
 export default function TablesScreen({ onBack, onReservations, onStartOrder }: Props) {
-  const [tables, setTables]               = useState<TableData[]>(INITIAL_TABLES);
-  const [editMode, setEditMode]           = useState(false);
-  const [activeSection, setActiveSection] = useState(SECTIONS[0]);
-  const [tappedTable, setTappedTable]     = useState<TableData | null>(null);
-  const [guestDialogOpen, setGuestDialogOpen] = useState(false);
-  const canvasDims                        = useRef({ w: 0, h: 0 });
+  const { t, af, isRTL } = useI18n();
+  const _initialTables = PREVIEW_DIALOG === 'edit-rearranged'
+    ? INITIAL_TABLES.map(t => REARRANGED_VIP[t.id] ? { ...t, ...REARRANGED_VIP[t.id] } : t)
+    : INITIAL_TABLES;
+  const [tables, setTables]               = useState<TableData[]>(_initialTables);
+  const [editMode, setEditMode]           = useState(PREVIEW_DIALOG === 'edit' || PREVIEW_DIALOG === 'edit-rearranged');
+  const [activeSection, setActiveSection] = useState(
+    PREVIEW_DIALOG === 'family' ? SECTIONS[1] :
+    PREVIEW_DIALOG === 'single' ? SECTIONS[2] :
+    SECTIONS[0]
+  );
+  const _previewTable = PREVIEW_DIALOG === 'tooltip' || PREVIEW_DIALOG === 'guest-dialog'
+    ? INITIAL_TABLES.find(t => t.id === 't3') ?? null
+    : null;
+  const [tappedTable, setTappedTable]     = useState<TableData | null>(_previewTable);
+  const [guestDialogOpen, setGuestDialogOpen] = useState(PREVIEW_DIALOG === 'guest-dialog');
+  const canvasDims = useRef(
+    PREVIEW_DIALOG === 'tooltip' || PREVIEW_DIALOG === 'guest-dialog'
+      ? { w: 1180, h: 698 }
+      : { w: 0, h: 0 }
+  );
 
   const sectionTables = tables.filter(t => t.section === activeSection);
 
@@ -272,8 +309,10 @@ export default function TablesScreen({ onBack, onReservations, onStartOrder }: P
     const top = spaceBelow >= 0
       ? table.y + CARD + 12
       : table.y - TOOLTIP_H - 12;
-    const left = Math.min(Math.max(0, table.x + CARD / 2 - TOOLTIP_W / 2), w - TOOLTIP_W - 8);
-    return { top, left, width: TOOLTIP_W };
+    const leftVal = Math.min(Math.max(0, table.x + CARD / 2 - TOOLTIP_W / 2), w - TOOLTIP_W - 8);
+    return isRTL
+      ? { top, right: w > 0 ? w - leftVal - TOOLTIP_W : leftVal, width: TOOLTIP_W }
+      : { top, left: leftVal, width: TOOLTIP_W };
   }
 
   return (
@@ -284,24 +323,24 @@ export default function TablesScreen({ onBack, onReservations, onStartOrder }: P
       <View style={s.topBar}>
         <View style={s.topLeft}>
           <TouchableOpacity style={s.backBtn} onPress={onBack} activeOpacity={0.7}>
-            <Text style={s.backText}>Back</Text>
+            <Text style={[s.backText, { fontFamily: af('medium') }]}>{t('back')}</Text>
           </TouchableOpacity>
           <View style={s.topSep} />
-          <Text style={s.topTitle}>Tables Plan</Text>
+          <Text style={[s.topTitle, { fontFamily: af('medium') }]}>Tables Plan</Text>
         </View>
 
         <View style={s.topRight}>
           <TouchableOpacity style={s.reservationsBtn} onPress={onReservations} activeOpacity={0.7}>
-            <Text style={s.reservationsText}>Reservations</Text>
+            <Text style={[s.reservationsText, { fontFamily: af('medium') }]}>Reservations</Text>
           </TouchableOpacity>
 
           {editMode ? (
             <TouchableOpacity style={s.doneBtn} onPress={() => setEditMode(false)} activeOpacity={0.8}>
-              <Text style={s.doneBtnText}>Done</Text>
+              <Text style={[s.doneBtnText, { fontFamily: af('semibold') }]}>{t('done')}</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity style={s.editBtn} onPress={() => setEditMode(true)} activeOpacity={0.8}>
-              <Text style={s.editBtnText}>Edit</Text>
+              <Text style={[s.editBtnText, { fontFamily: af('semibold') }]}>{t('edit')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -310,7 +349,7 @@ export default function TablesScreen({ onBack, onReservations, onStartOrder }: P
       {/* ── Edit hint strip ── */}
       {editMode && (
         <View style={s.hintBar}>
-          <Text style={s.hintText}>Drag tables to rearrange the floor plan</Text>
+          <Text style={[s.hintText, { fontFamily: af('medium') }]}>Drag tables to rearrange the floor plan</Text>
         </View>
       )}
 
@@ -351,14 +390,14 @@ export default function TablesScreen({ onBack, onReservations, onStartOrder }: P
             {tappedTable.y + CARD + 12 + TOOLTIP_H <= (canvasDims.current.h || 9999) && (
               <View style={[s.tooltipArrow, { left: TOOLTIP_W / 2 - 8, top: -8 }]} />
             )}
-            <Text style={s.tooltipName}>{tappedTable.name}</Text>
-            <Text style={s.tooltipSection}>{tappedTable.section}</Text>
+            <Text style={[s.tooltipName, { fontFamily: af('bold') }]}>{tappedTable.name}</Text>
+            <Text style={[s.tooltipSection, { fontFamily: af('medium') }]}>{SECTION_I18N_KEY[tappedTable.section] ? t(SECTION_I18N_KEY[tappedTable.section]) : tappedTable.section}</Text>
             <TouchableOpacity
               style={s.startOrderBtn}
               onPress={() => setGuestDialogOpen(true)}
               activeOpacity={0.85}
             >
-              <Text style={s.startOrderText}>▶  Start Order</Text>
+              <Text style={[s.startOrderText, { fontFamily: af('bold') }]}>▶  {t('startOrder')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -375,7 +414,9 @@ export default function TablesScreen({ onBack, onReservations, onStartOrder }: P
               onPress={() => { setActiveSection(sec); setTappedTable(null); }}
               activeOpacity={0.7}
             >
-              <Text style={[s.tabText, active && s.tabTextActive]}>{sec}</Text>
+              <Text style={[s.tabText, active && s.tabTextActive, { fontFamily: af(active ? 'bold' : 'medium') }]}>
+                {SECTION_I18N_KEY[sec] ? t(SECTION_I18N_KEY[sec]) : sec}
+              </Text>
             </TouchableOpacity>
           );
         })}
@@ -545,7 +586,6 @@ const s = StyleSheet.create({
   gripWrap: {
     position: 'absolute',
     top: 8,
-    right: 8,
     zIndex: 1,
   },
   cardTop: {

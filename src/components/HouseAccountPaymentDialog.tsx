@@ -11,6 +11,7 @@ import {
   TextInput,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { useI18n } from '../i18n';
 import { iconSarGray, iconSarDark } from '../assets/icons';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -73,6 +74,7 @@ function todayLabel(): string {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function HouseAccountPaymentDialog({ visible, onClose, onSave }: Props) {
+  const { t, af } = useI18n();
   const [step,            setStep]            = useState<Step>('form');
   const [customer,        setCustomer]        = useState<Customer | null>(null);
   const [amount,          setAmount]          = useState('');
@@ -132,9 +134,9 @@ export default function HouseAccountPaymentDialog({ visible, onClose, onSave }: 
             {/* Header */}
             <View style={s.subHeader}>
               <TouchableOpacity style={s.backBtn} onPress={() => setStep('form')} activeOpacity={0.7}>
-                <Text style={s.backText}>‹ Back</Text>
+                <Text style={[s.backText, { fontFamily: af('medium') }]}>‹ {t('back')}</Text>
               </TouchableOpacity>
-              <Text style={s.subHeaderTitle}>Customers</Text>
+              <Text style={[s.subHeaderTitle, { fontFamily: af('semibold') }]}>Customers</Text>
               <View style={s.backBtn} />
             </View>
 
@@ -143,7 +145,7 @@ export default function HouseAccountPaymentDialog({ visible, onClose, onSave }: 
               <View style={[s.searchBar, searchFocused && s.searchBarFocused]}>
                 <TextInput
                   style={s.searchInput}
-                  placeholder="Search by name or phone..."
+                  placeholder={t('search')}
                   placeholderTextColor={Colors.placeholder}
                   value={customerSearch}
                   onChangeText={setCustomerSearch}
@@ -194,9 +196,9 @@ export default function HouseAccountPaymentDialog({ visible, onClose, onSave }: 
             {/* Header */}
             <View style={s.subHeader}>
               <TouchableOpacity style={s.backBtn} onPress={() => setStep('form')} activeOpacity={0.7}>
-                <Text style={s.backText}>‹ Back</Text>
+                <Text style={[s.backText, { fontFamily: af('medium') }]}>‹ {t('back')}</Text>
               </TouchableOpacity>
-              <Text style={s.subHeaderTitle}>Payment Method</Text>
+              <Text style={[s.subHeaderTitle, { fontFamily: af('semibold') }]}>Payment Method</Text>
               <View style={s.backBtn} />
             </View>
 
@@ -238,7 +240,7 @@ export default function HouseAccountPaymentDialog({ visible, onClose, onSave }: 
 
             {/* Label */}
             <View style={s.amountHeader}>
-              <Text style={s.amountHeaderLabel}>Enter Amount</Text>
+              <Text style={[s.amountHeaderLabel, { fontFamily: af('semibold') }]}>{t('enterAmount').toUpperCase()}</Text>
             </View>
 
             {/* Display */}
@@ -274,10 +276,10 @@ export default function HouseAccountPaymentDialog({ visible, onClose, onSave }: 
               {/* Footer */}
               <View style={s.amountFooter}>
                 <TouchableOpacity style={s.amountCancelBtn} onPress={() => setStep('form')} activeOpacity={0.85}>
-                  <Text style={s.amountFooterText}>Cancel</Text>
+                  <Text style={[s.amountFooterText, { fontFamily: af('bold') }]}>{t('cancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={s.amountDoneBtn} onPress={() => setStep('form')} activeOpacity={0.85}>
-                  <Text style={s.amountFooterText}>Done</Text>
+                  <Text style={[s.amountFooterText, { fontFamily: af('bold') }]}>{t('done')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -300,7 +302,7 @@ export default function HouseAccountPaymentDialog({ visible, onClose, onSave }: 
 
           {/* Header */}
           <View style={s.header}>
-            <Text style={s.headerTitle}>House Account Payment</Text>
+            <Text style={[s.headerTitle, { fontFamily: af('semibold') }]}>{t('houseAccountTitle')}</Text>
           </View>
 
           {/* Form fields */}

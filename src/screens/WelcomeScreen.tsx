@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import { Colors } from '../constants/colors';
 import TalabOSLogo from '../components/TalabOSLogo';
+import LangToggle from '../components/LangToggle';
+import { useI18n } from '../i18n';
 
 interface Props {
   userName?: string;
@@ -30,6 +32,8 @@ export default function WelcomeScreen({
   onAccessRegister,
   onExit,
 }: Props) {
+  const { t, af } = useI18n();
+
   const initials = userName
     .split(' ')
     .map(w => w[0])
@@ -69,11 +73,14 @@ export default function WelcomeScreen({
 
         {/* ── RIGHT: Welcome panel ── */}
         <View style={s.right}>
+          <View style={s.langRow}>
+            <LangToggle variant="dark" />
+          </View>
           <View style={s.card}>
 
             {/* Greeting */}
             <View style={s.greeting}>
-              <Text style={s.greetingTitle}>Welcome back,</Text>
+              <Text style={[s.greetingTitle, { fontFamily: af() }]}>{t('welcomeBackComma')}</Text>
               <Text style={s.greetingName}>{userName}!</Text>
             </View>
 
@@ -81,7 +88,7 @@ export default function WelcomeScreen({
             <View style={[s.badge, isClockedIn ? s.badgeIn : s.badgeOut]}>
               <View style={[s.badgeDot, isClockedIn ? s.badgeDotIn : s.badgeDotOut]} />
               <Text style={[s.badgeText, isClockedIn ? s.badgeTextIn : s.badgeTextOut]}>
-                {isClockedIn ? 'Clocked In' : 'Not Clocked In'}
+                {t(isClockedIn ? 'clockedIn' : 'notClockedIn')}
               </Text>
             </View>
 
@@ -97,8 +104,8 @@ export default function WelcomeScreen({
                 onPress={onClockToggle}
                 activeOpacity={0.85}
               >
-                <Text style={s.btnPrimaryText}>
-                  {isClockedIn ? 'Clock Out' : 'Clock In'}
+                <Text style={[s.btnPrimaryText, { fontFamily: af('bold') }]}>
+                  {t(isClockedIn ? 'clockOut' : 'clockIn')}
                 </Text>
               </TouchableOpacity>
 
@@ -108,7 +115,7 @@ export default function WelcomeScreen({
                 onPress={onAccessRegister}
                 activeOpacity={0.8}
               >
-                <Text style={s.btnSecondaryText}>Access Register</Text>
+                <Text style={[s.btnSecondaryText, { fontFamily: af('semibold') }]}>{t('accessRegister')}</Text>
               </TouchableOpacity>
 
             </View>
@@ -119,7 +126,7 @@ export default function WelcomeScreen({
               onPress={onExit}
               activeOpacity={0.6}
             >
-              <Text style={s.exitText}>Exit</Text>
+              <Text style={[s.exitText, { fontFamily: af('medium') }]}>{t('exit')}</Text>
             </TouchableOpacity>
 
           </View>
@@ -203,6 +210,12 @@ const s = StyleSheet.create({
     fontWeight: '400',
     color: 'rgba(255,255,255,0.55)',
     letterSpacing: 0.1,
+  },
+
+  langRow: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
   },
 
   /* ── Right panel ── */

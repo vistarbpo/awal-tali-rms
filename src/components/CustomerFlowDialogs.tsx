@@ -4,6 +4,7 @@ import {
   Modal, ScrollView, TextInput, Image, StyleSheet, Platform,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { useI18n } from '../i18n';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface DeliveryCustomer {
@@ -18,6 +19,7 @@ interface Props {
   visible: boolean;
   onClose: () => void;
   onCustomerAssigned: (customer: DeliveryCustomer) => void;
+  initialStep?: Step;
 }
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
@@ -89,8 +91,8 @@ const ico = StyleSheet.create({
 });
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export default function CustomerFlowDialogs({ visible, onClose, onCustomerAssigned }: Props) {
-  const [step, setStep]                   = useState<Step>('customers');
+export default function CustomerFlowDialogs({ visible, onClose, onCustomerAssigned, initialStep }: Props) {
+  const [step, setStep]                   = useState<Step>(initialStep ?? 'customers');
   const [search, setSearch]               = useState('');
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
 
@@ -587,4 +589,4 @@ const s = StyleSheet.create({
     outlineWidth: 0,
     outlineStyle: 'none',
   },
-});
+} as any);

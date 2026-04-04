@@ -6,49 +6,15 @@ import {
   TouchableOpacity,
   StyleSheet,
   TouchableWithoutFeedback,
+  Platform,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { useI18n } from '../i18n';
 
 // ─── Menu definitions ─────────────────────────────────────────────────────────
 export type OrderMenuStatus = 'active' | 'voided' | 'returned' | 'done';
 
 interface MenuItem { key: string; label: string; danger?: boolean }
-
-const ACTIVE_ITEMS: MenuItem[] = [
-  { key: 'set_guests',       label: 'Set Guests' },
-  { key: 'add_due_time',     label: 'Add Due Time' },
-  { key: 'add_charge',       label: 'Add Charge' },
-  { key: 'add_call_name',    label: 'Add Call Name' },
-  { key: 'remove_customer',  label: 'Remove Customer' },
-  { key: 'assign_price_tag', label: 'Assign Price Tag' },
-  { key: 'assign_table',     label: 'Assign Table' },
-  { key: 'add_coupon',       label: 'Add Coupon' },
-  { key: 'join_order',       label: 'Join Order' },
-  { key: 'split_order',      label: 'Split Order' },
-  { key: 'redeem_reward',    label: 'Redeem Reward' },
-  { key: 'scan_loyalty_qr',  label: 'Scan Loyalty QR' },
-];
-
-const DONE_ITEMS: MenuItem[] = [
-  { key: 'return_order',  label: 'Return order' },
-  { key: 'view_receipt',  label: 'View Receipt' },
-];
-
-const VOIDED_ITEMS: MenuItem[] = [
-  { key: 'view_receipt', label: 'View Receipt' },
-  { key: 'print',        label: 'Print' },
-];
-
-const RETURNED_ITEMS: MenuItem[] = [
-  { key: 'view_receipt', label: 'View Receipt' },
-];
-
-function getItems(status: OrderMenuStatus): MenuItem[] {
-  if (status === 'done')     return DONE_ITEMS;
-  if (status === 'voided')   return VOIDED_ITEMS;
-  if (status === 'returned') return RETURNED_ITEMS;
-  return ACTIVE_ITEMS;
-}
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface Props {
@@ -57,8 +23,10 @@ interface Props {
   onItemPress?: (key: string) => void;
   status:       OrderMenuStatus;
   hasCustomer?: boolean;
+  orderType?:   string | null;
   anchorRight?: number;
   anchorTop?:   number;
+  useModal?:    boolean;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -68,32 +36,72 @@ export default function OrderMoreMenu({
   onItemPress,
   status,
   hasCustomer = false,
+  orderType,
   anchorRight = 20,
   anchorTop   = 130,
+  useModal    = Platform.OS !== 'web',
 }: Props) {
-  const items = getItems(status).filter(
-    item => item.key !== 'remove_customer' || hasCustomer,
-  );
+  const { t, af } = useI18n();
 
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      statusBarTranslucent
-      onRequestClose={onClose}
-    >
+  const ACTIVE_ITEMS: MenuItem[] = [
+    { key: 'set_guests',       label: t('setGuests') },
+    { key: 'add_due_time',     label: t('addDueTime') },
+    { key: 'add_charge',       label: t('addCharge') },
+    { key: 'add_call_name',    label: t('addCallName') },
+    { key: 'remove_customer',  label: t('removeCustomer') },
+    { key: 'assign_price_tag', label: t('assignPriceTag') },
+    { key: 'assign_table',     label: t('assignTable') },
+    { key: 'add_coupon',       label: t('addCoupon') },
+    { key: 'join_order',       label: t('joinOrder') },
+    { key: 'split_order',      label: t('splitOrder') },
+    { key: 'redeem_reward',    label: t('redeemReward') },
+    { key: 'scan_loyalty_qr',  label: t('scanLoyaltyQr') },
+  ];
+
+  const DONE_ITEMS: MenuItem[] = [
+    { key: 'return_order',  label: t('returnOrder') },
+    { key: 'view_receipt',  label: t('viewReceipt') },
+  ];
+
+  const VOIDED_ITEMS: MenuItem[] = [
+    { key: 'view_receipt', label: t('viewReceipt') },
+    { key: 'print',        label: 'Print' },
+  ];
+
+  const RETURNED_ITEMS: MenuItem[] = [
+    { key: 'view_receipt', label: t('viewReceipt') },
+  ];
+
+  function getItems(s: OrderMenuStatus): MenuItem[] {
+    if (s === 'done')     return DONE_ITEMS;
+    if (s === 'voided')   return VOIDED_ITEMS;
+    if (s === 'returned') return RETURNED_ITEMS;
+    return ACTIVE_ITEMS;
+  }
+
+  const isDelivery = orderType === 'Delivery';
+  const items = getItems(status)
+    .filter(item => item.key !== 'remove_customer' || hasCustomer)
+    .reduce<MenuItem[]>((acc, item) => {
+      acc.push(item);
+      // Insert delivery-specific items after 'add_charge'
+      if (item.key === 'add_charge' && isDelivery) {
+        acc.push({ key: 'add_delivery_address', label: t('addDeliveryAddress') });
+        acc.push({ key: 'add_driver',           label: t('addDriver') });
+      }
+      return acc;
+    }, []);
+
+  const inner = (
+    <>
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={s.backdrop} />
       </TouchableWithoutFeedback>
-
       <View
         style={[s.anchor, { right: anchorRight, top: anchorTop }]}
         pointerEvents="box-none"
       >
-        {/* Card with embedded triangle tip */}
         <View style={s.card}>
-          {/* Triangle — absolutely positioned above the card, pointing up */}
           <View style={s.triangleWrap} pointerEvents="none">
             <View style={s.triangle} />
           </View>
@@ -105,7 +113,7 @@ export default function OrderMoreMenu({
             >
               {index > 0 && <View style={s.divider} />}
               <View style={s.row}>
-                <Text style={[s.label, item.danger && s.labelDanger]}>
+                <Text style={[s.label, item.danger && s.labelDanger, { fontFamily: af('regular') }]}>
                   {item.label}
                 </Text>
               </View>
@@ -113,14 +121,35 @@ export default function OrderMoreMenu({
           ))}
         </View>
       </View>
-    </Modal>
+    </>
   );
+
+  if (useModal) {
+    return (
+      <Modal
+        visible={visible}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={onClose}
+      >
+        {inner}
+      </Modal>
+    );
+  }
+
+  if (!visible) return null;
+  return <View style={s.inlineOverlay} pointerEvents="box-none">{inner}</View>;
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const MENU_W = 280;
 
 const s = StyleSheet.create({
+  inlineOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 100,
+  },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'transparent',

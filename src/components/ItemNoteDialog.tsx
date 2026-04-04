@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   View,
@@ -11,38 +11,25 @@ import {
 import { Colors } from '../constants/colors';
 import { useI18n } from '../i18n';
 
-// ─── Props ────────────────────────────────────────────────────────────────────
 interface Props {
-  visible:        boolean;
-  receiptNotes:   string;
-  kitchenNotes:   string;
-  onClose:        () => void;
-  onSave:         (receiptNotes: string, kitchenNotes: string) => void;
+  visible:    boolean;
+  itemName:   string;
+  note:       string;
+  onClose:    () => void;
+  onSave:     (note: string) => void;
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-export default function OrderNotesDialog({
-  visible,
-  receiptNotes: initialReceipt,
-  kitchenNotes: initialKitchen,
-  onClose,
-  onSave,
-}: Props) {
+export default function ItemNoteDialog({ visible, itemName, note: initialNote, onClose, onSave }: Props) {
   const { t, af, isRTL } = useI18n();
-  const [receipt,        setReceipt]        = useState('');
-  const [kitchen,        setKitchen]        = useState('');
-  const [receiptFocused, setReceiptFocused] = useState(false);
-  const [kitchenFocused, setKitchenFocused] = useState(false);
+  const [note,    setNote]    = useState('');
+  const [focused, setFocused] = useState(false);
 
   useEffect(() => {
-    if (visible) {
-      setReceipt(initialReceipt);
-      setKitchen(initialKitchen);
-    }
+    if (visible) setNote(initialNote);
   }, [visible]);
 
   function handleSave() {
-    onSave(receipt, kitchen);
+    onSave(note);
     onClose();
   }
 
@@ -66,47 +53,29 @@ export default function OrderNotesDialog({
             <TouchableOpacity onPress={onClose} activeOpacity={0.7} style={s.cancelWrap}>
               <Text style={[s.cancelText, { fontFamily: af('medium') }]}>{t('cancel')}</Text>
             </TouchableOpacity>
-            <Text style={[s.headerTitle, { fontFamily: af('semibold') }]}>{t('orderNotesTitle')}</Text>
+            <View style={s.headerTitleWrap}>
+              <Text style={[s.headerTitle, { fontFamily: af('semibold') }]}>{t('itemNoteTitle')}</Text>
+              <Text style={[s.headerSub, { fontFamily: af('regular') }]} numberOfLines={1}>{itemName}</Text>
+            </View>
             <View style={s.cancelWrap} />
           </View>
 
-          {/* Receipt Notes */}
+          {/* Note input */}
           <View style={s.section}>
-            <Text style={[s.sectionLabel, { fontFamily: af('semibold') }]}>Receipt Notes</Text>
+            <Text style={[s.sectionLabel, { fontFamily: af('semibold') }]}>{t('itemNoteTitle')}</Text>
             <TextInput
-              style={[s.textArea, receiptFocused && s.textAreaFocused, { fontFamily: af('regular'), textAlign: isRTL ? 'right' : 'left' }]}
-              value={receipt}
-              onChangeText={setReceipt}
-              placeholder="Add a note printed on the receipt..."
-              placeholderTextColor={Colors.placeholder}
-              multiline
-              numberOfLines={3}
-              onFocus={() => setReceiptFocused(true)}
-              onBlur={() => setReceiptFocused(false)}
-              textAlignVertical="top"
-              // @ts-ignore
-              outlineWidth={0}
-            />
-          </View>
-
-          <View style={s.divider} />
-
-          {/* Kitchen Notes */}
-          <View style={s.section}>
-            <Text style={[s.sectionLabel, { fontFamily: af('semibold') }]}>Kitchen Notes</Text>
-            <TextInput
-              style={[s.textArea, kitchenFocused && s.textAreaFocused, { fontFamily: af('regular'), textAlign: isRTL ? 'right' : 'left' }]}
-              value={kitchen}
-              onChangeText={setKitchen}
+              style={[s.textArea, focused && s.textAreaFocused, { fontFamily: af('regular'), textAlign: isRTL ? 'right' : 'left' }]}
+              value={note}
+              onChangeText={setNote}
               placeholder="Add a note sent to the kitchen..."
               placeholderTextColor={Colors.placeholder}
               multiline
-              numberOfLines={3}
-              onFocus={() => setKitchenFocused(true)}
-              onBlur={() => setKitchenFocused(false)}
+              numberOfLines={4}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
               textAlignVertical="top"
-              // @ts-ignore
-              outlineWidth={0}
+              autoFocus
+              {...{ outlineWidth: 0, outlineStyle: 'none' } as any}
             />
           </View>
 
@@ -123,7 +92,6 @@ export default function OrderNotesDialog({
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
@@ -135,7 +103,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   card: {
-    width: 440,
+    width: 400,
     backgroundColor: Colors.white,
     borderRadius: 24,
     overflow: 'hidden',
@@ -146,7 +114,6 @@ const s = StyleSheet.create({
     elevation: 12,
   },
 
-  // Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -157,7 +124,7 @@ const s = StyleSheet.create({
     borderBottomColor: Colors.grayBorder,
   },
   cancelWrap: {
-    width: 80,
+    width: 72,
   },
   cancelText: {
     fontSize: 16,
@@ -165,19 +132,28 @@ const s = StyleSheet.create({
     color: Colors.red,
     letterSpacing: -0.3,
   },
-  headerTitle: {
+  headerTitleWrap: {
     flex: 1,
+    alignItems: 'center',
+  },
+  headerTitle: {
     fontSize: 20,
     fontWeight: '600',
     color: Colors.primary,
     letterSpacing: -0.4,
     textAlign: 'center',
   },
+  headerSub: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: Colors.grayText,
+    letterSpacing: -0.2,
+    marginTop: 2,
+  },
 
-  // Sections
   section: {
     paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingTop: 18,
     paddingBottom: 12,
   },
   sectionLabel: {
@@ -189,7 +165,7 @@ const s = StyleSheet.create({
     marginBottom: 10,
   },
   textArea: {
-    height: 88,
+    height: 108,
     backgroundColor: Colors.backgroundAlt,
     borderRadius: 14,
     borderWidth: 1.5,
@@ -200,21 +176,12 @@ const s = StyleSheet.create({
     fontWeight: '400',
     color: Colors.black,
     letterSpacing: -0.2,
-    outlineWidth: 0,
-    outlineStyle: 'none',
   } as any,
   textAreaFocused: {
     borderColor: Colors.primary,
     backgroundColor: Colors.white,
   },
 
-  divider: {
-    height: 0.5,
-    backgroundColor: 'rgba(60,60,67,0.29)',
-    marginHorizontal: 20,
-  },
-
-  // Footer
   footer: {
     padding: 16,
     paddingTop: 12,

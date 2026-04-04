@@ -8,12 +8,9 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { useI18n } from '../i18n';
 
-const VOID_REASONS = [
-  'Product not available',
-  'Delivery order — Customer did not show',
-  'Customer cancelled',
-];
+const VOID_REASON_KEYS = ['reasonNotAvail', 'reasonNoShow', 'reasonCancelled'] as const;
 
 interface Props {
   visible: boolean;
@@ -22,6 +19,7 @@ interface Props {
 }
 
 export default function VoidReasonDialog({ visible, onClose, onSelectReason }: Props) {
+  const { t, af } = useI18n();
   return (
     <Modal
       visible={visible}
@@ -45,22 +43,22 @@ export default function VoidReasonDialog({ visible, onClose, onSelectReason }: P
             <View style={s.iconWrap}>
               <View style={s.iconInner} />
             </View>
-            <Text style={s.title}>Cancel Order</Text>
-            <Text style={s.subtitle}>Select a reason to void this order</Text>
+            <Text style={[s.title, { fontFamily: af('bold') }]}>{t('cancelOrder')}</Text>
+            <Text style={[s.subtitle, { fontFamily: af('regular') }]}>{t('selectVoidReason')}</Text>
           </View>
 
           {/* Reason list */}
           <View style={s.dividerFull} />
-          {VOID_REASONS.map((reason, index) => (
-            <React.Fragment key={reason}>
+          {VOID_REASON_KEYS.map((key, index) => (
+            <React.Fragment key={key}>
               {index > 0 && <View style={s.divider} />}
               <TouchableOpacity
                 style={s.row}
-                onPress={() => onSelectReason(reason)}
+                onPress={() => onSelectReason(t(key))}
                 activeOpacity={0.55}
               >
                 <View style={s.rowDot} />
-                <Text style={s.rowLabel}>{reason}</Text>
+                <Text style={[s.rowLabel, { fontFamily: af('medium') }]}>{t(key)}</Text>
               </TouchableOpacity>
             </React.Fragment>
           ))}
@@ -68,7 +66,7 @@ export default function VoidReasonDialog({ visible, onClose, onSelectReason }: P
           {/* Cancel button */}
           <View style={s.dividerFull} />
           <TouchableOpacity style={s.cancelBtn} onPress={onClose} activeOpacity={0.65}>
-            <Text style={s.cancelText}>Cancel</Text>
+            <Text style={[s.cancelText, { fontFamily: af('semibold') }]}>{t('cancel')}</Text>
           </TouchableOpacity>
 
         </View>

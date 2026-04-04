@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Colors } from '../constants/colors';
 import { iconSarDark } from '../assets/icons';
+import { useI18n } from '../i18n';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Step = 'main' | 'form' | 'type' | 'reason' | 'amount' | 'open_reason';
@@ -56,6 +57,7 @@ function todayFormatted(): string {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function DrawerOperationsDialog({ visible, onClose }: Props) {
+  const { t, af } = useI18n();
   const [step,       setStep]       = useState<Step>('main');
   const [entries,    setEntries]    = useState<DrawerEntry[]>([]);
   const [formType,   setFormType]   = useState<DrawerType | ''>('');
@@ -135,9 +137,9 @@ export default function DrawerOperationsDialog({ visible, onClose }: Props) {
       return (
         <View style={s.header}>
           <TouchableOpacity onPress={onClose} activeOpacity={0.7} style={s.headerSide}>
-            <Text style={s.headerClose}>Close</Text>
+            <Text style={[s.headerClose, { fontFamily: af('regular') }]}>{t('close')}</Text>
           </TouchableOpacity>
-          <Text style={s.headerTitle}>Drawer Operations</Text>
+          <Text style={[s.headerTitle, { fontFamily: af('semibold') }]}>{t('drawerOpsTitle')}</Text>
           <TouchableOpacity
             onPress={() => {
               setFormType(''); setFormAmount(''); setFormReason(''); setFormNotes('');
@@ -165,12 +167,12 @@ export default function DrawerOperationsDialog({ visible, onClose }: Props) {
     return (
       <View style={s.header}>
         <TouchableOpacity onPress={goBack} activeOpacity={0.7} style={s.headerSide}>
-          <Text style={s.headerBack}>{'< Back'}</Text>
+          <Text style={[s.headerBack, { fontFamily: af('regular') }]}>{'< ' + t('back')}</Text>
         </TouchableOpacity>
-        <Text style={s.headerTitle}>{titles[step]}</Text>
+        <Text style={[s.headerTitle, { fontFamily: af('semibold') }]}>{titles[step]}</Text>
         {showSave ? (
           <TouchableOpacity onPress={handleSave} activeOpacity={0.7} style={s.headerSide} disabled={!formType}>
-            <Text style={[s.headerAction, !formType && s.headerActionDisabled]}>Save</Text>
+            <Text style={[s.headerAction, !formType && s.headerActionDisabled, { fontFamily: af('semibold') }]}>{t('save')}</Text>
           </TouchableOpacity>
         ) : (
           <View style={s.headerSide} />
@@ -213,7 +215,7 @@ export default function DrawerOperationsDialog({ visible, onClose }: Props) {
           </ScrollView>
 
           <TouchableOpacity style={s.openDrawerBtn} activeOpacity={0.85} onPress={() => setStep('open_reason')}>
-            <Text style={s.openDrawerText}>Open Drawer</Text>
+            <Text style={[s.openDrawerText, { fontFamily: af('bold') }]}>{t('openTill')}</Text>
           </TouchableOpacity>
         </>
       );
@@ -378,7 +380,7 @@ export default function DrawerOperationsDialog({ visible, onClose }: Props) {
             ))}
 
             <TouchableOpacity style={s.amountDoneBtn} onPress={() => setStep('form')} activeOpacity={0.85}>
-              <Text style={s.amountDoneBtnText}>Done</Text>
+              <Text style={[s.amountDoneBtnText, { fontFamily: af('bold') }]}>{t('done')}</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -8,6 +8,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { useI18n } from '../i18n';
 import OrdersSummaryReportModal from './OrdersSummaryReportModal';
 import TillsSummaryReportModal from './TillsSummaryReportModal';
 import ProductsMixReportModal from './ProductsMixReportModal';
@@ -52,6 +53,7 @@ interface Props {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function OrdersSummaryDialog({ visible, onBack, onClose, title = 'Orders Summary', reportType = 'orders' }: Props) {
+  const { t, af, isRTL } = useI18n();
   const today = new Date();
   const [viewYear,  setViewYear]  = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
@@ -103,9 +105,9 @@ export default function OrdersSummaryDialog({ visible, onBack, onClose, title = 
         <View style={s.card}>
 
           {/* ── Header ── */}
-          <View style={s.header}>
+          <View style={[s.header, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <TouchableOpacity onPress={onBack} style={s.backBtn} activeOpacity={0.7}>
-              <Text style={s.backText}>Back</Text>
+              <Text style={[s.backText, { fontFamily: af('medium') }]}>{t('back')}</Text>
             </TouchableOpacity>
 
             <Text style={s.title}>{title}</Text>
@@ -120,7 +122,7 @@ export default function OrdersSummaryDialog({ visible, onBack, onClose, title = 
                 onPress={() => setReportVisible(true)}
                 activeOpacity={0.8}
               >
-                <Text style={s.viewBtnText}>View</Text>
+                <Text style={s.viewBtnText}>{t('viewBtn')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -128,8 +130,8 @@ export default function OrdersSummaryDialog({ visible, onBack, onClose, title = 
           <View style={s.headerDivider} />
 
           {/* ── Business date row ── */}
-          <View style={s.dateRow}>
-            <Text style={s.dateRowLabel}>Business date</Text>
+          <View style={[s.dateRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <Text style={s.dateRowLabel}>{t('businessDate')}</Text>
             <Text style={s.dateRowValue}>{dateLabel}</Text>
           </View>
 

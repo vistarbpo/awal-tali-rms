@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Colors } from '../constants/colors';
 import { iconSarGray } from '../assets/icons';
+import { useI18n } from '../i18n';
 
 interface Props {
   visible: boolean;
@@ -25,7 +26,9 @@ const NUMPAD: string[][] = [
   ['C', '0', '.'],
 ];
 
-export default function TillAmountDialog({ visible, onClose, onDone, ctaLabel = 'Open Till' }: Props) {
+export default function TillAmountDialog({ visible, onClose, onDone, ctaLabel }: Props) {
+  const { t, af } = useI18n();
+  const resolvedCtaLabel = ctaLabel ?? t('openTill');
   const [amount, setAmount] = useState('');
 
   function handleKey(key: string) {
@@ -63,7 +66,7 @@ export default function TillAmountDialog({ visible, onClose, onDone, ctaLabel = 
 
           {/* Header */}
           <View style={s.header}>
-            <Text style={s.headerLabel}>Enter Till Amount</Text>
+            <Text style={[s.headerLabel, { fontFamily: af('semibold') }]}>{t('enterTillAmount')}</Text>
           </View>
 
           {/* Amount display */}
@@ -101,7 +104,7 @@ export default function TillAmountDialog({ visible, onClose, onDone, ctaLabel = 
 
             {/* Done CTA */}
             <TouchableOpacity style={s.doneBtn} onPress={handleDone} activeOpacity={0.85}>
-              <Text style={s.doneBtnText}>{ctaLabel}</Text>
+              <Text style={[s.doneBtnText, { fontFamily: af('bold') }]}>{resolvedCtaLabel}</Text>
             </TouchableOpacity>
           </View>
 

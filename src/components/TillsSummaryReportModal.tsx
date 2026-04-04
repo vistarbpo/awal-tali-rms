@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Colors } from '../constants/colors';
 import { iconSarDark } from '../assets/icons';
+import { useI18n } from '../i18n';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface TillRow {
@@ -75,6 +76,7 @@ const DIFF         = CLOSING - ESTIMATED;  // positive → surplus, negative →
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function TillsSummaryReportModal({ visible, onClose, dateLabel, printedAt }: Props) {
+  const { t, af } = useI18n();
   const surplusLabel   = DIFF > 0  ? 'Cash Surplus:'   : DIFF < 0 ? 'Cash Shortage:' : 'Cash Shortage:';
   const surplusAmount  = Math.abs(DIFF);
 
@@ -94,11 +96,11 @@ export default function TillsSummaryReportModal({ visible, onClose, dateLabel, p
           {/* ── Header bar ── */}
           <View style={r.headerBar}>
             <TouchableOpacity onPress={onClose} style={r.doneBtn} activeOpacity={0.7}>
-              <Text style={r.doneText}>Done</Text>
+              <Text style={[r.doneText, { fontFamily: af('semibold') }]}>{t('done')}</Text>
             </TouchableOpacity>
-            <Text style={r.headerTitle}>Tills Summary</Text>
+            <Text style={[r.headerTitle, { fontFamily: af('bold') }]}>{t('tillsSummary')}</Text>
             <TouchableOpacity style={r.printBtn} activeOpacity={0.7}>
-              <Text style={r.printText}>Print</Text>
+              <Text style={[r.printText, { fontFamily: af('semibold') }]}>{t('print')}</Text>
             </TouchableOpacity>
           </View>
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  Platform,
   View,
   Text,
   TouchableOpacity,
@@ -14,6 +15,7 @@ import {
 import { Colors } from '../constants/colors';
 import { layout, LEFT_PANEL_W } from '../styles/screenLayout';
 import OrderPanel, { CartItem } from '../components/OrderPanel';
+import { useI18n } from '../i18n';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 import { iconSarDark, iconSarGray, iconSarWhite } from '../assets/icons';
@@ -82,6 +84,7 @@ interface CustomKeypadProps {
 }
 
 function CustomAmountKeypad({ visible, remaining, onSelect, onCancel }: CustomKeypadProps) {
+  const { t, af } = useI18n();
   const [value, setValue] = useState('');
 
   function handleKey(key: string) {
@@ -106,48 +109,57 @@ function CustomAmountKeypad({ visible, remaining, onSelect, onCancel }: CustomKe
   const afterPay     = Math.max(0, remaining - entered);
   const displayValue = value || '0';
 
+  const cardJSX = (
+    <View style={ck.card}>
+      <View style={ck.header}>
+        <Text style={ck.headerLabel}>{t('enterAmount')}</Text>
+      </View>
+      <View style={ck.amountRow}>
+        <Image source={ICONS.sarGray} style={ck.amountCurrency} />
+        <Text style={ck.amountValue} numberOfLines={1} adjustsFontSizeToFit>{displayValue}</Text>
+      </View>
+      <View style={ck.remainingRow}>
+        <Text style={ck.remainingLabel}>Remaining</Text>
+        <Text style={[ck.remainingValue, afterPay === 0 && ck.remainingZero]}>{afterPay.toFixed(2)}</Text>
+      </View>
+      <View style={ck.divider} />
+      <View style={ck.numpad}>
+        {NUMPAD.map((row, ri) => (
+          <View key={ri} style={ck.row}>
+            {row.map(key => {
+              const isAction = key === 'C' || key === '.';
+              return (
+                <TouchableOpacity
+                  key={key}
+                  style={[ck.key, isAction && ck.keyAction]}
+                  onPress={() => handleKey(key)}
+                  activeOpacity={0.6}
+                >
+                  <Text style={[ck.keyText, isAction && ck.keyActionText]}>{key}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ))}
+        <TouchableOpacity style={ck.doneBtn} onPress={handleConfirm} activeOpacity={0.85}>
+          <Text style={[ck.doneBtnText, { fontFamily: af('bold') }]}>{t('confirm')}</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  if (Platform.OS === 'web') {
+    if (!visible) return null;
+    return <View style={ck.inlineOverlay}>{cardJSX}</View>;
+  }
+
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onCancel}>
       <TouchableWithoutFeedback onPress={onCancel}>
         <View style={ck.backdrop} />
       </TouchableWithoutFeedback>
       <View style={ck.center} pointerEvents="box-none">
-        <View style={ck.card}>
-          <View style={ck.header}>
-            <Text style={ck.headerLabel}>Custom Amount</Text>
-          </View>
-          <View style={ck.amountRow}>
-            <Image source={ICONS.sarGray} style={ck.amountCurrency} />
-            <Text style={ck.amountValue} numberOfLines={1} adjustsFontSizeToFit>{displayValue}</Text>
-          </View>
-          <View style={ck.remainingRow}>
-            <Text style={ck.remainingLabel}>Remaining</Text>
-            <Text style={[ck.remainingValue, afterPay === 0 && ck.remainingZero]}>{afterPay.toFixed(2)}</Text>
-          </View>
-          <View style={ck.divider} />
-          <View style={ck.numpad}>
-            {NUMPAD.map((row, ri) => (
-              <View key={ri} style={ck.row}>
-                {row.map(key => {
-                  const isAction = key === 'C' || key === '.';
-                  return (
-                    <TouchableOpacity
-                      key={key}
-                      style={[ck.key, isAction && ck.keyAction]}
-                      onPress={() => handleKey(key)}
-                      activeOpacity={0.6}
-                    >
-                      <Text style={[ck.keyText, isAction && ck.keyActionText]}>{key}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            ))}
-            <TouchableOpacity style={ck.doneBtn} onPress={handleConfirm} activeOpacity={0.85}>
-              <Text style={ck.doneBtnText}>Confirm</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        {cardJSX}
       </View>
     </Modal>
   );
@@ -164,70 +176,89 @@ function buildQuickAmounts(remaining: number): (number | 'custom')[] {
 }
 
 function AmountPicker({ visible, remaining, onSelect, onCustom, onCancel }: AmountPickerProps) {
+  const { t, af } = useI18n();
   const quickAmounts = buildQuickAmounts(remaining);
+
+  const cardJSX = (
+    <View style={ap.card}>
+      {/* Header */}
+      <View style={ap.header}>
+        <Text style={ap.headerTitle}>Select Amount</Text>
+        <Text style={ap.headerSub}>Remaining: {remaining.toFixed(2)}</Text>
+      </View>
+
+      {/* Amount buttons */}
+      <View style={ap.amountList}>
+        {quickAmounts.map((amt, i) => (
+          <TouchableOpacity
+            key={String(amt)}
+            style={[ap.amountBtn, i === 0 && ap.amountBtnExact]}
+            onPress={() => onSelect(amt as number)}
+            activeOpacity={0.8}
+          >
+            <View style={ap.amountInner}>
+              <Image
+                source={i === 0 ? ICONS.sarWhite : ICONS.sarDark}
+                style={ap.sar}
+              />
+              <Text style={[ap.amountText, i === 0 && ap.amountTextExact]}>
+                {(amt as number).toFixed(2)}
+              </Text>
+            </View>
+            {i === 0 && (
+              <Text style={ap.exactBadge}>Exact</Text>
+            )}
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Custom */}
+      <TouchableOpacity style={ap.customBtn} onPress={onCustom} activeOpacity={0.8}>
+        <Text style={[ap.customText, { fontFamily: af('semibold') }]}>{t('enterAmount')}</Text>
+      </TouchableOpacity>
+
+      {/* Cancel */}
+      <TouchableOpacity style={ap.cancelBtn} onPress={onCancel} activeOpacity={0.7}>
+        <Text style={[ap.cancelText, { fontFamily: af('semibold') }]}>{t('cancel')}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  if (Platform.OS === 'web') {
+    if (!visible) return null;
+    return <View style={ap.inlineOverlay}>{cardJSX}</View>;
+  }
 
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onCancel}>
       <TouchableWithoutFeedback onPress={onCancel}>
         <View style={ap.backdrop} />
       </TouchableWithoutFeedback>
-
       <View style={ap.center} pointerEvents="box-none">
-        <View style={ap.card}>
-
-          {/* Header */}
-          <View style={ap.header}>
-            <Text style={ap.headerTitle}>Select Amount</Text>
-            <Text style={ap.headerSub}>Remaining: {remaining.toFixed(2)}</Text>
-          </View>
-
-          {/* Amount buttons */}
-          <View style={ap.amountList}>
-            {quickAmounts.map((amt, i) => (
-              <TouchableOpacity
-                key={String(amt)}
-                style={[ap.amountBtn, i === 0 && ap.amountBtnExact]}
-                onPress={() => onSelect(amt as number)}
-                activeOpacity={0.8}
-              >
-                <View style={ap.amountInner}>
-                  <Image
-                    source={i === 0 ? ICONS.sarWhite : ICONS.sarDark}
-                    style={ap.sar}
-                  />
-                  <Text style={[ap.amountText, i === 0 && ap.amountTextExact]}>
-                    {(amt as number).toFixed(2)}
-                  </Text>
-                </View>
-                {i === 0 && (
-                  <Text style={ap.exactBadge}>Exact</Text>
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Custom */}
-          <TouchableOpacity style={ap.customBtn} onPress={onCustom} activeOpacity={0.8}>
-            <Text style={ap.customText}>Enter Custom Amount</Text>
-          </TouchableOpacity>
-
-          {/* Cancel */}
-          <TouchableOpacity style={ap.cancelBtn} onPress={onCancel} activeOpacity={0.7}>
-            <Text style={ap.cancelText}>Cancel</Text>
-          </TouchableOpacity>
-
-        </View>
+        {cardJSX}
       </View>
     </Modal>
   );
 }
 
+// ─── Preview mode (Figma capture) ────────────────────────────────────────────
+// 'amount-picker' | 'custom-keypad' | 'paid' | null
+const PREVIEW_DIALOG: string | null = null;
+
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function PaymentScreen({ cart, orderType, orderSeq, status, onBack, onNewOrder }: Props) {
-  const [appliedPayments, setAppliedPayments] = useState<AppliedPayment[]>([]);
-  const [pendingMethod, setPendingMethod]     = useState<string | null>(null);
-  const [showAmountPicker, setShowAmountPicker]   = useState(false);
-  const [showCustomKeypad, setShowCustomKeypad]   = useState(false);
+  const { t, af } = useI18n();
+  const PM_LABEL_MAP: Record<string, string> = { house: 'houseAccount', cash: 'cash', gift: 'giftCard', mada: 'mada' };
+  const PM_HINT_MAP: Record<string, string> = { house: 'houseAccountDesc', cash: 'cashDesc', gift: 'giftCardDesc', mada: 'madaDesc' };
+  const fullTotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0) * (1 + TAX_RATE);
+  const [appliedPayments, setAppliedPayments] = useState<AppliedPayment[]>(
+    PREVIEW_DIALOG === 'paid' ? [{ method: 'Cash', amount: parseFloat(fullTotal.toFixed(2)) }] : []
+  );
+  const [pendingMethod, setPendingMethod]     = useState<string | null>(
+    PREVIEW_DIALOG === 'amount-picker' ? 'Cash' : null
+  );
+  const [showAmountPicker, setShowAmountPicker]   = useState(PREVIEW_DIALOG === 'amount-picker');
+  const [showCustomKeypad, setShowCustomKeypad]   = useState(PREVIEW_DIALOG === 'custom-keypad');
   const [showMoreTooltip, setShowMoreTooltip]     = useState(false);
   const [paidWithoutClose, setPaidWithoutClose] = useState(false);
 
@@ -277,9 +308,9 @@ export default function PaymentScreen({ cart, orderType, orderSeq, status, onBac
           {/* Header */}
           <View style={s.header}>
             <TouchableOpacity style={s.headerBtn} onPress={onBack} activeOpacity={0.8}>
-              <Text style={s.headerBtnText}>BACK</Text>
+              <Text style={[s.headerBtnText, { fontFamily: af('semibold') }]}>{t('back').toUpperCase()}</Text>
             </TouchableOpacity>
-            <Text style={s.headerTitle}>Payment</Text>
+            <Text style={[s.headerTitle, { fontFamily: af('bold') }]}>{t('paymentTitle')}</Text>
             <TouchableOpacity style={s.headerBtn} activeOpacity={0.8}>
               <Text style={s.headerBtnText}>CURRENCY</Text>
             </TouchableOpacity>
@@ -308,8 +339,8 @@ export default function PaymentScreen({ cart, orderType, orderSeq, status, onBac
 
                   {/* Labels */}
                   <View style={s.methodTextWrap}>
-                    <Text style={s.methodLabel}>{method.label}</Text>
-                    <Text style={s.methodHint}>{method.hint}</Text>
+                    <Text style={[s.methodLabel, { fontFamily: af('semibold') }]}>{t(PM_LABEL_MAP[method.key] as any)}</Text>
+                    <Text style={s.methodHint}>{t(PM_HINT_MAP[method.key] as any)}</Text>
                   </View>
 
                   {/* Chevron */}
@@ -730,6 +761,12 @@ const s = StyleSheet.create({
 
 // ─── Amount Picker Styles ─────────────────────────────────────────────────────
 const ap = StyleSheet.create({
+  inlineOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -865,6 +902,12 @@ const KEY_H   = 72;
 const KEY_GAP = 10;
 
 const ck = StyleSheet.create({
+  inlineOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.45)',

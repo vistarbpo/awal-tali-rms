@@ -5,6 +5,8 @@ export const SCREEN_PAD   = 20; // consistent padding on all sides
 export const RIGHT_PAD    = SCREEN_PAD;
 export const LEFT_PANEL_W = 350;
 export const CARD_GAP     = 14;
+export const IPAD_W       = 1180; // iPad Air / iPad 10th gen landscape logical width
+export const IPAD_H       = 820;
 
 export const layout = StyleSheet.create({
   safe: {

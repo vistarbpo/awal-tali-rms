@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Colors } from '../constants/colors';
 import { iconSarDark } from '../assets/icons';
+import { useI18n } from '../i18n';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface ReportRow {
@@ -152,6 +153,7 @@ interface Props {
 export default function OrdersSummaryReportModal({
   visible, onClose, dateLabel, openedAt, closedAt,
 }: Props) {
+  const { t, af, isRTL } = useI18n();
   const printedAt = closedAt;
   const sections  = buildReportData(dateLabel);
 
@@ -169,13 +171,13 @@ export default function OrdersSummaryReportModal({
         <View style={r.card}>
 
           {/* ── Header bar ── */}
-          <View style={r.headerBar}>
+          <View style={[r.headerBar, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <TouchableOpacity onPress={onClose} style={r.doneBtn} activeOpacity={0.7}>
-              <Text style={r.doneText}>Done</Text>
+              <Text style={[r.doneText, { fontFamily: af('semibold') }]}>{t('done')}</Text>
             </TouchableOpacity>
-            <Text style={r.headerTitle}>Orders Summary</Text>
+            <Text style={[r.headerTitle, { fontFamily: af('bold') }]}>{t('ordersSummary')}</Text>
             <TouchableOpacity style={r.printBtn} activeOpacity={0.7}>
-              <Text style={r.printText}>Print</Text>
+              <Text style={[r.printText, { fontFamily: af('semibold') }]}>{t('print')}</Text>
             </TouchableOpacity>
           </View>
 

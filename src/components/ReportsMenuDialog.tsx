@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Colors } from '../constants/colors';
 import OrdersSummaryDialog from './OrdersSummaryDialog';
+import { useI18n } from '../i18n';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface Props {
@@ -20,6 +21,7 @@ type Report = 'orders-summary' | 'tills-summary' | 'products-mix' | 'active-deli
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function ReportsMenuDialog({ visible, onClose }: Props) {
+  const { t, af } = useI18n();
   const [activeReport, setActiveReport] = useState<Report>(null);
 
   function handleClose() {
@@ -46,9 +48,9 @@ export default function ReportsMenuDialog({ visible, onClose }: Props) {
             {/* ── Header ── */}
             <View style={s.header}>
               <TouchableOpacity onPress={onClose} style={s.closeBtn} activeOpacity={0.7}>
-                <Text style={s.closeText}>Close</Text>
+                <Text style={[s.closeText, { fontFamily: af('medium') }]}>{t('close')}</Text>
               </TouchableOpacity>
-              <Text style={s.title}>Reports</Text>
+              <Text style={[s.title, { fontFamily: af('semibold') }]}>{t('reports')}</Text>
               <View style={s.closeBtn} />
             </View>
 
@@ -56,11 +58,11 @@ export default function ReportsMenuDialog({ visible, onClose }: Props) {
 
             {/* ── Report list ── */}
             {[
-              { key: 'tills',            label: 'Tills Summary'                   },
-              { key: 'orders-summary',   label: 'Orders Summary'                  },
-              { key: 'products-mix',     label: 'Products Mix'                    },
-              { key: 'active-delivery',  label: 'Active Delivery Orders Summary'  },
-              { key: 'driver-payments',  label: 'Driver Payments'                 },
+              { key: 'tills',            labelKey: 'tillsSummary'    },
+              { key: 'orders-summary',   labelKey: 'ordersSummary'   },
+              { key: 'products-mix',     labelKey: 'productsMix'     },
+              { key: 'active-delivery',  labelKey: 'activeDelivery'  },
+              { key: 'driver-payments',  labelKey: 'driverPayments'  },
             ].map((item, i, arr) => (
               <React.Fragment key={item.key}>
                 <TouchableOpacity
@@ -74,7 +76,7 @@ export default function ReportsMenuDialog({ visible, onClose }: Props) {
                     if (item.key === 'driver-payments') setActiveReport('driver-payments');
                   }}
                 >
-                  <Text style={s.rowLabel}>{item.label}</Text>
+                  <Text style={[s.rowLabel, { fontFamily: af('regular') }]}>{t(item.labelKey as any)}</Text>
                 </TouchableOpacity>
                 {i < arr.length - 1 && <View style={s.divider} />}
               </React.Fragment>
@@ -88,7 +90,7 @@ export default function ReportsMenuDialog({ visible, onClose }: Props) {
         visible={activeReport === 'orders-summary'}
         onBack={() => setActiveReport(null)}
         onClose={handleClose}
-        title="Orders Summary"
+        title={t('ordersSummary')}
         reportType="orders"
       />
 
@@ -96,7 +98,7 @@ export default function ReportsMenuDialog({ visible, onClose }: Props) {
         visible={activeReport === 'tills-summary'}
         onBack={() => setActiveReport(null)}
         onClose={handleClose}
-        title="Tills Summary"
+        title={t('tillsSummary')}
         reportType="tills"
       />
 
@@ -104,7 +106,7 @@ export default function ReportsMenuDialog({ visible, onClose }: Props) {
         visible={activeReport === 'products-mix'}
         onBack={() => setActiveReport(null)}
         onClose={handleClose}
-        title="Products Mix"
+        title={t('productsMix')}
         reportType="products"
       />
 
@@ -112,7 +114,7 @@ export default function ReportsMenuDialog({ visible, onClose }: Props) {
         visible={activeReport === 'active-delivery'}
         onBack={() => setActiveReport(null)}
         onClose={handleClose}
-        title="Active Delivery Orders Summary"
+        title={t('activeDelivery')}
         reportType="active-delivery"
       />
 
@@ -120,7 +122,7 @@ export default function ReportsMenuDialog({ visible, onClose }: Props) {
         visible={activeReport === 'driver-payments'}
         onBack={() => setActiveReport(null)}
         onClose={handleClose}
-        title="Driver Payments"
+        title={t('driverPayments')}
         reportType="driver-payments"
       />
     </>

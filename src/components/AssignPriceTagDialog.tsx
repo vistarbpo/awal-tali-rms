@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Modal,
+  Platform,
   View,
   Text,
   TouchableOpacity,
@@ -9,6 +10,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { useI18n } from '../i18n';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface PriceTag {
@@ -35,6 +37,7 @@ interface Props {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function AssignPriceTagDialog({ visible, activePriceTag, onClose, onApply }: Props) {
+  const { t, af } = useI18n();
   const [selected, setSelected] = useState<PriceTag | null>(null);
 
   useEffect(() => {
@@ -44,6 +47,41 @@ export default function AssignPriceTagDialog({ visible, activePriceTag, onClose,
   function handleDone() {
     onApply(selected?.id === 'default' ? null : selected);
     onClose();
+  }
+
+  const cardJSX = (
+    <View style={s.card}>
+      <View style={s.header}>
+        <Text style={[s.headerTitle, { fontFamily: af('semibold') }]}>{t('priceTagTitle')}</Text>
+      </View>
+      <ScrollView style={s.list} bounces={false}>
+        {PRICE_TAGS.map((tag, index) => {
+          const isSelected = selected?.id === tag.id || (tag.id === 'default' && selected === null);
+          return (
+            <TouchableOpacity key={tag.id} activeOpacity={0.7} onPress={() => setSelected(tag.id === 'default' ? null : tag)}>
+              {index > 0 && <View style={s.divider} />}
+              <View style={s.row}>
+                <Text style={[s.rowLabel, isSelected && s.rowLabelSelected]}>{tag.label}</Text>
+                {isSelected && <Text style={s.checkmark}>✓</Text>}
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+      <View style={s.footer}>
+        <TouchableOpacity style={s.cancelBtn} onPress={onClose} activeOpacity={0.85}>
+          <Text style={[s.footerBtnText, { fontFamily: af('bold') }]}>{t('cancel')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={s.doneBtn} onPress={handleDone} activeOpacity={0.85}>
+          <Text style={[s.footerBtnText, { fontFamily: af('bold') }]}>{t('done')}</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  if (Platform.OS === 'web') {
+    if (!visible) return null;
+    return <View style={s.inlineOverlay}>{cardJSX}</View>;
   }
 
   return (
@@ -59,49 +97,7 @@ export default function AssignPriceTagDialog({ visible, activePriceTag, onClose,
       </TouchableWithoutFeedback>
 
       <View style={s.center} pointerEvents="box-none">
-        <View style={s.card}>
-
-          {/* Header */}
-          <View style={s.header}>
-            <Text style={s.headerTitle}>Assign Price Tag</Text>
-          </View>
-
-          {/* List */}
-          <ScrollView style={s.list} bounces={false}>
-            {PRICE_TAGS.map((tag, index) => {
-              const isSelected = selected?.id === tag.id ||
-                (tag.id === 'default' && selected === null);
-              return (
-                <TouchableOpacity
-                  key={tag.id}
-                  activeOpacity={0.7}
-                  onPress={() => setSelected(tag.id === 'default' ? null : tag)}
-                >
-                  {index > 0 && <View style={s.divider} />}
-                  <View style={s.row}>
-                    <Text style={[s.rowLabel, isSelected && s.rowLabelSelected]}>
-                      {tag.label}
-                    </Text>
-                    {isSelected && (
-                      <Text style={s.checkmark}>✓</Text>
-                    )}
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-
-          {/* Footer */}
-          <View style={s.footer}>
-            <TouchableOpacity style={s.cancelBtn} onPress={onClose} activeOpacity={0.85}>
-              <Text style={s.footerBtnText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={s.doneBtn} onPress={handleDone} activeOpacity={0.85}>
-              <Text style={s.footerBtnText}>Done</Text>
-            </TouchableOpacity>
-          </View>
-
-        </View>
+        {cardJSX}
       </View>
     </Modal>
   );
@@ -177,6 +173,12 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     borderTopWidth: 1,
     borderTopColor: Colors.grayBorder,
+  },
+  inlineOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
   cancelBtn: {
     flex: 1,

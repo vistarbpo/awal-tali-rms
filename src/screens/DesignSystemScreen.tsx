@@ -116,6 +116,7 @@ interface Props { onClose?: () => void }
 export default function DesignSystemScreen({ onClose }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const [activeChapter, setActiveChapter] = useState('brand');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [confirmVisible, setConfirmVisible]     = useState(false);
   const [voidVisible, setVoidVisible]           = useState(false);
   const [orderTypeVisible, setOrderTypeVisible] = useState(false);
@@ -157,19 +158,31 @@ export default function DesignSystemScreen({ onClose }: Props) {
       <View style={s.body}>
 
         {/* ══ LEFT SIDEBAR NAV ══ */}
-        <ScrollView style={s.sidebar} showsVerticalScrollIndicator={false} contentContainerStyle={s.sidebarContent}>
-          <Text style={s.sidebarLabel}>CHAPTERS</Text>
-          {CHAPTERS.map(ch => (
-            <TouchableOpacity
-              key={ch.key}
-              style={[s.navItem, activeChapter === ch.key && s.navItemActive]}
-              onPress={() => scrollTo(ch.key)}
-              activeOpacity={0.7}
-            >
-              <Text style={[s.navLabel, activeChapter === ch.key && s.navLabelActive]}>{ch.label}</Text>
+        {sidebarOpen ? (
+          <View style={s.sidebarWrap}>
+            <ScrollView style={s.sidebar} showsVerticalScrollIndicator={false} contentContainerStyle={s.sidebarContent}>
+              <Text style={s.sidebarLabel}>CHAPTERS</Text>
+              {CHAPTERS.map(ch => (
+                <TouchableOpacity
+                  key={ch.key}
+                  style={[s.navItem, activeChapter === ch.key && s.navItemActive]}
+                  onPress={() => scrollTo(ch.key)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[s.navLabel, activeChapter === ch.key && s.navLabelActive]}>{ch.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity style={s.sidebarToggle} onPress={() => setSidebarOpen(false)} activeOpacity={0.7}>
+              <Text style={s.sidebarToggleText}>‹</Text>
             </TouchableOpacity>
-          ))}
-        </ScrollView>
+          </View>
+        ) : (
+          <TouchableOpacity style={s.sidebarCollapsed} onPress={() => setSidebarOpen(true)} activeOpacity={0.7}>
+            <Text style={s.sidebarCollapsedText}>›</Text>
+            <Text style={s.sidebarCollapsedLabel}>CHAPTERS</Text>
+          </TouchableOpacity>
+        )}
 
         {/* ══ MAIN CONTENT ══ */}
         <ScrollView
@@ -1240,13 +1253,29 @@ const s = StyleSheet.create({
 
   body: { flex: 1, flexDirection: 'row' },
 
-  sidebar: { width: 168, backgroundColor: Colors.white, borderRightWidth: 1, borderRightColor: Colors.grayBorder },
+  sidebarWrap: { flexDirection: 'row', borderRightWidth: 1, borderRightColor: Colors.grayBorder },
+  sidebar: { width: 168, backgroundColor: Colors.white },
   sidebarContent: { paddingTop: 20, paddingBottom: 40 },
   sidebarLabel: { fontSize: 10, fontWeight: '700', color: Colors.placeholder, letterSpacing: 1.2, textTransform: 'uppercase', paddingHorizontal: 16, marginBottom: 8 },
   navItem: { paddingHorizontal: 16, paddingVertical: 11, marginHorizontal: 8, borderRadius: 10 },
   navItemActive: { backgroundColor: Colors.primaryLight },
   navLabel: { fontSize: 13, fontWeight: '500', color: Colors.grayText },
   navLabelActive: { color: Colors.primary, fontWeight: '600' },
+  sidebarToggle: {
+    width: 20, backgroundColor: Colors.grayLight,
+    alignItems: 'center', justifyContent: 'center',
+    borderLeftWidth: 1, borderLeftColor: Colors.grayBorder,
+  },
+  sidebarToggleText: { fontSize: 16, color: Colors.grayText },
+  sidebarCollapsed: {
+    width: 32, backgroundColor: Colors.white, borderRightWidth: 1, borderRightColor: Colors.grayBorder,
+    alignItems: 'center', paddingTop: 20, gap: 8,
+  },
+  sidebarCollapsedText: { fontSize: 16, color: Colors.primary, fontWeight: '700' },
+  sidebarCollapsedLabel: {
+    fontSize: 9, fontWeight: '700', color: Colors.placeholder, letterSpacing: 1,
+    transform: [{ rotate: '90deg' }], marginTop: 12,
+  } as any,
 
   content: { flex: 1 },
   contentInner: { padding: 36, gap: 0 },

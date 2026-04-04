@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Colors } from '../constants/colors';
 import { iconSarDark } from '../assets/icons';
+import { useI18n } from '../i18n';
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
 interface DriverRow {
@@ -51,6 +52,7 @@ interface Props {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function DriverPaymentsReportModal({ visible, onClose, dateLabel, printedAt }: Props) {
+  const { t, af }  = useI18n();
   const totOrders    = DRIVER_DATA.reduce((s, d) => s + d.orders,    0);
   const totCollected = DRIVER_DATA.reduce((s, d) => s + d.collected, 0);
   const totPaid      = DRIVER_DATA.reduce((s, d) => s + d.paid,      0);
@@ -72,11 +74,11 @@ export default function DriverPaymentsReportModal({ visible, onClose, dateLabel,
           {/* ── Header bar ── */}
           <View style={r.headerBar}>
             <TouchableOpacity onPress={onClose} style={r.doneBtn} activeOpacity={0.7}>
-              <Text style={r.doneText}>Done</Text>
+              <Text style={[r.doneText, { fontFamily: af('semibold') }]}>{t('done')}</Text>
             </TouchableOpacity>
-            <Text style={r.headerTitle}>Driver Payments</Text>
+            <Text style={[r.headerTitle, { fontFamily: af('bold') }]}>{t('driverPayments')}</Text>
             <TouchableOpacity style={r.printBtn} activeOpacity={0.7}>
-              <Text style={r.printText}>Print</Text>
+              <Text style={[r.printText, { fontFamily: af('semibold') }]}>{t('print')}</Text>
             </TouchableOpacity>
           </View>
 

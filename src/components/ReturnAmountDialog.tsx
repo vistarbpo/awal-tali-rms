@@ -3,6 +3,7 @@ import {
   View, Text, Image, TouchableOpacity, TouchableWithoutFeedback, Modal, StyleSheet,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { useI18n } from '../i18n';
 import { iconSarDark } from '../assets/icons';
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export default function ReturnAmountDialog({ visible, amount, orderNumber, onClose }: Props) {
+  const { t, af, isRTL } = useI18n();
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={onClose}>
@@ -24,12 +26,12 @@ export default function ReturnAmountDialog({ visible, amount, orderNumber, onClo
 
           {/* Title */}
           <View style={s.titleArea}>
-            <Text style={s.title}>Return amount</Text>
+            <Text style={[s.title, { fontFamily: af('medium') }]}>{t('returnAmount')}</Text>
             <Text style={s.orderRef}>Order #{orderNumber}</Text>
           </View>
 
           {/* Amount */}
-          <View style={s.amountRow}>
+          <View style={[s.amountRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Text style={s.amount}>{amount.toFixed(2)}</Text>
             <Image source={iconSarDark} style={s.currency} />
           </View>
@@ -38,7 +40,7 @@ export default function ReturnAmountDialog({ visible, amount, orderNumber, onClo
 
           {/* OK */}
           <TouchableOpacity style={s.okRow} onPress={onClose} activeOpacity={0.6}>
-            <Text style={s.okText}>OK</Text>
+            <Text style={[s.okText, { fontFamily: af('regular') }]}>{t('confirm')}</Text>
           </TouchableOpacity>
 
         </View>

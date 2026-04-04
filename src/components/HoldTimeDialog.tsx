@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Modal,
+  Platform,
   View,
   Text,
   TouchableOpacity,
@@ -8,6 +9,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { useI18n } from '../i18n';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface Props {
@@ -29,6 +31,7 @@ const NUMPAD: string[][] = [
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function HoldTimeDialog({ visible, itemName, onClose, onConfirm, onFireLater }: Props) {
+  const { t, af, isRTL } = useI18n();
   const [customMode,  setCustomMode]  = useState(false);
   const [customInput, setCustomInput] = useState('');
 
@@ -57,6 +60,136 @@ export default function HoldTimeDialog({ visible, itemName, onClose, onConfirm, 
   const customMinutes = parseInt(customInput, 10);
   const customValid   = customMinutes > 0;
 
+  const cardJSX = (
+    <View style={s.card}>
+
+      {/* ── Header ── */}
+      <View style={s.header}>
+        <View style={s.headerLeft}>
+          <Text style={[s.headerLabel, { fontFamily: af('bold') }]}>{t('holdTimeTitle').toUpperCase()}</Text>
+          <Text style={[s.headerItem, { fontFamily: af('medium') }]} numberOfLines={1}>{itemName}</Text>
+        </View>
+
+        {/* Custom input box — amber border, tappable */}
+        <TouchableOpacity
+          style={[s.customBox, customMode && s.customBoxActive]}
+          onPress={() => setCustomMode(true)}
+          activeOpacity={0.75}
+        >
+          {customMode && customInput ? (
+            <>
+              <Text style={s.customBoxValue}>{customInput}</Text>
+              <Text style={s.customBoxUnit}>min</Text>
+            </>
+          ) : (
+            <Text style={[s.customBoxPlaceholder, { fontFamily: af('semibold') }]}>Custom</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {customMode ? (
+        /* ── Numpad view ── */
+        <>
+          {/* Display */}
+          <View style={s.numDisplay}>
+            <Text style={[s.numDisplayValue, { fontFamily: af('bold') }]}>
+              {customInput || '0'}
+            </Text>
+            <Text style={[s.numDisplayUnit, { fontFamily: af('medium') }]}>min</Text>
+          </View>
+
+          <View style={s.numpadWrap}>
+            {NUMPAD.map((row, ri) => (
+              <View key={ri} style={s.numRow}>
+                {row.map(key => {
+                  const isAction = key === 'C' || key === '⌫';
+                  return (
+                    <TouchableOpacity
+                      key={key}
+                      style={[s.numKey, isAction && s.numKeyAction]}
+                      onPress={() => handleNumKey(key)}
+                      activeOpacity={0.6}
+                    >
+                      <Text style={[s.numKeyText, isAction && s.numKeyActionText]}>
+                        {key}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            ))}
+
+            {/* Footer */}
+            <View style={s.numFooter}>
+              <TouchableOpacity
+                style={s.numBackBtn}
+                onPress={() => { setCustomMode(false); setCustomInput(''); }}
+                activeOpacity={0.85}
+              >
+                <Text style={[s.numFooterText, { fontFamily: af('bold') }]}>{t('back')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.numConfirmBtn, !customValid && s.numConfirmBtnDisabled]}
+                onPress={handleCustomConfirm}
+                activeOpacity={0.85}
+                disabled={!customValid}
+              >
+                <Text style={[s.numFooterText, { fontFamily: af('bold') }]}>{t('confirm')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </>
+      ) : (
+        /* ── Presets grid ── */
+        <>
+          <View style={s.grid}>
+            {PRESETS.map(min => (
+              <TouchableOpacity
+                key={min}
+                style={s.timeBtn}
+                onPress={() => { onConfirm(min); onClose(); }}
+                activeOpacity={0.75}
+              >
+                <Text style={[s.timeBtnValue, { fontFamily: af('bold') }]}>{min}</Text>
+                <Text style={[s.timeBtnUnit, { fontFamily: af('medium') }]}>min</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={s.footerRow}>
+            {onFireLater && (
+              <TouchableOpacity
+                style={s.fireLaterBtn}
+                onPress={() => { onFireLater(); onClose(); }}
+                activeOpacity={0.85}
+              >
+                <Text style={[s.fireLaterText, { fontFamily: af('bold') }]}>Fire Later</Text>
+
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={[s.cancelBtn, !!onFireLater && s.cancelBtnSmall]}
+              onPress={onClose}
+              activeOpacity={0.85}
+            >
+              <Text style={[s.cancelText, { fontFamily: af('bold') }]}>{t('cancel')}</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
+
+    </View>
+  );
+
+  if (Platform.OS === 'web') {
+    if (!visible) return null;
+    return (
+      <View style={s.inlineOverlay}>
+        {cardJSX}
+      </View>
+    );
+  }
+
   return (
     <Modal
       visible={visible}
@@ -70,123 +203,7 @@ export default function HoldTimeDialog({ visible, itemName, onClose, onConfirm, 
       </TouchableWithoutFeedback>
 
       <View style={s.center} pointerEvents="box-none">
-        <View style={s.card}>
-
-          {/* ── Header ── */}
-          <View style={s.header}>
-            <View style={s.headerLeft}>
-              <Text style={s.headerLabel}>HOLD UNTIL</Text>
-              <Text style={s.headerItem} numberOfLines={1}>{itemName}</Text>
-            </View>
-
-            {/* Custom input box — amber border, tappable */}
-            <TouchableOpacity
-              style={[s.customBox, customMode && s.customBoxActive]}
-              onPress={() => setCustomMode(true)}
-              activeOpacity={0.75}
-            >
-              {customMode && customInput ? (
-                <>
-                  <Text style={s.customBoxValue}>{customInput}</Text>
-                  <Text style={s.customBoxUnit}>min</Text>
-                </>
-              ) : (
-                <Text style={s.customBoxPlaceholder}>Custom</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          {customMode ? (
-            /* ── Numpad view ── */
-            <>
-              {/* Display */}
-              <View style={s.numDisplay}>
-                <Text style={s.numDisplayValue}>
-                  {customInput || '0'}
-                </Text>
-                <Text style={s.numDisplayUnit}>min</Text>
-              </View>
-
-              <View style={s.numpadWrap}>
-                {NUMPAD.map((row, ri) => (
-                  <View key={ri} style={s.numRow}>
-                    {row.map(key => {
-                      const isAction = key === 'C' || key === '⌫';
-                      return (
-                        <TouchableOpacity
-                          key={key}
-                          style={[s.numKey, isAction && s.numKeyAction]}
-                          onPress={() => handleNumKey(key)}
-                          activeOpacity={0.6}
-                        >
-                          <Text style={[s.numKeyText, isAction && s.numKeyActionText]}>
-                            {key}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                ))}
-
-                {/* Footer */}
-                <View style={s.numFooter}>
-                  <TouchableOpacity
-                    style={s.numBackBtn}
-                    onPress={() => { setCustomMode(false); setCustomInput(''); }}
-                    activeOpacity={0.85}
-                  >
-                    <Text style={s.numFooterText}>Presets</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[s.numConfirmBtn, !customValid && s.numConfirmBtnDisabled]}
-                    onPress={handleCustomConfirm}
-                    activeOpacity={0.85}
-                    disabled={!customValid}
-                  >
-                    <Text style={s.numFooterText}>Set</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </>
-          ) : (
-            /* ── Presets grid ── */
-            <>
-              <View style={s.grid}>
-                {PRESETS.map(min => (
-                  <TouchableOpacity
-                    key={min}
-                    style={s.timeBtn}
-                    onPress={() => { onConfirm(min); onClose(); }}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={s.timeBtnValue}>{min}</Text>
-                    <Text style={s.timeBtnUnit}>min</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <View style={s.footerRow}>
-                {onFireLater && (
-                  <TouchableOpacity
-                    style={s.fireLaterBtn}
-                    onPress={() => { onFireLater(); onClose(); }}
-                    activeOpacity={0.85}
-                  >
-                    <Text style={s.fireLaterText}>Fire Later</Text>
-                  </TouchableOpacity>
-                )}
-                <TouchableOpacity
-                  style={[s.cancelBtn, !!onFireLater && s.cancelBtnSmall]}
-                  onPress={onClose}
-                  activeOpacity={0.85}
-                >
-                  <Text style={s.cancelText}>Cancel</Text>
-                </TouchableOpacity>
-              </View>
-            </>
-          )}
-
-        </View>
+        {cardJSX}
       </View>
     </Modal>
   );
@@ -207,6 +224,12 @@ const s = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  inlineOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
   card: {
     width: BTN_SIZE * 3 + 16 * 4,

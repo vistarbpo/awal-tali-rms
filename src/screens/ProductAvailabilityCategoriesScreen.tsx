@@ -10,11 +10,10 @@ import {
   SafeAreaView,
   StatusBar,
   FlatList,
-  useWindowDimensions,
   ImageSourcePropType,
 } from 'react-native';
 import { Colors } from '../constants/colors';
-import { CARD_GAP } from '../styles/screenLayout';
+import { CARD_GAP, IPAD_W } from '../styles/screenLayout';
 
 import { iconSearch, catImg0, catImg1, catImg2, catImg3, catImg4 } from '../assets/icons';
 
@@ -48,7 +47,7 @@ export const AVAIL_CATEGORIES: AvailCategory[] = [
   { id: 'c9', name: 'SPECIALS',        image: CAT_IMG.img3 },
 ];
 
-const COLS   = 7;
+const COLS   = 6;
 const NAME_H = 46;
 const PAD    = 24;
 
@@ -58,12 +57,12 @@ interface Props {
 }
 
 export default function ProductAvailabilityCategoriesScreen({ onBack, onCategorySelect }: Props) {
-  const { width: screenW }                 = useWindowDimensions();
   const searchRef                          = useRef<TextInput>(null);
   const [search, setSearch]                = useState('');
   const [searchFocused, setSearchFocused]  = useState(false);
+  const [bodyW, setBodyW]                  = useState(IPAD_W);
 
-  const cardW = Math.floor((screenW - PAD * 2 - CARD_GAP * (COLS - 1)) / COLS);
+  const cardW = Math.floor((bodyW - PAD * 2 - CARD_GAP * (COLS - 1)) / COLS);
   const cardH = cardW + NAME_H;
 
   const filtered = AVAIL_CATEGORIES.filter(c =>
@@ -87,7 +86,7 @@ export default function ProductAvailabilityCategoriesScreen({ onBack, onCategory
       </View>
 
       {/* ── Body ── */}
-      <View style={s.body}>
+      <View style={s.body} onLayout={e => setBodyW(e.nativeEvent.layout.width)}>
         <Pressable
           style={[s.searchBar, searchFocused && s.searchBarFocused]}
           onPress={() => searchRef.current?.focus()}

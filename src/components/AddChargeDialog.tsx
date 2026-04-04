@@ -5,117 +5,125 @@ import {
   View,
   Text,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   StyleSheet,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { Colors } from '../constants/colors';
 import { useI18n } from '../i18n';
 
-// ─── Props ────────────────────────────────────────────────────────────────────
-interface Props {
-  visible:    boolean;
-  current:    number;
-  onClose:    () => void;
-  onConfirm:  (guests: number) => void;
+// ─── Types ────────────────────────────────────────────────────────────────────
+export interface OrderCharge {
+  id: string;
+  label: string;
+  amount: number;
 }
 
-const PAD: string[][] = [
+// ─── Constants ────────────────────────────────────────────────────────────────
+const NUMPAD: string[][] = [
   ['1', '2', '3'],
   ['4', '5', '6'],
   ['7', '8', '9'],
-  ['C', '0', '⌫'],
+  ['C', '0', '.'],
 ];
 
+const KEY_SIZE = 88;
+const KEY_GAP  = 10;
+
+// ─── Props ────────────────────────────────────────────────────────────────────
+interface Props {
+  visible:    boolean;
+  chargeName: string;
+  onClose:    () => void;
+  onApply:    (charge: OrderCharge) => void;
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
-export default function SetGuestsDialog({ visible, current, onClose, onConfirm }: Props) {
+export default function AddChargeDialog({ visible, chargeName, onClose, onApply }: Props) {
   const { t, af, isRTL } = useI18n();
-  const [value, setValue] = useState('');
+  const [amount, setAmount] = useState('');
 
   useEffect(() => {
-    if (visible) setValue(current > 0 ? String(current) : '');
+    if (visible) setAmount('');
   }, [visible]);
 
-  function handleKey(key: string) {
-    if (key === 'C') {
-      setValue('');
-    } else if (key === '⌫') {
-      setValue(prev => prev.slice(0, -1));
-    } else {
-      setValue(prev => {
-        const next = prev + key;
-        // Cap at 999
-        return parseInt(next, 10) > 999 ? prev : next;
-      });
-    }
+  function handleNumKey(key: string) {
+    if (key === 'C') { setAmount(''); return; }
+    if (key === '.' && amount.includes('.')) return;
+    if (key === '.' && amount === '') { setAmount('0.'); return; }
+    const dot = amount.indexOf('.');
+    if (dot !== -1 && amount.length - dot > 2) return;
+    if (dot === -1 && amount.length >= 6) return;
+    setAmount(prev => prev + key);
   }
 
+  const parsed   = parseFloat(amount);
+  const canApply = !isNaN(parsed) && parsed > 0;
+
   function handleDone() {
-    const n = parseInt(value, 10);
-    onConfirm(isNaN(n) ? 0 : n);
+    if (!canApply) return;
+    onApply({ id: `charge-${Date.now()}`, label: chargeName, amount: parsed });
     onClose();
   }
 
-  const display = value === '' ? '0' : value;
+  const display = amount === '' ? '0' : amount;
 
   const cardJSX = (
-        <View style={s.card}>
+    <View style={s.card}>
 
-          {/* ── Header ── */}
-          <View style={s.header}>
-            <Text style={[s.headerTitle, { fontFamily: af('bold') }]}>{t('setGuests')}</Text>
+      {/* ── Header ── */}
+      <View style={s.header}>
+        <Text style={[s.headerTitle, { fontFamily: af('bold') }]} numberOfLines={1}>{chargeName || t('addChargeTitle')}</Text>
+      </View>
+
+      {/* ── Amount display ── */}
+      <View style={s.displayWrap}>
+        <Text style={[s.displayValue, amount === '' && s.displayPlaceholder, { fontFamily: af('bold') }]}>
+          {display}
+        </Text>
+        <Text style={[s.displayLabel, { fontFamily: af('medium') }]}>{t('chargeFieldAmount')}</Text>
+      </View>
+
+      {/* ── Numpad ── */}
+      <View style={s.numpad}>
+        {NUMPAD.map((row, ri) => (
+          <View key={ri} style={s.padRow}>
+            {row.map(key => {
+              const isSpecial = key === 'C';
+              return (
+                <TouchableOpacity
+                  key={key}
+                  style={[s.key, isSpecial && s.keySpecial]}
+                  onPress={() => handleNumKey(key)}
+                  activeOpacity={0.65}
+                >
+                  <Text style={[s.keyText, isSpecial && s.keyTextSpecial]}>{key}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
+        ))}
+      </View>
 
-          {/* ── Display ── */}
-          <View style={s.displayWrap}>
-            <Text style={[s.displayValue, { fontFamily: af('bold') }]}>{display}</Text>
-            <Text style={[s.displayLabel, { fontFamily: af('medium') }]}>{t('guests')}</Text>
-          </View>
+      {/* ── Actions ── */}
+      <View style={s.actions}>
+        <TouchableOpacity style={s.cancelBtn} onPress={onClose} activeOpacity={0.7}>
+          <Text style={[s.cancelText, { fontFamily: af('semibold') }]}>{t('cancel')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[s.doneBtn, !canApply && s.doneBtnDisabled]}
+          onPress={handleDone}
+          activeOpacity={canApply ? 0.85 : 1}
+        >
+          <Text style={[s.doneText, { fontFamily: af('bold') }]}>{t('done')}</Text>
+        </TouchableOpacity>
+      </View>
 
-          {/* ── Numpad ── */}
-          <View style={s.numpad}>
-            {PAD.map((row, ri) => (
-              <View key={ri} style={s.padRow}>
-                {row.map(key => {
-                  const isClear     = key === 'C';
-                  const isBackspace = key === '⌫';
-                  const isSpecial   = isClear || isBackspace;
-                  return (
-                    <TouchableOpacity
-                      key={key}
-                      style={[s.key, isSpecial && s.keySpecial]}
-                      onPress={() => handleKey(key)}
-                      activeOpacity={0.65}
-                    >
-                      <Text style={[s.keyText, isSpecial && s.keyTextSpecial]}>
-                        {key}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            ))}
-          </View>
-
-          {/* ── Actions ── */}
-          <View style={s.actions}>
-            <TouchableOpacity style={s.cancelBtn} onPress={onClose} activeOpacity={0.7}>
-              <Text style={[s.cancelText, { fontFamily: af('semibold') }]}>{t('cancel')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={s.doneBtn} onPress={handleDone} activeOpacity={0.85}>
-              <Text style={[s.doneText, { fontFamily: af('bold') }]}>{t('done')}</Text>
-            </TouchableOpacity>
-          </View>
-
-        </View>
+    </View>
   );
 
   if (Platform.OS === 'web') {
     if (!visible) return null;
-    return (
-      <View style={s.inlineOverlay}>
-        {cardJSX}
-      </View>
-    );
+    return <View style={s.inlineOverlay}>{cardJSX}</View>;
   }
 
   return (
@@ -131,9 +139,6 @@ export default function SetGuestsDialog({ visible, current, onClose, onConfirm }
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-const KEY_SIZE = 88;
-const KEY_GAP  = 10;
-
 const s = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
@@ -150,6 +155,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(0,0,0,0.45)',
   },
+
   card: {
     width: KEY_SIZE * 3 + KEY_GAP * 2 + 48,
     backgroundColor: Colors.white,
@@ -188,6 +194,9 @@ const s = StyleSheet.create({
     color: Colors.primary,
     letterSpacing: -2,
     lineHeight: 60,
+  },
+  displayPlaceholder: {
+    color: Colors.placeholder,
   },
   displayLabel: {
     fontSize: 13,
@@ -271,6 +280,11 @@ const s = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 10,
     elevation: 4,
+  },
+  doneBtnDisabled: {
+    backgroundColor: Colors.grayMid,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   doneText: {
     fontSize: 17,

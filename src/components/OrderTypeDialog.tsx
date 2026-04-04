@@ -8,10 +8,18 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { useI18n } from '../i18n';
 
 export type OrderType = 'Dine in' | 'Pick up' | 'Delivery' | 'Drive thru';
 
 const ORDER_TYPES: OrderType[] = ['Dine in', 'Pick up', 'Delivery', 'Drive thru'];
+
+const ORDER_TYPE_KEYS: Record<OrderType, 'dineIn' | 'pickUp' | 'delivery' | 'driveThru'> = {
+  'Dine in':   'dineIn',
+  'Pick up':   'pickUp',
+  'Delivery':  'delivery',
+  'Drive thru': 'driveThru',
+};
 
 interface Props {
   visible: boolean;
@@ -20,6 +28,7 @@ interface Props {
 }
 
 export default function OrderTypeDialog({ visible, onClose, onSelect }: Props) {
+  const { t, af } = useI18n();
   return (
     <Modal
       visible={visible}
@@ -37,7 +46,7 @@ export default function OrderTypeDialog({ visible, onClose, onSelect }: Props) {
 
           {/* Header */}
           <View style={s.header}>
-            <Text style={s.headerTitle}>Order Type</Text>
+            <Text style={[s.headerTitle, { fontFamily: af('semibold') }]}>{t('orderType')}</Text>
           </View>
 
           {/* Options */}
@@ -50,7 +59,7 @@ export default function OrderTypeDialog({ visible, onClose, onSelect }: Props) {
                   onPress={() => { onSelect(type); onClose(); }}
                   activeOpacity={0.6}
                 >
-                  <Text style={s.rowLabel}>{type}</Text>
+                  <Text style={[s.rowLabel, { fontFamily: af('medium') }]}>{t(ORDER_TYPE_KEYS[type])}</Text>
                 </TouchableOpacity>
               </React.Fragment>
             ))}

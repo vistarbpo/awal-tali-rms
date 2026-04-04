@@ -9,6 +9,10 @@ import {
 } from 'react-native';
 import { CameraView, Camera } from 'expo-camera';
 import { Colors } from '../constants/colors';
+import { useI18n } from '../i18n';
+
+// ─── Preview mode (Figma capture) — 'scanning' | 'denied' | null ─────────────
+const PREVIEW_STATE: 'scanning' | 'denied' | null = null;
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface Props {
@@ -19,12 +23,15 @@ interface Props {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function ScanLoyaltyQRModal({ visible, onClose, onScanned }: Props) {
+  const { t, af, isRTL } = useI18n();
   const [facing, setFacing]         = useState<'front' | 'back'>('back');
-  const [hasPermission, setPermission] = useState<boolean | null>(null);
+  const [hasPermission, setPermission] = useState<boolean | null>(
+    PREVIEW_STATE === 'scanning' ? true : PREVIEW_STATE === 'denied' ? false : null
+  );
   const [scanned, setScanned]       = useState(false);
 
   useEffect(() => {
-    if (visible) {
+    if (visible && !PREVIEW_STATE) {
       setScanned(false);
       Camera.requestCameraPermissionsAsync().then(({ status }) => {
         setPermission(status === 'granted');
@@ -55,11 +62,11 @@ export default function ScanLoyaltyQRModal({ visible, onClose, onScanned }: Prop
         <View style={s.card}>
 
           {/* Header */}
-          <View style={s.header}>
+          <View style={[s.header, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <TouchableOpacity onPress={onClose} activeOpacity={0.7} style={s.sideBtn}>
-              <Text style={s.closeText}>Close</Text>
+              <Text style={[s.closeText, { fontFamily: af('medium') }]}>{t('close')}</Text>
             </TouchableOpacity>
-            <Text style={s.title}>Scan Loyalty QR</Text>
+            <Text style={[s.title, { fontFamily: af('semibold') }]}>{t('scanQR')}</Text>
             <TouchableOpacity
               onPress={() => setFacing(f => f === 'back' ? 'front' : 'back')}
               activeOpacity={0.7}
@@ -163,7 +170,6 @@ const s = StyleSheet.create({
   flipText: {
     fontSize: 22,
     color: Colors.primary,
-    textAlign: 'right',
   },
 
   // Camera

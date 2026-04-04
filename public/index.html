@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>Awal &amp; Tali TalabOS</title>
+    <style id="expo-reset">
+      html,
+      body {
+        width: 1180px;
+        height: 820px;
+        overflow: hidden;
+        margin: 0;
+        padding: 0;
+      }
+      #root {
+        display: flex;
+        width: 1180px;
+        height: 820px;
+        overflow: hidden;
+      }
+    </style>
+    <script>
+      if (window.location.pathname === '/design-system') {
+        var st = document.getElementById('expo-reset');
+        st.textContent = 'html,body{width:100%;height:auto;overflow:auto;margin:0;padding:0;}#root{display:flex;flex-direction:column;width:100%;height:auto;min-height:100vh;}';
+      }
+    </script>
+    <script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
+  </head>
+  <body>
+    <noscript>
+      You need to enable JavaScript to run this app.
+    </noscript>
+    <div id="root"></div>
+  </body>
+</html>

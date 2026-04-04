@@ -10,6 +10,7 @@ import {
   Animated,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { useI18n } from '../i18n';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface Props {
@@ -87,6 +88,7 @@ export default function DiagnosticsScreen({
   isClockedIn,
   ordersPendingSync = 0,
 }: Props) {
+  const { t, af, isRTL } = useI18n();
   const [sending, setSending] = useState(false);
   const [sent,    setSent]    = useState(false);
 
@@ -142,9 +144,9 @@ export default function DiagnosticsScreen({
           {/* ── Header ── */}
           <View style={s.header}>
             <TouchableOpacity onPress={onClose} activeOpacity={0.7} style={s.headerSide}>
-              <Text style={s.headerClose}>Close</Text>
+              <Text style={[s.headerClose, { fontFamily: af() }]}>{t('close')}</Text>
             </TouchableOpacity>
-            <Text style={s.headerTitle}>Diagnostics</Text>
+            <Text style={[s.headerTitle, { fontFamily: af('semibold') }]}>Diagnostics</Text>
             <TouchableOpacity onPress={handleSend} activeOpacity={0.7} style={s.headerSide} disabled={sending}>
               <Text style={[s.headerSend, sent && s.headerSendDone]}>
                 {sending ? 'Sending…' : sent ? 'Sent ✓' : 'Send'}
@@ -345,7 +347,7 @@ const s = StyleSheet.create({
     letterSpacing: -0.2,
     flexShrink: 1,
     textAlign: 'right',
-    marginLeft: 12,
+    marginStart: 12,
   },
   rowValueGreen:   { color: Colors.green,  fontWeight: '500' },
   rowValueWarning: { color: '#F59E0B',     fontWeight: '600' },
@@ -357,14 +359,14 @@ const s = StyleSheet.create({
   chevron: {
     fontSize: 18,
     color: Colors.grayMid,
-    marginLeft: 2,
+    marginStart: 2,
   },
 
   // Divider
   hairline: {
     height: 0.5,
     backgroundColor: 'rgba(60,60,67,0.18)',
-    marginLeft: 20,
+    marginStart: 20,
   },
 
   bottomPad: { height: 28 },

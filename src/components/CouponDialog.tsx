@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Modal,
+  Platform,
   View,
   Text,
   TextInput,
@@ -10,14 +11,15 @@ import {
   Animated,
 } from 'react-native';
 import { Colors } from '../constants/colors';
-import { OrderDiscount } from './DiscountDialog';
+import { OrderDiscount, DiscountKind } from './DiscountDialog';
 
 // ─── Mock coupon database ─────────────────────────────────────────────────────
-const VALID_COUPONS: Record<string, { label: string; kind: 'percent' | 'fixed'; value: number }> = {
-  'SAVE10':  { label: 'Coupon SAVE10',  kind: 'percent', value: 10 },
-  'FLAT20':  { label: 'Coupon FLAT20',  kind: 'fixed',   value: 20 },
-  'WELCOME': { label: 'Coupon WELCOME', kind: 'percent', value: 15 },
-  'VIP50':   { label: 'Coupon VIP50',   kind: 'percent', value: 50 },
+
+const VALID_COUPONS: Record<string, { label: string; kind: DiscountKind; value: number }> = {
+  'SAVE10':  { label: 'Coupon SAVE10',  kind: 'percentage', value: 10 },
+  'FLAT20':  { label: 'Coupon FLAT20',  kind: 'amount',     value: 20 },
+  'WELCOME': { label: 'Coupon WELCOME', kind: 'percentage', value: 15 },
+  'VIP50':   { label: 'Coupon VIP50',   kind: 'percentage', value: 50 },
 };
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -80,9 +82,92 @@ export default function CouponDialog({ visible, onClose, onApply }: Props) {
   }
 
   const discountLine =
-    matched?.kind === 'percent'
+    matched?.kind === 'percentage'
       ? `${matched.value}% off your entire order`
       : `SAR ${matched?.value?.toFixed(2)} off your entire order`;
+
+  const cardJSX = (
+    <>
+      {/* ── Header ── */}
+      <View style={s.header}>
+        <TouchableOpacity style={s.headerSide} onPress={handleClose} activeOpacity={0.7}>
+          <Text style={s.cancelText}>Cancel</Text>
+        </TouchableOpacity>
+        <View style={s.headerCenter}>
+          <Text style={s.headerTitle}>Coupon</Text>
+        </View>
+        <TouchableOpacity
+          style={s.headerSide}
+          onPress={status === 'success' ? handleConfirm : handleApply}
+          activeOpacity={0.7}
+        >
+          <Text style={[s.applyText, status === 'success' && s.applyTextSuccess]}>
+            {status === 'success' ? 'Done' : 'Apply'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* ── Input area ── */}
+      <View style={s.inputArea}>
+        {status === 'success' ? (
+          /* Success state */
+          <View style={s.successWrap}>
+            <View style={s.successIconWrap}>
+              <Text style={s.successIcon}>✓</Text>
+            </View>
+            <Text style={s.successCode}>{code.trim().toUpperCase()}</Text>
+            <Text style={s.successDesc}>{discountLine}</Text>
+          </View>
+        ) : (
+          /* Input state */
+          <View style={[s.inputWrap, status === 'error' && s.inputWrapError]}>
+            <Text style={s.inputPrefix}>🏷</Text>
+            <TextInput
+              ref={inputRef}
+              style={s.input}
+              value={code}
+              onChangeText={t => { setCode(t); setStatus('idle'); }}
+              placeholder="Enter coupon code"
+              placeholderTextColor={Colors.placeholder}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              returnKeyType="done"
+              onSubmitEditing={handleApply}
+            />
+            {code.length > 0 && (
+              <TouchableOpacity style={s.clearBtn} onPress={() => { setCode(''); setStatus('idle'); }} activeOpacity={0.7}>
+                <Text style={s.clearText}>✕</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        {/* Error message */}
+        {status === 'error' && (
+          <View style={s.errorBanner}>
+            <Text style={s.errorIcon}>⚠</Text>
+            <Text style={s.errorText}>Coupon not found. Please check the code and try again.</Text>
+          </View>
+        )}
+      </View>
+
+      {/* ── Hint ── */}
+      {status === 'idle' && (
+        <View style={s.hintRow}>
+          <Text style={s.hintText}>Enter the coupon code exactly as provided.</Text>
+        </View>
+      )}
+    </>
+  );
+
+  if (Platform.OS === 'web') {
+    if (!visible) return null;
+    return (
+      <View style={s.inlineOverlay}>
+        <View style={s.card}>{cardJSX}</View>
+      </View>
+    );
+  }
 
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={handleClose}>
@@ -92,77 +177,7 @@ export default function CouponDialog({ visible, onClose, onApply }: Props) {
 
       <View style={s.center} pointerEvents="box-none">
         <Animated.View style={[s.card, { transform: [{ translateX: shakeX }] }]}>
-
-          {/* ── Header ── */}
-          <View style={s.header}>
-            <TouchableOpacity style={s.headerSide} onPress={handleClose} activeOpacity={0.7}>
-              <Text style={s.cancelText}>Cancel</Text>
-            </TouchableOpacity>
-            <View style={s.headerCenter}>
-              <Text style={s.headerTitle}>Coupon</Text>
-            </View>
-            <TouchableOpacity
-              style={s.headerSide}
-              onPress={status === 'success' ? handleConfirm : handleApply}
-              activeOpacity={0.7}
-            >
-              <Text style={[s.applyText, status === 'success' && s.applyTextSuccess]}>
-                {status === 'success' ? 'Done' : 'Apply'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* ── Input area ── */}
-          <View style={s.inputArea}>
-            {status === 'success' ? (
-              /* Success state */
-              <View style={s.successWrap}>
-                <View style={s.successIconWrap}>
-                  <Text style={s.successIcon}>✓</Text>
-                </View>
-                <Text style={s.successCode}>{code.trim().toUpperCase()}</Text>
-                <Text style={s.successDesc}>{discountLine}</Text>
-              </View>
-            ) : (
-              /* Input state */
-              <View style={[s.inputWrap, status === 'error' && s.inputWrapError]}>
-                <Text style={s.inputPrefix}>🏷</Text>
-                <TextInput
-                  ref={inputRef}
-                  style={s.input}
-                  value={code}
-                  onChangeText={t => { setCode(t); setStatus('idle'); }}
-                  placeholder="Enter coupon code"
-                  placeholderTextColor={Colors.placeholder}
-                  autoCapitalize="characters"
-                  autoCorrect={false}
-                  returnKeyType="done"
-                  onSubmitEditing={handleApply}
-                />
-                {code.length > 0 && (
-                  <TouchableOpacity style={s.clearBtn} onPress={() => { setCode(''); setStatus('idle'); }} activeOpacity={0.7}>
-                    <Text style={s.clearText}>✕</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            )}
-
-            {/* Error message */}
-            {status === 'error' && (
-              <View style={s.errorBanner}>
-                <Text style={s.errorIcon}>⚠</Text>
-                <Text style={s.errorText}>Coupon not found. Please check the code and try again.</Text>
-              </View>
-            )}
-          </View>
-
-          {/* ── Hint ── */}
-          {status === 'idle' && (
-            <View style={s.hintRow}>
-              <Text style={s.hintText}>Enter the coupon code exactly as provided.</Text>
-            </View>
-          )}
-
+          {cardJSX}
         </Animated.View>
       </View>
     </Modal>
@@ -179,6 +194,12 @@ const s = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  inlineOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
   card: {
     width: 400,

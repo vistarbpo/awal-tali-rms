@@ -10,11 +10,10 @@ import {
   SafeAreaView,
   StatusBar,
   FlatList,
-  useWindowDimensions,
   ImageSourcePropType,
 } from 'react-native';
 import { Colors } from '../constants/colors';
-import { layout, LEFT_PANEL_W, CARD_GAP, RIGHT_PAD } from '../styles/screenLayout';
+import { layout, LEFT_PANEL_W, CARD_GAP, RIGHT_PAD, IPAD_W } from '../styles/screenLayout';
 import OrderPanel, { CartItem, Course } from '../components/OrderPanel';
 import MoreMenu from '../components/MoreMenu';
 import OrderMoreMenu from '../components/OrderMoreMenu';
@@ -29,6 +28,7 @@ import DevicesScreen from './DevicesScreen';
 import SupportScreen from './SupportScreen';
 import ScanLoyaltyQRModal from '../components/ScanLoyaltyQRModal';
 import RedeemRewardDialog from '../components/RedeemRewardDialog';
+import { useI18n } from '../i18n';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 import {
@@ -128,7 +128,9 @@ interface Props {
 }
 
 export default function HomeScreen({ onTabPress, onCategorySelect, cart, selectedCartId, onSelectItem, onRemoveItem, onUpdateQty, onDoneEditing, isTillOpen, onTillToggle, onExit, orderType, onOrderTypeSet, orderSeq, status, onTotalPress, onAvailabilityPress, tableNumber, courses, onAddCourse, onMoveItemToCourse, onHoldCourse }: Props) {
-  const { width: screenW }      = useWindowDimensions();
+  const { t, af, isRTL } = useI18n();
+  const TAB_KEY_MAP: Record<string, string> = { home: 'tabHome', orders: 'tabOrders', tables: 'tabTables', new: 'tabNew' };
+  const [rightW, setRightW] = useState(IPAD_W - LEFT_PANEL_W);
   const searchRef                   = useRef<TextInput>(null);
   const [search, setSearch]         = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
@@ -149,7 +151,6 @@ export default function HomeScreen({ onTabPress, onCategorySelect, cart, selecte
   const [devicesVisible,     setDevicesVisible]     = useState(false);
   const [supportVisible,     setSupportVisible]     = useState(false);
 
-  const rightW    = screenW - LEFT_PANEL_W;
   const available = rightW - RIGHT_PAD * 2 - CARD_GAP * (COLS - 1);
   const cardW     = Math.floor(available / COLS);
   const cardH     = cardW + NAME_H;
@@ -182,7 +183,7 @@ export default function HomeScreen({ onTabPress, onCategorySelect, cart, selecte
         />
 
         {/* ══ RIGHT: Content ══ */}
-        <View style={layout.right}>
+        <View style={layout.right} onLayout={e => setRightW(e.nativeEvent.layout.width)}>
 
           {/* Action bar */}
           <View style={layout.actionBar}>
@@ -197,7 +198,7 @@ export default function HomeScreen({ onTabPress, onCategorySelect, cart, selecte
                 }
               >
                 <Image source={btn.icon} style={layout.actionIcon} />
-                <Text style={layout.actionLabel}>{btn.label}</Text>
+                <Text style={[layout.actionLabel, { fontFamily: af() }]}>{t(btn.key as any)}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -211,7 +212,7 @@ export default function HomeScreen({ onTabPress, onCategorySelect, cart, selecte
               <TextInput
                 ref={searchRef}
                 style={layout.searchInput}
-                placeholder="Search Products"
+                placeholder={t('searchProducts')}
                 placeholderTextColor={Colors.placeholder}
                 value={search}
                 onChangeText={setSearch}
@@ -281,7 +282,7 @@ export default function HomeScreen({ onTabPress, onCategorySelect, cart, selecte
                   activeOpacity={0.7}
                 >
                   <Image source={tab.icon} style={[layout.tabIcon, active && layout.tabIconActive]} />
-                  <Text style={[layout.tabLabel, active && layout.tabLabelActive]}>{tab.label}</Text>
+                  <Text style={[layout.tabLabel, active && layout.tabLabelActive, { fontFamily: af() }]}>{t(TAB_KEY_MAP[tab.key] as any)}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -293,7 +294,7 @@ export default function HomeScreen({ onTabPress, onCategorySelect, cart, selecte
       <MoreMenu
         visible={homeMenuVisible}
         onClose={() => setHomeMenuVisible(false)}
-        leftPanelWidth={LEFT_PANEL_W + 14}
+        leftPanelWidth={LEFT_PANEL_W + RIGHT_PAD + 8}
         tabBarBottomOffset={76}
         isTillOpen={isTillOpen}
         onItemPress={key => {
@@ -312,8 +313,8 @@ export default function HomeScreen({ onTabPress, onCategorySelect, cart, selecte
 
       <ConfirmDialog
         visible={confirmTillVisible}
-        title={isTillOpen ? 'Close Till' : 'Open Till'}
-        message={isTillOpen ? 'Are you sure you want to close Till?' : 'Are you sure you want to open Till?'}
+        title={t(isTillOpen ? 'closeTill' : 'openTill')}
+        message={t(isTillOpen ? 'closeTillConfirm' : 'openTillConfirm')}
         onNo={() => setConfirmTillVisible(false)}
         onYes={() => { setConfirmTillVisible(false); setTillAmountVisible(true); }}
       />
@@ -322,7 +323,7 @@ export default function HomeScreen({ onTabPress, onCategorySelect, cart, selecte
         visible={tillAmountVisible}
         onClose={() => setTillAmountVisible(false)}
         onDone={() => { setTillAmountVisible(false); onTillToggle(); }}
-        ctaLabel={isTillOpen ? 'Close Till' : 'Open Till'}
+        ctaLabel={t(isTillOpen ? 'closeTill' : 'openTill')}
       />
 
       <DrawerOperationsDialog

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Colors } from '../constants/colors';
 import { layout } from '../styles/screenLayout';
+import { useI18n } from '../i18n';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 import { iconSearch } from '../assets/icons';
@@ -136,6 +137,7 @@ const di = StyleSheet.create({
 
 // ─── Reservation card ─────────────────────────────────────────────────────────
 function ReservationCard({ res }: { res: Reservation }) {
+  const { t, af } = useI18n();
   return (
     <View style={c.card}>
       {/* Left accent bar based on status */}
@@ -197,11 +199,11 @@ function ReservationCard({ res }: { res: Reservation }) {
         <View style={c.actions}>
           {res.status === 'PENDING' && (
             <TouchableOpacity style={c.confirmBtn} activeOpacity={0.8}>
-              <Text style={c.confirmBtnText}>Confirm</Text>
+              <Text style={[c.confirmBtnText, { fontFamily: af('bold') }]}>{t('confirm')}</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity style={c.cancelBtn} activeOpacity={0.8}>
-            <Text style={c.cancelBtnText}>Cancel</Text>
+            <Text style={[c.cancelBtnText, { fontFamily: af('semibold') }]}>{t('cancel')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -216,6 +218,7 @@ interface Props {
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 export default function ReservationsScreen({ onBack }: Props) {
+  const { t, af, isRTL } = useI18n();
   const searchRef = useRef<TextInput>(null);
   const [search, setSearch]         = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
@@ -247,10 +250,10 @@ export default function ReservationsScreen({ onBack }: Props) {
       <View style={s.topBar}>
         <View style={s.topLeft}>
           <TouchableOpacity style={s.backBtn} onPress={onBack} activeOpacity={0.7}>
-            <Text style={s.backText}>Back</Text>
+            <Text style={[s.backText, { fontFamily: af('medium') }]}>{t('back')}</Text>
           </TouchableOpacity>
           <View style={s.topSep} />
-          <Text style={s.topTitle}>Reservations</Text>
+          <Text style={[s.topTitle, { fontFamily: af('bold') }]}>{t('reservationsTitle')}</Text>
         </View>
         <View style={s.topRight}>
           <View style={s.reservationCount}>
@@ -276,7 +279,7 @@ export default function ReservationsScreen({ onBack }: Props) {
             <TextInput
               ref={searchRef}
               style={layout.searchInput}
-              placeholder="Search by guest, phone or table…"
+              placeholder={t('search')}
               placeholderTextColor={Colors.placeholder}
               value={search}
               onChangeText={setSearch}

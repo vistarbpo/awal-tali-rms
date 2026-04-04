@@ -8,6 +8,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { useI18n } from '../i18n';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface Props {
@@ -27,6 +28,7 @@ const NUMPAD: string[][] = [
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function QuantityPadDialog({ visible, currentQty, itemName, onClose, onConfirm }: Props) {
+  const { t, af, isRTL } = useI18n();
   const [input, setInput] = useState('');
 
   useEffect(() => {
@@ -72,13 +74,13 @@ export default function QuantityPadDialog({ visible, currentQty, itemName, onClo
 
           {/* Header */}
           <View style={s.header}>
-            <Text style={s.headerLabel}>QUANTITY</Text>
-            <Text style={s.headerItem} numberOfLines={1}>{itemName}</Text>
+            <Text style={[s.headerLabel, { fontFamily: af('bold') }]}>{t('quantityTitle').toUpperCase()}</Text>
+            <Text style={[s.headerItem, { fontFamily: af('medium') }]} numberOfLines={1}>{itemName}</Text>
           </View>
 
           {/* Display */}
           <View style={s.display}>
-            <Text style={s.displayValue} adjustsFontSizeToFit numberOfLines={1}>
+            <Text style={[s.displayValue, { fontFamily: af('bold') }]} adjustsFontSizeToFit numberOfLines={1}>
               {displayQty}
             </Text>
           </View>
@@ -108,7 +110,7 @@ export default function QuantityPadDialog({ visible, currentQty, itemName, onClo
             {/* Footer */}
             <View style={s.footer}>
               <TouchableOpacity style={s.cancelBtn} onPress={onClose} activeOpacity={0.85}>
-                <Text style={s.footerText}>Cancel</Text>
+                <Text style={[s.footerText, { fontFamily: af('bold') }]}>{t('cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.confirmBtn, (!input || input === '0') && s.confirmBtnDisabled]}
@@ -116,7 +118,7 @@ export default function QuantityPadDialog({ visible, currentQty, itemName, onClo
                 activeOpacity={0.85}
                 disabled={!input || input === '0'}
               >
-                <Text style={s.footerText}>Set Qty</Text>
+                <Text style={[s.footerText, { fontFamily: af('bold') }]}>{t('confirm')}</Text>
               </TouchableOpacity>
             </View>
           </View>

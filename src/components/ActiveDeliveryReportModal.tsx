@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Colors } from '../constants/colors';
 import { iconSarDark } from '../assets/icons';
+import { useI18n } from '../i18n';
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
 interface DeliveryOrder {
@@ -52,6 +53,7 @@ interface Props {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function ActiveDeliveryReportModal({ visible, onClose, dateLabel, printedAt }: Props) {
+  const { t, af } = useI18n();
   const total = DELIVERY_ORDERS.reduce((s, o) => s + o.amount, 0);
 
   return (
@@ -70,11 +72,11 @@ export default function ActiveDeliveryReportModal({ visible, onClose, dateLabel,
           {/* ── Header bar ── */}
           <View style={r.headerBar}>
             <TouchableOpacity onPress={onClose} style={r.doneBtn} activeOpacity={0.7}>
-              <Text style={r.doneText}>Done</Text>
+              <Text style={[r.doneText, { fontFamily: af('semibold') }]}>{t('done')}</Text>
             </TouchableOpacity>
-            <Text style={r.headerTitle}>Active Delivery Orders</Text>
+            <Text style={[r.headerTitle, { fontFamily: af('bold') }]}>{t('activeDelivery')}</Text>
             <TouchableOpacity style={r.printBtn} activeOpacity={0.7}>
-              <Text style={r.printText}>Print</Text>
+              <Text style={[r.printText, { fontFamily: af('semibold') }]}>{t('print')}</Text>
             </TouchableOpacity>
           </View>
 

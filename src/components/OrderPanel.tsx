@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Colors } from '../constants/colors';
+import { useI18n } from '../i18n';
 import { OrderDiscount } from './DiscountDialog';
 
 // ─── Shared types ─────────────────────────────────────────────────────────────
@@ -45,6 +46,7 @@ export interface CartItem {
   comboGroups?: ComboGroup[];
   comboSelections?: Record<string, string>;
   comboSelectionLabels?: string[];  // display-ready names, e.g. ["Pepsi", "Fries"]
+  kitchenNote?: string;
 }
 
 export function formatHoldCountdown(holdTime: number, now: number): string {
@@ -58,6 +60,8 @@ export function formatHoldCountdown(holdTime: number, now: number): string {
 // ─── Icons ────────────────────────────────────────────────────────────────────
 import { iconSarDark, iconSarGray, iconSarWhite, iconXClose, iconChevronRight } from '../assets/icons';
 import HoldTimeDialog from './HoldTimeDialog';
+import { OrderCharge } from './AddChargeDialog';
+import { SplitData } from './SplitOrderView';
 
 const ICONS = {
   sarDark:      iconSarDark,
@@ -97,6 +101,13 @@ interface Props {
   onHoldCourse?: (courseId: string, holdUntil?: number) => void;
   guestCount?: number;
   dueTime?: Date | null;
+  charges?: OrderCharge[];
+  onRemoveCharge?: (id: string) => void;
+  callName?: string;
+  onCallNamePress?: () => void;
+  splits?: SplitData[];
+  activeSplitIndex?: number;
+  onSplitNavigate?: (index: number) => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -116,16 +127,35 @@ function statusBg(s: string) {
   return map[s.toUpperCase()] ?? Colors.grayLight;
 }
 
-export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveItem, orderType, onOrderTypePress, customer, onAddCustomerPress, onTotalPress, onCountPress, orderSeq, isPaymentOpen, isVoided, isReturned, tableNumber, status, discount, onDiscountPress, priceTagMultiplier = 1, currentTime, courses, onAddCourse, onMoveItemToCourse, onHoldCourse, guestCount, dueTime }: Props) {
-  const subtotal       = items.reduce((sum, i) => sum + itemEffectiveTotal(i, priceTagMultiplier), 0);
+export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveItem, orderType, onOrderTypePress, customer, onAddCustomerPress, onTotalPress, onCountPress, orderSeq, isPaymentOpen, isVoided, isReturned, tableNumber, status, discount, onDiscountPress, priceTagMultiplier = 1, currentTime, courses, onAddCourse, onMoveItemToCourse, onHoldCourse, guestCount, dueTime, charges, onRemoveCharge, callName, onCallNamePress, splits, activeSplitIndex = 0, onSplitNavigate }: Props) {
+  const { t, af, isRTL } = useI18n();
+
+  function statusLabel(s: string): string {
+    const map: Record<string, string> = {
+      ACTIVE:   t('statusActive'),
+      DONE:     t('statusDone'),
+      VOID:     t('statusVoid'),
+      PENDING:  t('statusPending'),
+      RETURNED: t('statusReturned'),
+    };
+    return map[s.toUpperCase()] ?? s;
+  }
+
+  // When splits are active, show only the current split's items
+  const splitItems = splits && splits.length > 0
+    ? items.filter(i => splits[activeSplitIndex]?.itemIds.includes(i.id))
+    : items;
+
+  const subtotal       = splitItems.reduce((sum, i) => sum + itemEffectiveTotal(i, priceTagMultiplier), 0);
   const discountAmount = discount
     ? discount.kind === 'percentage'
       ? (subtotal * discount.value) / 100
       : Math.min(discount.value, subtotal)
     : 0;
   const discountedSub  = subtotal - discountAmount;
+  const chargesTotal   = (charges ?? []).reduce((sum, c) => sum + c.amount, 0);
   const taxes          = discountedSub * TAX_RATE / (1 + TAX_RATE);
-  const total          = discountedSub;
+  const total          = discountedSub + chargesTotal;
 
   const hasCourses = !!courses && courses.length > 0;
 
@@ -231,20 +261,20 @@ export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveIt
           item.isHeld && !isVoided && !isReturned && s.itemContentHeld,
         ]}>
           <View style={s.itemLeft}>
-            <Text style={s.itemQty}>{item.qty}</Text>
+            <Text style={[s.itemQty, { fontFamily: af() }]}>{item.qty}</Text>
             <View>
               <Image source={ICONS.xClose} style={s.itemX} />
             </View>
             <View style={s.itemNameCol}>
-              <Text style={s.itemName} numberOfLines={2}>{item.name}</Text>
+              <Text style={[s.itemName, { fontFamily: af() }]} numberOfLines={2}>{item.name}</Text>
               {(tableNumber || orderType?.toLowerCase().includes('dine')) && (
                 <View style={s.tableBadge}>
-                  <Text style={s.tableBadgeText}>{tableNumber ?? 'Table'}</Text>
+                  <Text style={[s.tableBadgeText, { fontFamily: af('semibold') }]}>{tableNumber ?? t('table')}</Text>
                 </View>
               )}
               {item.isHeld && !isVoided && !isReturned && (
                 <View style={s.holdBadge}>
-                  <Text style={s.holdBadgeText}>
+                  <Text style={[s.holdBadgeText, { fontFamily: af('bold') }]}>
                     {item.holdTime && currentTime
                       ? formatHoldCountdown(item.holdTime, currentTime)
                       : 'HOLD'}
@@ -252,21 +282,24 @@ export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveIt
                 </View>
               )}
               {item.discount && (
-                <Text style={s.itemDiscountBadge}>{item.discount.label}</Text>
+                <Text style={[s.itemDiscountBadge, { fontFamily: af('semibold') }]}>{item.discount.label}</Text>
               )}
               {item.comboSelectionLabels && item.comboSelectionLabels.map((label, i) => (
-                <Text key={i} style={s.comboLabel}>+ {label}</Text>
+                <Text key={i} style={[s.comboLabel, { fontFamily: af('medium') }]}>+ {label}</Text>
               ))}
+              {!!item.kitchenNote && (
+                <Text style={[s.kitchenNoteLabel, { fontFamily: af() }]} numberOfLines={2}>{item.kitchenNote}</Text>
+              )}
             </View>
           </View>
           <View style={s.itemRight}>
             <View style={s.itemPriceCol}>
               {item.discount && (
-                <Text style={s.itemOrigPrice}>{(item.price * item.qty * priceTagMultiplier).toFixed(2)}</Text>
+                <Text style={[s.itemOrigPrice, { fontFamily: af() }]}>{(item.price * item.qty * priceTagMultiplier).toFixed(2)}</Text>
               )}
               <View style={s.itemPriceRow}>
                 <Image source={ICONS.sarDark} style={s.sarDark} />
-                <Text style={[s.itemPriceText, !!item.discount && s.itemPriceDiscounted]}>
+                <Text style={[s.itemPriceText, !!item.discount && s.itemPriceDiscounted, { fontFamily: af('semibold') }]}>
                   {itemEffectiveTotal(item, priceTagMultiplier).toFixed(2)}
                 </Text>
               </View>
@@ -301,37 +334,45 @@ export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveIt
           <View style={s.headerRow}>
             {orderSeq !== undefined ? (
               <TouchableOpacity onPress={onCountPress} activeOpacity={0.6} disabled={!onCountPress}>
-                <Text style={[s.countNum, !!onCountPress && s.countNumLink]}>{String(orderSeq).padStart(2, '0')}</Text>
+                <Text style={[s.countNum, !!onCountPress && s.countNumLink, { fontFamily: af('medium') }]}>{String(orderSeq).padStart(2, '0')}</Text>
               </TouchableOpacity>
             ) : <View />}
             {status && (
               <View style={[s.statusBadge, { backgroundColor: statusBg(status) }]}>
-                <Text style={[s.statusText, { color: statusColor(status) }]}>{status}</Text>
+                <Text style={[s.statusText, { color: statusColor(status), fontFamily: af('bold') }]}>{statusLabel(status)}</Text>
               </View>
             )}
           </View>
 
           {dueTime && (
             <View style={s.dueTimeRow}>
-              <Text style={s.dueTimeLabel}>Due:</Text>
-              <Text style={s.dueTimeValue}>
+              <Text style={[s.dueTimeLabel, { fontFamily: af('semibold') }]}>Due:</Text>
+              <Text style={[s.dueTimeValue, { fontFamily: af('semibold') }]}>
                 {dueTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 {' '}
                 {dueTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
               </Text>
             </View>
           )}
+          {!!callName && (
+            <TouchableOpacity onPress={onCallNamePress} activeOpacity={0.7} disabled={!onCallNamePress}>
+              <View style={s.callNameRow}>
+                <Text style={[s.callNameLabel, { fontFamily: af('semibold') }]}>Call:</Text>
+                <Text style={[s.callNameValue, { fontFamily: af('semibold') }]} numberOfLines={1}>{callName}</Text>
+              </View>
+            </TouchableOpacity>
+          )}
           <View style={s.headerRow}>
             <TouchableOpacity onPress={onOrderTypePress} activeOpacity={0.6} disabled={!onOrderTypePress}>
-              <Text style={s.pickup}>{orderType ?? 'Order Type'}</Text>
+              <Text style={[s.pickup, { fontFamily: af('semibold') }]}>{orderType ?? 'Order Type'}</Text>
             </TouchableOpacity>
             {customer ? (
               <TouchableOpacity onPress={onAddCustomerPress} activeOpacity={0.6}>
-                <Text style={s.customerName} numberOfLines={1}>{customer.name}</Text>
+                <Text style={[s.customerName, { fontFamily: af('semibold') }]} numberOfLines={1}>{customer.name}</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity onPress={onAddCustomerPress} activeOpacity={0.6}>
-                <Text style={s.addCustomer}>Add Customer</Text>
+                <Text style={[s.addCustomer, { fontFamily: af('semibold') }]}>{t('addCustomer')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -339,17 +380,42 @@ export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveIt
 
         <View style={s.divider} />
 
+        {/* Split pager strip */}
+        {splits && splits.length > 1 && (
+          <View style={s.splitNav}>
+            <TouchableOpacity
+              style={s.splitNavArrow}
+              onPress={() => onSplitNavigate?.(Math.max(0, activeSplitIndex - 1))}
+              activeOpacity={0.7}
+              disabled={activeSplitIndex === 0}
+            >
+              <Text style={[s.splitNavArrowText, activeSplitIndex === 0 && s.splitNavArrowDisabled, { fontFamily: af() }]}>{'‹'}</Text>
+            </TouchableOpacity>
+            <Text style={[s.splitNavLabel, { fontFamily: af('semibold') }]}>
+              {activeSplitIndex + 1}/{splits.length}
+            </Text>
+            <TouchableOpacity
+              style={s.splitNavArrow}
+              onPress={() => onSplitNavigate?.(Math.min(splits.length - 1, activeSplitIndex + 1))}
+              activeOpacity={0.7}
+              disabled={activeSplitIndex === splits.length - 1}
+            >
+              <Text style={[s.splitNavArrowText, activeSplitIndex === splits.length - 1 && s.splitNavArrowDisabled, { fontFamily: af() }]}>{'›'}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Items title — glass effect */}
         <BlurView intensity={60} tint="light">
           <View style={s.itemsTitle}>
-            <Text style={s.itemsTitleText}>Items</Text>
+            <Text style={[s.itemsTitleText, { fontFamily: af('semibold') }]}>{t('items')}</Text>
             <View style={s.itemsTitleRight}>
               {guestCount != null && guestCount > 0 && (
                 <View style={s.guestBadge}>
-                  <Text style={s.guestBadgeText}>{guestCount} guests</Text>
+                  <Text style={[s.guestBadgeText, { fontFamily: af('semibold') }]}>{guestCount} {t('guests')}</Text>
                 </View>
               )}
-              <Text style={s.itemsCount}>{items.reduce((sum, i) => sum + i.qty, 0)}</Text>
+              <Text style={[s.itemsCount, { fontFamily: af('medium') }]}>{splitItems.reduce((sum, i) => sum + i.qty, 0)}</Text>
             </View>
           </View>
         </BlurView>
@@ -370,13 +436,13 @@ export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveIt
           onScroll={e => { scrollOffsetRef.current = e.nativeEvent.contentOffset.y; }}
           scrollEventThrottle={16}
         >
-          {items.length === 0 ? (
+          {splitItems.length === 0 ? (
             <View style={s.emptyState}>
-              <Text style={s.emptyText}>No items yet</Text>
+              <Text style={[s.emptyText, { fontFamily: af() }]}>No items yet</Text>
             </View>
           ) : courses && courses.length > 0 ? (
             courses.map(course => {
-              const courseItems  = items.filter(i => i.courseId === course.id);
+              const courseItems  = splitItems.filter(i => i.courseId === course.id);
               const isDropTarget = !!draggingId
                 && draggingItemRef.current?.courseId !== course.id
                 && hoverCourseId === course.id;
@@ -399,24 +465,24 @@ export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveIt
                   ]}>
                     <View style={s.courseHeaderLeft}>
                       {course.isHeld && <View style={s.courseHoldDot} />}
-                      <Text style={[s.courseHeaderText, course.isHeld && s.courseHeaderTextHeld]}>
+                      <Text style={[s.courseHeaderText, course.isHeld && s.courseHeaderTextHeld, { fontFamily: af('semibold') }]}>
                         {course.name}
                       </Text>
                       {course.isHeld && course.holdUntil && currentTime ? (
                         <View style={s.courseTimerBadge}>
-                          <Text style={s.courseTimerText}>
+                          <Text style={[s.courseTimerText, { fontFamily: af('medium') }]}>
                             {formatHoldCountdown(course.holdUntil, currentTime)}
                           </Text>
                         </View>
                       ) : course.isHeld ? (
                         <View style={s.courseHeldBadge}>
-                          <Text style={s.courseHeldBadgeText}>ON HOLD</Text>
+                          <Text style={[s.courseHeldBadgeText, { fontFamily: af('bold') }]}>ON HOLD</Text>
                         </View>
                       ) : null}
                     </View>
                     {isDropTarget ? (
                       <View style={s.dropBadge}>
-                        <Text style={s.dropBadgeText}>Drop here</Text>
+                        <Text style={[s.dropBadgeText, { fontFamily: af('semibold') }]}>Drop here</Text>
                       </View>
                     ) : !draggingId && onHoldCourse && !isVoided && !isReturned ? (
                       <TouchableOpacity
@@ -433,7 +499,7 @@ export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveIt
                         activeOpacity={0.75}
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       >
-                        <Text style={[s.holdCourseBtnText, course.isHeld && s.holdCourseBtnTextActive]}>
+                        <Text style={[s.holdCourseBtnText, course.isHeld && s.holdCourseBtnTextActive, { fontFamily: af('semibold') }]}>
                           {course.isHeld ? 'Unhold' : 'Hold'}
                         </Text>
                       </TouchableOpacity>
@@ -444,22 +510,41 @@ export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveIt
               );
             })
           ) : (
-            items.map(item => renderItem(item))
+            splitItems.map(item => renderItem(item))
           )}
         </ScrollView>
 
         {/* Add Course */}
         <TouchableOpacity style={s.addCourse} activeOpacity={0.7} onPress={onAddCourse} disabled={!onAddCourse}>
-          <Text style={s.addCourseText}>Add Course</Text>
+          <Text style={[s.addCourseText, { fontFamily: af('semibold') }]}>{t('addCourse')}</Text>
         </TouchableOpacity>
+
+        {/* Charge rows */}
+        {charges && charges.map(charge => (
+          <TouchableOpacity
+            key={charge.id}
+            style={s.chargeRow}
+            onPress={() => onRemoveCharge?.(charge.id)}
+            activeOpacity={0.75}
+          >
+            <View style={s.chargeLeft}>
+              <View style={s.chargeDot} />
+              <Text style={[s.chargeLabel, { fontFamily: af('medium') }]}>{charge.label}</Text>
+            </View>
+            <View style={s.chargeVal}>
+              <Image source={ICONS.sarGray} style={s.sarGray} />
+              <Text style={[s.chargeValText, { fontFamily: af('semibold') }]}>{charge.amount.toFixed(2)}</Text>
+            </View>
+          </TouchableOpacity>
+        ))}
 
         {/* Sub Total row — only when discount applied */}
         {discount ? (
           <View style={s.subTotalRow}>
-            <Text style={s.subTotalLabel}>Sub Total</Text>
+            <Text style={[s.subTotalLabel, { fontFamily: af('medium') }]}>{t('subtotal')}</Text>
             <View style={s.taxesVal}>
               <Image source={ICONS.sarGray} style={s.sarGray} />
-              <Text style={s.subTotalValText}>{subtotal.toFixed(2)}</Text>
+              <Text style={[s.subTotalValText, { fontFamily: af('medium') }]}>{subtotal.toFixed(2)}</Text>
             </View>
           </View>
         ) : null}
@@ -469,22 +554,22 @@ export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveIt
           <TouchableOpacity style={s.discountRow} onPress={onDiscountPress} activeOpacity={0.75}>
             <View style={s.discountLeft}>
               <View style={s.discountDot} />
-              <Text style={s.discountLabel}>{discount.label}</Text>
+              <Text style={[s.discountLabel, { fontFamily: af('medium') }]}>{discount.label}</Text>
             </View>
             <View style={s.discountVal}>
-              <Text style={s.discountValText}>− </Text>
+              <Text style={[s.discountValText, { fontFamily: af('semibold') }]}>− </Text>
               <Image source={ICONS.sarGray} style={s.sarGray} />
-              <Text style={s.discountValText}>{discountAmount.toFixed(2)}</Text>
+              <Text style={[s.discountValText, { fontFamily: af('semibold') }]}>{discountAmount.toFixed(2)}</Text>
             </View>
           </TouchableOpacity>
         ) : null}
 
         {/* Taxes */}
         <View style={s.taxesRow}>
-          <Text style={s.taxesLabel}>Tax (incl.)</Text>
+          <Text style={[s.taxesLabel, { fontFamily: af('medium') }]}>{t('taxIncl')}</Text>
           <View style={s.taxesVal}>
             <Image source={ICONS.sarGray} style={s.sarGray} />
-            <Text style={s.taxesValText}>{taxes.toFixed(2)}</Text>
+            <Text style={[s.taxesValText, { fontFamily: af('medium') }]}>{taxes.toFixed(2)}</Text>
           </View>
         </View>
 
@@ -494,12 +579,12 @@ export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveIt
           return (
             <TouchableOpacity style={[s.totalBtn, inactive && s.totalBtnPayment]} onPress={inactive ? undefined : onTotalPress} activeOpacity={0.85}>
               <View style={s.totalLeft}>
-                <Text style={[s.totalLabel, inactive && s.totalLabelInactive]}>TOTAL</Text>
+                <Text style={[s.totalLabel, inactive && s.totalLabelInactive, { fontFamily: af('semibold') }]}>{t('total')}</Text>
                 <Image source={ICONS.chevronRight} style={[s.totalChevron, inactive && s.totalChevronInactive]} />
               </View>
               <View style={s.totalRight}>
                 <Image source={ICONS.sarWhite} style={[s.sarWhite, inactive && s.sarWhiteInactive]} />
-                <Text style={[s.totalAmount, inactive && s.totalLabelInactive]}>{total.toFixed(2)}</Text>
+                <Text style={[s.totalAmount, inactive && s.totalLabelInactive, { fontFamily: af('semibold') }]}>{total.toFixed(2)}</Text>
               </View>
             </TouchableOpacity>
           );
@@ -539,7 +624,7 @@ export default function OrderPanel({ items, selectedId, onSelectItem, onRemoveIt
             <View style={s.ghostHandleLine} />
             <View style={s.ghostHandleLine} />
           </View>
-          <Text style={s.ghostText} numberOfLines={1}>
+          <Text style={[s.ghostText, { fontFamily: af('semibold') }]} numberOfLines={1}>
             {items.find(i => i.id === draggingId)?.name ?? ''}
           </Text>
         </Animated.View>
@@ -686,10 +771,55 @@ const s = StyleSheet.create({
     color: Colors.primary,
     letterSpacing: -0.1,
   },
+  callNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  callNameLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.grayText,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  callNameValue: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.primary,
+    letterSpacing: -0.1,
+    flex: 1,
+  },
   itemsCount: {
     fontSize: 13,
     fontWeight: '500',
     color: Colors.grayText,
+  },
+  splitNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#2C2C2E',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  splitNavArrow: {
+    paddingHorizontal: 4,
+  },
+  splitNavArrowText: {
+    fontSize: 22,
+    fontWeight: '400',
+    color: Colors.white,
+    lineHeight: 24,
+  },
+  splitNavArrowDisabled: {
+    color: 'rgba(255,255,255,0.3)',
+  },
+  splitNavLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.white,
+    letterSpacing: -0.2,
   },
 
   scroll: { flex: 1 },
@@ -930,6 +1060,14 @@ const s = StyleSheet.create({
     letterSpacing: -0.1,
     marginTop: 2,
   },
+  kitchenNoteLabel: {
+    fontSize: 11,
+    fontWeight: '400',
+    color: Colors.grayText,
+    letterSpacing: -0.1,
+    marginTop: 3,
+    fontStyle: 'italic',
+  },
   itemRight: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1060,6 +1198,46 @@ const s = StyleSheet.create({
     letterSpacing: -0.075,
   },
 
+  chargeRow: {
+    backgroundColor: Colors.primaryLight,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.grayBorder,
+  },
+  chargeLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  chargeDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: Colors.primary,
+  },
+  chargeLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.primary,
+    letterSpacing: -0.075,
+    flex: 1,
+  },
+  chargeVal: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  chargeValText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.primary,
+    letterSpacing: -0.07,
+  },
   discountRow: {
     backgroundColor: Colors.primaryLight,
     flexDirection: 'row',

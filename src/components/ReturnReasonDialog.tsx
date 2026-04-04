@@ -3,6 +3,8 @@ import {
   View, Text, TouchableOpacity, TouchableWithoutFeedback, Modal, StyleSheet,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { useI18n } from '../i18n';
+
 
 const REASONS = [
   'Customer request',
@@ -19,6 +21,7 @@ interface Props {
 }
 
 export default function ReturnReasonDialog({ visible, onClose, onSelect }: Props) {
+  const { t, af, isRTL } = useI18n();
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={onClose}>
@@ -30,8 +33,8 @@ export default function ReturnReasonDialog({ visible, onClose, onSelect }: Props
 
           {/* Header */}
           <View style={s.header}>
-            <Text style={s.title}>Return order</Text>
-            <Text style={s.subtitle}>Select reason below</Text>
+            <Text style={[s.title, { fontFamily: af('semibold') }]}>{t('returnOrderTitle')}</Text>
+            <Text style={s.subtitle}>{t('selectReasonBelow')}</Text>
           </View>
 
           {/* Reasons */}
@@ -95,7 +98,7 @@ const s = StyleSheet.create({
   divider: {
     height: 0.5,
     backgroundColor: 'rgba(60,60,67,0.29)',
-    marginLeft: 24,
+    marginStart: 24,
   },
   row: {
     paddingHorizontal: 26,

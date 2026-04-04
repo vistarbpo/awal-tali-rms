@@ -9,6 +9,7 @@ import {
   Image,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { useI18n } from '../i18n';
 import { Order } from '../screens/OrdersScreen';
 import { iconSarDark } from '../assets/icons';
 
@@ -118,6 +119,7 @@ interface Props {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function ReceiptModal({ visible, onClose, order }: Props) {
+  const { t, af, isRTL } = useI18n();
   const subtotal = order.items.reduce((s, i) => s + i.price * i.qty, 0);
   const vat      = order.status === 'VOID' ? 0 : subtotal * 0.15;
   const total    = subtotal + vat;
@@ -139,13 +141,13 @@ export default function ReceiptModal({ visible, onClose, order }: Props) {
         <View style={r.card}>
 
           {/* ── Header ── */}
-          <View style={r.header}>
+          <View style={[r.header, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <TouchableOpacity onPress={onClose} style={r.doneBtn} activeOpacity={0.7}>
-              <Text style={r.doneText}>Done</Text>
+              <Text style={[r.doneText, { fontFamily: af('semibold') }]}>{t('done')}</Text>
             </TouchableOpacity>
-            <Text style={r.headerTitle}>Order Receipt</Text>
+            <Text style={[r.headerTitle, { fontFamily: af('semibold') }]}>{t('receiptTitle')}</Text>
             <TouchableOpacity style={r.printBtn} activeOpacity={0.7}>
-              <Text style={r.printText}>🖨 Print</Text>
+              <Text style={r.printText}>🖨 {t('print')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -458,7 +460,6 @@ const r = StyleSheet.create({
   totalLabel: {
     fontSize: 14,
     color: Colors.black,
-    textAlign: 'left',
   },
   totalRight: {
     flexDirection: 'row',

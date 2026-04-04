@@ -9,6 +9,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import { useI18n } from '../i18n';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface OrderTag {
@@ -39,6 +40,7 @@ interface Props {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function OrderTagsDialog({ visible, activeTags, onClose, onApply }: Props) {
+  const { t, af, isRTL } = useI18n();
   const [selected, setSelected] = useState<string[]>([]);
 
   useEffect(() => {
@@ -73,7 +75,7 @@ export default function OrderTagsDialog({ visible, activeTags, onClose, onApply 
 
           {/* Header */}
           <View style={s.header}>
-            <Text style={s.headerTitle}>Tags</Text>
+            <Text style={[s.headerTitle, { fontFamily: af('semibold') }]}>{t('orderTagsTitle')}</Text>
           </View>
 
           {/* List */}
@@ -88,7 +90,7 @@ export default function OrderTagsDialog({ visible, activeTags, onClose, onApply 
                 >
                   {index > 0 && <View style={s.divider} />}
                   <View style={s.row}>
-                    <Text style={[s.rowLabel, isSelected && s.rowLabelSelected]}>
+                    <Text style={[s.rowLabel, isSelected && s.rowLabelSelected, { fontFamily: af('regular') }]}>
                       {tag.label}
                     </Text>
                     {isSelected && <Text style={s.checkmark}>✓</Text>}
@@ -101,10 +103,10 @@ export default function OrderTagsDialog({ visible, activeTags, onClose, onApply 
           {/* Footer */}
           <View style={s.footer}>
             <TouchableOpacity style={s.cancelBtn} onPress={onClose} activeOpacity={0.85}>
-              <Text style={s.footerBtnText}>Cancel</Text>
+              <Text style={[s.footerBtnText, { fontFamily: af('bold') }]}>{t('cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={s.doneBtn} onPress={handleDone} activeOpacity={0.85}>
-              <Text style={s.footerBtnText}>Done</Text>
+              <Text style={[s.footerBtnText, { fontFamily: af('bold') }]}>{t('done')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -156,7 +158,7 @@ const s = StyleSheet.create({
   divider: {
     height: 0.5,
     backgroundColor: 'rgba(60,60,67,0.29)',
-    marginLeft: 24,
+    marginStart: 24,
   },
   row: {
     flexDirection: 'row',

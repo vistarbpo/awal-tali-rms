@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { Colors } from '../constants/colors';
 import { layout } from '../styles/screenLayout';
+import { useI18n } from '../i18n';
 import OrderPanel, { CartItem } from '../components/OrderPanel';
 import ReturnOrderDialog, { ReturnItem } from '../components/ReturnOrderDialog';
 import ReturnReasonDialog from '../components/ReturnReasonDialog';
@@ -71,6 +72,7 @@ export interface Order {
   customerName?: string;
   customerPhone?: string;
   createdBy: string;
+  source?: OrderSource;
   paymentMethod: PaymentMethod;
   status: OrderStatus;
   total: number;
@@ -79,18 +81,18 @@ export interface Order {
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
 const ORDERS: Order[] = [
-  { id: '1',  orderNumber: '100351', type: 'PICK UP',    itemCount: 8, time: '07:41 PM', closedAt: '07:55 PM', createdBy: 'Mohammed',  paymentMethod: 'Card',   status: 'ACTIVE',  total: 23.00, items: [{ name: 'Gourmet Burger Large', qty: 1, price: 23, note: '+ Sourdough Bread' }] },
-  { id: '2',  orderNumber: '100350', type: 'PICK UP',    itemCount: 7, time: '07:39 PM', closedAt: '07:52 PM', createdBy: 'Mohammed',  paymentMethod: 'Cash',   status: 'ACTIVE',  total: 67.50, items: [{ name: 'Grilled Chicken', qty: 2, price: 45 }, { name: 'Garden Salad', qty: 1, price: 18 }] },
-  { id: '3',  orderNumber: '100349', type: 'PICK UP',    itemCount: 6, time: '07:38 PM', closedAt: '07:50 PM', createdBy: 'Sara',      paymentMethod: 'Card',   status: 'DONE',    total: 7.00,  items: [{ name: 'Water Bottle', qty: 2, price: 7 }] },
-  { id: '4',  orderNumber: '100348', type: 'PICK UP',    itemCount: 5, time: '06:55 PM', closedAt: '07:10 PM', createdBy: 'Mohammed',  paymentMethod: 'Cash',   status: 'ACTIVE',  total: 2.00,  items: [{ name: 'Coffee', qty: 1, price: 2 }] },
-  { id: '5',  orderNumber: '100347', type: 'DINE IN',    tableNumber: 'Table 1', itemCount: 3, time: '05:17 PM', closedAt: '05:45 PM', customerName: 'Hassan',  customerPhone: '0599999999', createdBy: 'Sara', paymentMethod: 'Unpaid', status: 'VOID', total: 0.00, items: [{ name: 'Fried Rice', qty: 1, price: 15 }, { name: 'Juice', qty: 2, price: 10 }] },
-  { id: '6',  orderNumber: '100346', type: 'DINE IN',    tableNumber: 'Table 1', itemCount: 4, time: '03:54 PM', closedAt: '04:20 PM', createdBy: 'Mohammed',  paymentMethod: 'Unpaid', status: 'VOID', total: 0.00, items: [{ name: 'Pasta Primavera', qty: 1, price: 30 }] },
-  { id: '7',  orderNumber: '100345', type: 'DELIVERY',   itemCount: 4, time: '03:10 PM', closedAt: '03:45 PM', customerName: 'Ahmed Sha',  customerPhone: '0508946545', createdBy: 'Sara', paymentMethod: 'Card', status: 'DONE', total: 112.75, items: [{ name: 'Beef Steak', qty: 1, price: 65 }, { name: 'Pasta', qty: 1, price: 30 }, { name: 'Salad', qty: 2, price: 36 }] },
-  { id: '8',  orderNumber: '100344', type: 'PICK UP',    itemCount: 2, time: '02:30 PM', closedAt: '02:44 PM', customerName: 'Fatima N',   customerPhone: '0509876543', createdBy: 'Mohammed', paymentMethod: 'Cash', status: 'DONE', total: 36.00, items: [{ name: 'Caesar Salad', qty: 2, price: 18 }] },
-  { id: '9',  orderNumber: '100343', type: 'DINE IN',    tableNumber: 'Table 3', itemCount: 5, time: '01:15 PM', closedAt: '02:00 PM', customerName: 'Khalid M', customerPhone: '0544332211', createdBy: 'Sara', paymentMethod: 'Split', status: 'DONE', total: 204.00, items: [{ name: 'Mixed Grill', qty: 2, price: 150 }, { name: 'Lamb Chops', qty: 1, price: 70 }, { name: 'Juice', qty: 2, price: 20 }] },
-  { id: '10', orderNumber: '100342', type: 'DRIVE THRU', itemCount: 3, time: '12:05 PM', closedAt: '12:18 PM', createdBy: 'Mohammed',  paymentMethod: 'Card',   status: 'DONE',    total: 55.50, items: [{ name: 'Chicken Tikka', qty: 1, price: 40 }, { name: 'Salad', qty: 1, price: 18 }] },
-  { id: '11', orderNumber: '100341', type: 'PENDING',    itemCount: 2, time: '11:50 AM', createdBy: 'Sara',      paymentMethod: 'Unpaid', status: 'PENDING', total: 38.50, items: [{ name: 'Veggie Wrap', qty: 2, price: 20 }] } as any,
-  { id: '12', orderNumber: '100340', type: 'PICK UP',    itemCount: 1, time: '11:30 AM', createdBy: 'Mohammed',  paymentMethod: 'Unpaid', status: 'PENDING', total: 22.00, items: [{ name: 'Veggie Wrap', qty: 1, price: 20 }] },
+  { id: '1',  orderNumber: '100351', type: 'PICK UP',    itemCount: 8, time: '07:41 PM', closedAt: '07:55 PM', createdBy: 'Mohammed',  source: 'Cashier', paymentMethod: 'Card',   status: 'ACTIVE',  total: 23.00, items: [{ name: 'Gourmet Burger Large', qty: 1, price: 23, note: '+ Sourdough Bread' }] },
+  { id: '2',  orderNumber: '100350', type: 'PICK UP',    itemCount: 7, time: '07:39 PM', closedAt: '07:52 PM', createdBy: 'Mohammed',  source: 'Cashier', paymentMethod: 'Cash',   status: 'ACTIVE',  total: 67.50, items: [{ name: 'Grilled Chicken', qty: 2, price: 45 }, { name: 'Garden Salad', qty: 1, price: 18 }] },
+  { id: '3',  orderNumber: '100349', type: 'PICK UP',    itemCount: 6, time: '07:38 PM', closedAt: '07:50 PM', createdBy: 'Sara',      source: 'Cashier', paymentMethod: 'Card',   status: 'DONE',    total: 7.00,  items: [{ name: 'Water Bottle', qty: 2, price: 7 }] },
+  { id: '4',  orderNumber: '100348', type: 'PICK UP',    itemCount: 5, time: '06:55 PM', closedAt: '07:10 PM', createdBy: 'Mohammed',  source: 'API',     paymentMethod: 'Cash',   status: 'ACTIVE',  total: 2.00,  items: [{ name: 'Coffee', qty: 1, price: 2 }] },
+  { id: '5',  orderNumber: '100347', type: 'DINE IN',    tableNumber: 'Table 1', itemCount: 3, time: '05:17 PM', closedAt: '05:45 PM', customerName: 'Hassan',  customerPhone: '0599999999', createdBy: 'Sara', source: 'Cashier', paymentMethod: 'Unpaid', status: 'VOID', total: 0.00, items: [{ name: 'Fried Rice', qty: 1, price: 15 }, { name: 'Juice', qty: 2, price: 10 }] },
+  { id: '6',  orderNumber: '100346', type: 'DINE IN',    tableNumber: 'Table 1', itemCount: 4, time: '03:54 PM', closedAt: '04:20 PM', createdBy: 'Mohammed',  source: 'Cashier', paymentMethod: 'Unpaid', status: 'VOID', total: 0.00, items: [{ name: 'Pasta Primavera', qty: 1, price: 30 }] },
+  { id: '7',  orderNumber: '100345', type: 'DELIVERY',   itemCount: 4, time: '03:10 PM', closedAt: '03:45 PM', customerName: 'Ahmed Sha',  customerPhone: '0508946545', createdBy: 'Sara', source: 'API', paymentMethod: 'Card', status: 'DONE', total: 112.75, items: [{ name: 'Beef Steak', qty: 1, price: 65 }, { name: 'Pasta', qty: 1, price: 30 }, { name: 'Salad', qty: 2, price: 36 }] },
+  { id: '8',  orderNumber: '100344', type: 'PICK UP',    itemCount: 2, time: '02:30 PM', closedAt: '02:44 PM', customerName: 'Fatima N',   customerPhone: '0509876543', createdBy: 'Mohammed', source: 'Cashier', paymentMethod: 'Cash', status: 'DONE', total: 36.00, items: [{ name: 'Caesar Salad', qty: 2, price: 18 }] },
+  { id: '9',  orderNumber: '100343', type: 'DINE IN',    tableNumber: 'Table 3', itemCount: 5, time: '01:15 PM', closedAt: '02:00 PM', customerName: 'Khalid M', customerPhone: '0544332211', createdBy: 'Sara', source: 'Cashier', paymentMethod: 'Split', status: 'DONE', total: 204.00, items: [{ name: 'Mixed Grill', qty: 2, price: 150 }, { name: 'Lamb Chops', qty: 1, price: 70 }, { name: 'Juice', qty: 2, price: 20 }] },
+  { id: '10', orderNumber: '100342', type: 'DRIVE THRU', itemCount: 3, time: '12:05 PM', closedAt: '12:18 PM', createdBy: 'Mohammed',  source: 'Cashier', paymentMethod: 'Card',   status: 'DONE',    total: 55.50, items: [{ name: 'Chicken Tikka', qty: 1, price: 40 }, { name: 'Salad', qty: 1, price: 18 }] },
+  { id: '11', orderNumber: '100341', type: 'PENDING',    itemCount: 2, time: '11:50 AM', createdBy: 'Sara',      source: 'API',     paymentMethod: 'Unpaid', status: 'PENDING', total: 38.50, items: [{ name: 'Veggie Wrap', qty: 2, price: 20 }] } as any,
+  { id: '12', orderNumber: '100340', type: 'PICK UP',    itemCount: 1, time: '11:30 AM', createdBy: 'Mohammed',  source: 'Cashier', paymentMethod: 'Unpaid', status: 'PENDING', total: 22.00, items: [{ name: 'Veggie Wrap', qty: 1, price: 20 }] },
 ];
 
 // ─── Status config ────────────────────────────────────────────────────────────
@@ -135,6 +137,7 @@ interface MoreMenuProps {
 }
 
 function MoreMenu({ visible, onClose, onAction, orderStatus }: MoreMenuProps) {
+  const { af, isRTL } = useI18n();
   const allowedKeys = orderStatus ? STATUS_MORE_KEYS[orderStatus] : STATUS_MORE_KEYS.ACTIVE;
   const actions = ALL_MORE_ACTIONS.filter(a => allowedKeys.includes(a.key));
   return (
@@ -142,7 +145,7 @@ function MoreMenu({ visible, onClose, onAction, orderStatus }: MoreMenuProps) {
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={StyleSheet.absoluteFill} />
       </TouchableWithoutFeedback>
-      <View style={mm.container} pointerEvents="box-none">
+      <View style={[mm.container, isRTL ? { left: 20, right: undefined } : { right: 20 }]} pointerEvents="box-none">
         <View style={mm.card}>
           {actions.map((action, i) => (
             <React.Fragment key={action.key}>
@@ -152,7 +155,7 @@ function MoreMenu({ visible, onClose, onAction, orderStatus }: MoreMenuProps) {
                 onPress={() => { onAction(action.key); onClose(); }}
                 activeOpacity={0.6}
               >
-                <Text style={[mm.rowLabel, action.key === 'details' && mm.rowLabelHighlight]}>
+                <Text style={[mm.rowLabel, action.key === 'details' && mm.rowLabelHighlight, { fontFamily: af('regular') }]}>
                   {action.label}
                 </Text>
                 {action.key === 'details' && (
@@ -173,7 +176,6 @@ const mm = StyleSheet.create({
   container: {
     position: 'absolute',
     top: 72,
-    right: 20,
   },
   card: {
     width: 240,
@@ -231,11 +233,25 @@ const mm = StyleSheet.create({
 
 // ─── Order Detail Full View (right panel content) ────────────────────────────
 function InfoRow({ label, value }: { label: string; value: string }) {
+  const { af } = useI18n();
   return (
     <View style={dv.infoRow}>
-      <Text style={dv.infoLabel}>{label}</Text>
-      <Text style={dv.infoValue}>{value}</Text>
+      <Text style={[dv.infoLabel, { fontFamily: af('regular') }]}>{label}</Text>
+      <Text style={[dv.infoValue, { fontFamily: af('semibold') }]}>{value}</Text>
     </View>
+  );
+}
+
+function TapRow({ label, onPress }: { label: string; onPress: () => void }) {
+  const { af } = useI18n();
+  return (
+    <TouchableOpacity style={dv.infoRow} onPress={onPress} activeOpacity={0.7}>
+      <Text style={[dv.infoLabel, { fontFamily: af('regular') }]}>{label}</Text>
+      <View style={dv.tapRowRight}>
+        <Text style={[dv.tapRowLink, { fontFamily: af('semibold') }]}>View</Text>
+        <Text style={[dv.tapRowChev, { fontFamily: af('regular') }]}>›</Text>
+      </View>
+    </TouchableOpacity>
   );
 }
 
@@ -245,6 +261,7 @@ interface OrderDetailViewProps {
 }
 
 function OrderDetailView({ order, onBack }: OrderDetailViewProps) {
+  const { t, af } = useI18n();
   const subtotal = order.items.reduce((sum, i) => sum + i.price * i.qty, 0);
   const tax      = order.status === 'VOID' ? 0 : subtotal * 0.15;
   const total    = subtotal + tax;
@@ -260,19 +277,19 @@ function OrderDetailView({ order, onBack }: OrderDetailViewProps) {
       <View style={[s.actionBar, dv.actionBar]}>
         <TouchableOpacity style={s.backBtn} onPress={onBack} activeOpacity={0.8}>
           <Image source={ICONS.arrowLeft} style={s.btnIcon} />
-          <Text style={s.btnLabel}>BACK</Text>
+          <Text style={[s.btnLabel, { fontFamily: af('medium') }]}>BACK</Text>
         </TouchableOpacity>
 
         <View style={dv.titleArea}>
-          <Text style={dv.titleOrderNum}>#{order.orderNumber}</Text>
+          <Text style={[dv.titleOrderNum, { fontFamily: af('bold') }]}>#{order.orderNumber}</Text>
           <View style={[dv.statusChip, { backgroundColor: STATUS_BG[order.status] }]}>
             <View style={[dv.statusDot, { backgroundColor: STATUS_COLOR[order.status] }]} />
-            <Text style={[dv.statusChipText, { color: STATUS_COLOR[order.status] }]}>{order.status}</Text>
+            <Text style={[dv.statusChipText, { color: STATUS_COLOR[order.status], fontFamily: af('bold') }]}>{STATUS_I18N_KEY[order.status] ? t(STATUS_I18N_KEY[order.status]) : order.status}</Text>
           </View>
         </View>
 
         <TouchableOpacity style={s.toolBtn} onPress={() => setReceiptVisible(true)} activeOpacity={0.8}>
-          <Text style={s.btnLabel}>VIEW RECEIPT</Text>
+          <Text style={[s.btnLabel, { fontFamily: af('medium') }]}>VIEW RECEIPT</Text>
         </TouchableOpacity>
       </View>
 
@@ -285,34 +302,36 @@ function OrderDetailView({ order, onBack }: OrderDetailViewProps) {
 
           {/* Order info grid */}
           <View style={dv.section}>
-            <Text style={dv.sectionLabel}>ORDER INFORMATION</Text>
+            <Text style={[dv.sectionLabel, { fontFamily: af('bold') }]}>ORDER INFORMATION</Text>
             <InfoRow label="Order Type"   value={order.type + (order.tableNumber ? ` — ${order.tableNumber}` : '')} />
-            <InfoRow label="Created By"   value={order.createdBy} />
+            {order.source        && <InfoRow label="Order Source" value={order.source} />}
+            <InfoRow label="Creator"      value={order.createdBy} />
             <InfoRow label="Order Time"   value={order.time} />
-            {order.closedAt   && <InfoRow label="Closed At"   value={order.closedAt} />}
+            {order.closedAt      && <InfoRow label="Closed At"   value={order.closedAt} />}
             <InfoRow label="Payment"      value={PAYMENT_LABEL[order.paymentMethod]} />
             <InfoRow label="Items"        value={`${order.itemCount} items`} />
             {order.customerName  && <InfoRow label="Customer" value={order.customerName} />}
             {order.customerPhone && <InfoRow label="Phone"    value={order.customerPhone} />}
+            <TapRow label="View Receipt"  onPress={() => setReceiptVisible(true)} />
           </View>
 
           <View style={dv.divider} />
 
           {/* Items */}
           <View style={dv.section}>
-            <Text style={dv.sectionLabel}>ORDER ITEMS</Text>
+            <Text style={[dv.sectionLabel, { fontFamily: af('bold') }]}>ORDER ITEMS</Text>
             {order.items.map((item, i) => (
               <View key={i} style={dv.itemRow}>
                 <View style={dv.itemQtyBadge}>
-                  <Text style={dv.itemQtyText}>{item.qty}</Text>
+                  <Text style={[dv.itemQtyText, { fontFamily: af('bold') }]}>{item.qty}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={dv.itemName}>{item.name}</Text>
-                  {item.note && <Text style={dv.itemNote}>{item.note}</Text>}
+                  <Text style={[dv.itemName, { fontFamily: af('medium') }]}>{item.name}</Text>
+                  {item.note && <Text style={[dv.itemNote, { fontFamily: af('regular') }]}>{item.note}</Text>}
                 </View>
                 <View style={dv.amountRow}>
                   <Image source={ICONS.sar} style={dv.sarIcon} />
-                  <Text style={dv.itemPrice}>{(item.price * item.qty).toFixed(2)}</Text>
+                  <Text style={[dv.itemPrice, { fontFamily: af('semibold') }]}>{(item.price * item.qty).toFixed(2)}</Text>
                 </View>
               </View>
             ))}
@@ -323,24 +342,24 @@ function OrderDetailView({ order, onBack }: OrderDetailViewProps) {
           {/* Totals */}
           <View style={[dv.section, { gap: 12 }]}>
             <View style={dv.totalRow}>
-              <Text style={dv.totalLabel}>Subtotal</Text>
+              <Text style={[dv.totalLabel, { fontFamily: af('regular') }]}>Subtotal</Text>
               <View style={dv.amountRow}>
                 <Image source={ICONS.sar} style={dv.sarIcon} />
-                <Text style={dv.totalVal}>{subtotal.toFixed(2)}</Text>
+                <Text style={[dv.totalVal, { fontFamily: af('medium') }]}>{subtotal.toFixed(2)}</Text>
               </View>
             </View>
             <View style={dv.totalRow}>
-              <Text style={dv.totalLabel}>Tax (15%)</Text>
+              <Text style={[dv.totalLabel, { fontFamily: af('regular') }]}>Tax (15%)</Text>
               <View style={dv.amountRow}>
                 <Image source={ICONS.sar} style={dv.sarIcon} />
-                <Text style={dv.totalVal}>{tax.toFixed(2)}</Text>
+                <Text style={[dv.totalVal, { fontFamily: af('medium') }]}>{tax.toFixed(2)}</Text>
               </View>
             </View>
             <View style={[dv.totalRow, dv.grandTotalRow]}>
-              <Text style={dv.grandTotalLabel}>Total</Text>
+              <Text style={[dv.grandTotalLabel, { fontFamily: af('bold') }]}>Total</Text>
               <View style={dv.amountRow}>
                 <Image source={ICONS.sar} style={[dv.sarIcon, dv.sarIconLg]} />
-                <Text style={dv.grandTotalVal}>{order.status === 'VOID' ? '0.00' : total.toFixed(2)}</Text>
+                <Text style={[dv.grandTotalVal, { fontFamily: af('bold') }]}>{order.status === 'VOID' ? '0.00' : total.toFixed(2)}</Text>
               </View>
             </View>
           </View>
@@ -384,6 +403,9 @@ const dv = StyleSheet.create({
   infoRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: Colors.grayBorder },
   infoLabel: { fontSize: 14, fontWeight: '500', color: Colors.grayText },
   infoValue: { fontSize: 14, fontWeight: '600', color: Colors.primary },
+  tapRowRight: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  tapRowLink:  { fontSize: 14, fontWeight: '600', color: Colors.primary },
+  tapRowChev:  { fontSize: 18, fontWeight: '400', color: Colors.primary, lineHeight: 22 },
 
   divider: { height: 1, backgroundColor: Colors.grayBorder, marginHorizontal: 24 },
 
@@ -489,20 +511,32 @@ function countActiveFilters(f: OrderFilters): number {
 }
 
 interface FilterPanelProps {
-  visible:   boolean;
-  filters:   OrderFilters;
-  onApply:   (f: OrderFilters) => void;
-  onClose:   () => void;
+  visible:      boolean;
+  filters:      OrderFilters;
+  onApply:      (f: OrderFilters) => void;
+  onClose:      () => void;
+  initialStep?: FPStep | 'main-scrolled';
 }
 
-function FilterPanel({ visible, filters, onApply, onClose }: FilterPanelProps) {
+function FilterPanel({ visible, filters, onApply, onClose, initialStep }: FilterPanelProps) {
+  const { t, af, isRTL } = useI18n();
   const [local,    setLocal]    = useState<OrderFilters>(emptyFilters);
-  const [step,     setStep]     = useState<FPStep>('main');
+  const [step,     setStep]     = useState<FPStep>(
+    (initialStep && initialStep !== 'main-scrolled') ? initialStep : 'main'
+  );
   const [calYear,  setCalYear]  = useState(new Date().getFullYear());
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
+  const mainScrollRef = useRef<ScrollView>(null);
 
   React.useEffect(() => {
-    if (visible) { setLocal({ ...filters }); setStep('main'); }
+    if (visible) {
+      setLocal({ ...filters });
+      const s = (initialStep && initialStep !== 'main-scrolled') ? initialStep : 'main';
+      setStep(s);
+      if (initialStep === 'main-scrolled') {
+        setTimeout(() => mainScrollRef.current?.scrollToEnd({ animated: false }), 100);
+      }
+    }
   }, [visible]);
 
   const TODAY = todayISO();
@@ -536,19 +570,19 @@ function FilterPanel({ visible, filters, onApply, onClose }: FilterPanelProps) {
     return (
       <View style={fp.calendar}>
         <View style={fp.calHeader}>
-          <Text style={fp.calMonthTitle}>{MONTH_NAMES[calMonth]} {calYear} ›</Text>
+          <Text style={[fp.calMonthTitle, { fontFamily: af('semibold') }]}>{MONTH_NAMES[calMonth]} {calYear} ›</Text>
           <View style={fp.calNavRow}>
             <TouchableOpacity onPress={prevMonth} style={fp.calNav} activeOpacity={0.7}>
-              <Text style={fp.calNavText}>‹</Text>
+              <Text style={[fp.calNavText, { fontFamily: af('regular') }]}>‹</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={nextMonth} style={fp.calNav} activeOpacity={0.7}>
-              <Text style={fp.calNavText}>›</Text>
+              <Text style={[fp.calNavText, { fontFamily: af('regular') }]}>›</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={fp.calDayNames}>
-          {DAY_NAMES.map(d => <Text key={d} style={fp.calDayName}>{d}</Text>)}
+          {DAY_NAMES.map(d => <Text key={d} style={[fp.calDayName, { fontFamily: af('medium') }]}>{d}</Text>)}
         </View>
 
         {rows.map((row, ri) => (
@@ -561,7 +595,7 @@ function FilterPanel({ visible, filters, onApply, onClose }: FilterPanelProps) {
               return (
                 <TouchableOpacity key={di} style={fp.calDay} onPress={() => onSelect(iso)} activeOpacity={0.7}>
                   <View style={[fp.calDayInner, sel && fp.calDaySel, !sel && tod && fp.calDayTod]}>
-                    <Text style={[fp.calDayText, sel && fp.calDayTextSel, !sel && tod && fp.calDayTextTod]}>
+                    <Text style={[fp.calDayText, sel && fp.calDayTextSel, !sel && tod && fp.calDayTextTod, { fontFamily: af(sel || tod ? 'semibold' : 'regular') }]}>
                       {day}
                     </Text>
                   </View>
@@ -573,7 +607,7 @@ function FilterPanel({ visible, filters, onApply, onClose }: FilterPanelProps) {
 
         {bottomLink && (
           <TouchableOpacity style={fp.calBottom} onPress={onBottomLink} activeOpacity={0.7}>
-            <Text style={fp.calBottomText}>{bottomLink}</Text>
+            <Text style={[fp.calBottomText, { fontFamily: af('medium') }]}>{bottomLink}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -590,8 +624,8 @@ function FilterPanel({ visible, filters, onApply, onClose }: FilterPanelProps) {
       <ScrollView bounces={false} style={fp.subList}>
         <TouchableOpacity onPress={() => onSelect('')} activeOpacity={0.7}>
           <View style={fp.optRow}>
-            <Text style={[fp.optLabel, !selectedId && fp.optLabelSel]}>All</Text>
-            {!selectedId && <Text style={fp.optCheck}>✓</Text>}
+            <Text style={[fp.optLabel, !selectedId && fp.optLabelSel, { fontFamily: af(!selectedId ? 'medium' : 'regular') }]}>All</Text>
+            {!selectedId && <Text style={[fp.optCheck, { fontFamily: af('semibold') }]}>✓</Text>}
           </View>
         </TouchableOpacity>
         {options.map(opt => {
@@ -600,8 +634,8 @@ function FilterPanel({ visible, filters, onApply, onClose }: FilterPanelProps) {
             <TouchableOpacity key={opt.id} onPress={() => onSelect(opt.id)} activeOpacity={0.7}>
               <View style={fp.optDivider} />
               <View style={fp.optRow}>
-                <Text style={[fp.optLabel, sel && fp.optLabelSel]}>{opt.label}</Text>
-                {sel && <Text style={fp.optCheck}>✓</Text>}
+                <Text style={[fp.optLabel, sel && fp.optLabelSel, { fontFamily: af(sel ? 'medium' : 'regular') }]}>{opt.label}</Text>
+                {sel && <Text style={[fp.optCheck, { fontFamily: af('semibold') }]}>✓</Text>}
               </View>
             </TouchableOpacity>
           );
@@ -616,9 +650,9 @@ function FilterPanel({ visible, filters, onApply, onClose }: FilterPanelProps) {
     return (
       <View style={fp.subHeader}>
         <TouchableOpacity style={fp.backBtn} onPress={() => setStep('main')} activeOpacity={0.7}>
-          <Text style={fp.backText}>‹ Back</Text>
+          <Text style={[fp.backText, { fontFamily: af('medium') }]}>‹ Back</Text>
         </TouchableOpacity>
-        <Text style={fp.subHeaderTitle}>{title}</Text>
+        <Text style={[fp.subHeaderTitle, { fontFamily: af('semibold') }]}>{title}</Text>
         <View style={fp.backBtn} />
       </View>
     );
@@ -628,10 +662,10 @@ function FilterPanel({ visible, filters, onApply, onClose }: FilterPanelProps) {
   function FRow({ label, value, onPress }: { label: string; value: string; onPress?: () => void }) {
     return (
       <TouchableOpacity style={fp.fRow} onPress={onPress} activeOpacity={onPress ? 0.7 : 1} disabled={!onPress}>
-        <Text style={fp.fRowLabel}>{label}</Text>
+        <Text style={[fp.fRowLabel, { fontFamily: af('regular') }]}>{label}</Text>
         <View style={fp.fRowRight}>
-          <Text style={fp.fRowValue}>{value}</Text>
-          {onPress && <Text style={fp.fRowChev}>›</Text>}
+          <Text style={[fp.fRowValue, { fontFamily: af('regular') }]}>{value}</Text>
+          {onPress && <Text style={[fp.fRowChev, { fontFamily: af('regular') }]}>›</Text>}
         </View>
       </TouchableOpacity>
     );
@@ -640,32 +674,32 @@ function FilterPanel({ visible, filters, onApply, onClose }: FilterPanelProps) {
   // ── Content by step ────────────────────────────────────────────────────────
   function renderContent() {
     if (step === 'status') return (
-      <><SubHeader title="Order status" />
+      <><SubHeader title={t('filterStatus')} />
         <SelectList options={STATUS_OPTIONS} selectedId={local.statusId}
           onSelect={id => { setLocal(l => ({ ...l, statusId: id })); setStep('main'); }} /></>
     );
     if (step === 'type') return (
-      <><SubHeader title="Order type" />
+      <><SubHeader title={t('filterType')} />
         <SelectList options={TYPE_OPTIONS} selectedId={local.typeId}
           onSelect={id => { setLocal(l => ({ ...l, typeId: id })); setStep('main'); }} /></>
     );
     if (step === 'source') return (
-      <><SubHeader title="Order source" />
+      <><SubHeader title={t('filterSource')} />
         <SelectList options={SOURCE_OPTIONS} selectedId={local.sourceId}
           onSelect={id => { setLocal(l => ({ ...l, sourceId: id })); setStep('main'); }} /></>
     );
     if (step === 'creator') return (
-      <><SubHeader title="Creator" />
+      <><SubHeader title={t('filterCreator')} />
         <SelectList options={STAFF_OPTIONS} selectedId={local.creatorId}
           onSelect={id => { setLocal(l => ({ ...l, creatorId: id })); setStep('main'); }} /></>
     );
     if (step === 'cashier') return (
-      <><SubHeader title="Cashier" />
+      <><SubHeader title={t('filterCashier')} />
         <SelectList options={STAFF_OPTIONS} selectedId={local.cashierId}
           onSelect={id => { setLocal(l => ({ ...l, cashierId: id })); setStep('main'); }} /></>
     );
     if (step === 'driver') return (
-      <><SubHeader title="Driver" />
+      <><SubHeader title={t('filterDriver')} />
         <SelectList options={DRIVER_OPTIONS} selectedId={local.driverId}
           onSelect={id => { setLocal(l => ({ ...l, driverId: id })); setStep('main'); }} /></>
     );
@@ -673,11 +707,11 @@ function FilterPanel({ visible, filters, onApply, onClose }: FilterPanelProps) {
       <>
         <View style={fp.dateStepHeader}>
           <TouchableOpacity onPress={() => setStep('main')} activeOpacity={0.7} style={fp.backBtn}>
-            <Text style={fp.backText}>‹ Back</Text>
+            <Text style={[fp.backText, { fontFamily: af('medium') }]}>‹ Back</Text>
           </TouchableOpacity>
-          <Text style={[fp.dateStepLabel, { textAlign: 'center' }]}>Business date</Text>
+          <Text style={[fp.dateStepLabel, { textAlign: 'center', fontFamily: af('medium') }]}>{t('filterBizDate')}</Text>
           <TouchableOpacity onPress={() => { setLocal(l => ({ ...l, businessDate: '' })); setStep('main'); }} activeOpacity={0.7} style={fp.backBtn}>
-            <Text style={[fp.dateStepAll, { textAlign: 'right' }]}>All</Text>
+            <Text style={[fp.dateStepAll, { textAlign: 'right', fontFamily: af('regular') }]}>All</Text>
           </TouchableOpacity>
         </View>
         <MiniCalendar
@@ -692,11 +726,11 @@ function FilterPanel({ visible, filters, onApply, onClose }: FilterPanelProps) {
       <>
         <View style={fp.dateStepHeader}>
           <TouchableOpacity onPress={() => setStep('main')} activeOpacity={0.7} style={fp.backBtn}>
-            <Text style={fp.backText}>‹ Back</Text>
+            <Text style={[fp.backText, { fontFamily: af('medium') }]}>‹ Back</Text>
           </TouchableOpacity>
-          <Text style={[fp.dateStepLabel, { textAlign: 'center' }]}>Due date</Text>
+          <Text style={[fp.dateStepLabel, { textAlign: 'center', fontFamily: af('medium') }]}>{t('filterDueDate')}</Text>
           <TouchableOpacity onPress={() => { setLocal(l => ({ ...l, dueDate: '' })); setStep('main'); }} activeOpacity={0.7} style={fp.backBtn}>
-            <Text style={[fp.dateStepAll, { textAlign: 'right' }]}>All</Text>
+            <Text style={[fp.dateStepAll, { textAlign: 'right', fontFamily: af('regular') }]}>All</Text>
           </TouchableOpacity>
         </View>
         <MiniCalendar
@@ -712,20 +746,20 @@ function FilterPanel({ visible, filters, onApply, onClose }: FilterPanelProps) {
     return (
       <>
         <View style={fp.header}>
-          <Text style={fp.headerTitle}>Order Filters</Text>
+          <Text style={[fp.headerTitle, { fontFamily: af('semibold') }]}>Order Filters</Text>
         </View>
-        <ScrollView style={fp.body} showsVerticalScrollIndicator={false}>
-          <FRow label="Order status" value={local.statusId ? findLabel(STATUS_OPTIONS, local.statusId) : 'All'} onPress={() => setStep('status')} />
+        <ScrollView ref={mainScrollRef} style={fp.body} showsVerticalScrollIndicator={false}>
+          <FRow label={t('filterStatus')} value={local.statusId ? findLabel(STATUS_OPTIONS, local.statusId) : t('allOrders')} onPress={() => setStep('status')} />
           <View style={fp.rowDiv} />
-          <FRow label="Order type"   value={local.typeId   ? findLabel(TYPE_OPTIONS,   local.typeId)   : 'All'} onPress={() => setStep('type')} />
+          <FRow label={t('filterType')}   value={local.typeId   ? findLabel(TYPE_OPTIONS,   local.typeId)   : t('allOrders')} onPress={() => setStep('type')} />
           <View style={fp.rowDiv} />
-          <FRow label="Order source" value={local.sourceId ? findLabel(SOURCE_OPTIONS, local.sourceId) : 'All'} onPress={() => setStep('source')} />
+          <FRow label={t('filterSource')} value={local.sourceId ? findLabel(SOURCE_OPTIONS, local.sourceId) : t('allOrders')} onPress={() => setStep('source')} />
           <View style={fp.rowDiv} />
-          <FRow label="Creator"      value={local.creatorId  || 'All'} onPress={() => setStep('creator')} />
+          <FRow label={t('filterCreator')} value={local.creatorId  || t('allOrders')} onPress={() => setStep('creator')} />
           <View style={fp.rowDiv} />
-          <FRow label="Cashier"      value={local.cashierId  || 'All'} onPress={() => setStep('cashier')} />
+          <FRow label={t('filterCashier')} value={local.cashierId  || t('allOrders')} onPress={() => setStep('cashier')} />
           <View style={fp.rowDiv} />
-          <FRow label="Driver"       value={local.driverId ? findLabel(DRIVER_OPTIONS, local.driverId) : 'All'} onPress={() => setStep('driver')} />
+          <FRow label={t('filterDriver')}  value={local.driverId ? findLabel(DRIVER_OPTIONS, local.driverId) : t('allOrders')} onPress={() => setStep('driver')} />
 
           <View style={fp.sectionGap} />
 
@@ -735,19 +769,19 @@ function FilterPanel({ visible, filters, onApply, onClose }: FilterPanelProps) {
             else { const n = new Date(); setCalYear(n.getFullYear()); setCalMonth(n.getMonth()); }
             setStep('biz_date');
           }} activeOpacity={0.7}>
-            <Text style={fp.fRowLabel}>Business date</Text>
-            <Text style={fp.fRowValue}>{formatDateLabel(local.businessDate)}</Text>
+            <Text style={[fp.fRowLabel, { fontFamily: af('regular') }]}>{t('filterBizDate')}</Text>
+            <Text style={[fp.fRowValue, { fontFamily: af('regular') }]}>{formatDateLabel(local.businessDate)}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={fp.subLink} activeOpacity={0.7}
             onPress={() => setLocal(l => ({ ...l, businessDate: l.businessDate ? '' : TODAY }))}>
-            <Text style={fp.subLinkText}>{local.businessDate ? 'Show all business days' : 'Show current business day'}</Text>
+            <Text style={[fp.subLinkText, { fontFamily: af('medium') }]}>{local.businessDate ? 'Show all business days' : 'Show current business day'}</Text>
           </TouchableOpacity>
 
           <View style={fp.sectionGap} />
 
           {/* Ahead */}
           <View style={fp.fRow}>
-            <Text style={fp.fRowLabel}>Ahead</Text>
+            <Text style={[fp.fRowLabel, { fontFamily: af('regular') }]}>Ahead</Text>
             <TouchableOpacity style={[fp.toggle, local.ahead && fp.toggleOn]}
               onPress={() => setLocal(l => ({ ...l, ahead: !l.ahead }))} activeOpacity={0.8}>
               <View style={[fp.toggleThumb, local.ahead && fp.toggleThumbOn]} />
@@ -762,11 +796,11 @@ function FilterPanel({ visible, filters, onApply, onClose }: FilterPanelProps) {
             else { const n = new Date(); setCalYear(n.getFullYear()); setCalMonth(n.getMonth()); }
             setStep('due_date');
           }} activeOpacity={0.7}>
-            <Text style={fp.fRowLabel}>Due date</Text>
-            <Text style={fp.fRowValue}>{formatDateLabel(local.dueDate)}</Text>
+            <Text style={[fp.fRowLabel, { fontFamily: af('regular') }]}>{t('filterDueDate')}</Text>
+            <Text style={[fp.fRowValue, { fontFamily: af('regular') }]}>{formatDateLabel(local.dueDate)}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={fp.subLink} onPress={() => setLocal(l => ({ ...l, dueDate: TODAY }))} activeOpacity={0.7}>
-            <Text style={fp.subLinkText}>Select today</Text>
+            <Text style={[fp.subLinkText, { fontFamily: af('medium') }]}>Select today</Text>
           </TouchableOpacity>
 
           <View style={{ height: 16 }} />
@@ -774,10 +808,10 @@ function FilterPanel({ visible, filters, onApply, onClose }: FilterPanelProps) {
 
         <View style={fp.footer}>
           <TouchableOpacity style={fp.clearBtn} onPress={() => setLocal(emptyFilters())} activeOpacity={0.7}>
-            <Text style={fp.clearBtnText}>Clear All</Text>
+            <Text style={[fp.clearBtnText, { fontFamily: af('semibold') }]}>Clear All</Text>
           </TouchableOpacity>
           <TouchableOpacity style={fp.applyBtn} onPress={() => onApply(local)} activeOpacity={0.8}>
-            <Text style={fp.applyBtnText}>Apply Filters</Text>
+            <Text style={[fp.applyBtnText, { fontFamily: af('bold') }]}>Apply Filters</Text>
           </TouchableOpacity>
         </View>
       </>
@@ -868,7 +902,7 @@ const fp = StyleSheet.create({
   fRowChev: {
     fontSize: 18,
     color: Colors.grayMid,
-    marginLeft: 2,
+    marginStart: 2,
   },
   rowDiv: {
     height: 0.5,
@@ -1114,6 +1148,24 @@ const fp = StyleSheet.create({
   },
 });
 
+// ─── i18n key map for status labels ──────────────────────────────────────────
+import type { TKey } from '../i18n/translations';
+const STATUS_I18N_KEY: Record<OrderStatus, TKey> = {
+  ACTIVE:   'statusActive',
+  PENDING:  'statusPending',
+  DONE:     'statusDone',
+  VOID:     'statusVoid',
+  RETURNED: 'statusReturned',
+};
+
+// ─── i18n key map for order type labels ──────────────────────────────────────
+const TYPE_I18N_KEY: Partial<Record<string, TKey>> = {
+  'DINE IN':    'dineIn',
+  'PICK UP':    'pickUp',
+  'DELIVERY':   'delivery',
+  'DRIVE THRU': 'driveThru',
+};
+
 // ─── Helper ───────────────────────────────────────────────────────────────────
 function orderToCartItems(order: Order): CartItem[] {
   return order.items.map((item, i) => ({
@@ -1128,6 +1180,7 @@ function orderToCartItems(order: Order): CartItem[] {
 const REFUND_METHODS = ['Cash', 'Mada', 'Credit Card', 'House Account'];
 
 function RefundMethodDialog({ visible, onSelect, onClose }: { visible: boolean; onSelect: (method: string) => void; onClose: () => void }) {
+  const { af } = useI18n();
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={onClose}>
@@ -1136,13 +1189,13 @@ function RefundMethodDialog({ visible, onSelect, onClose }: { visible: boolean; 
       <View style={rm.center} pointerEvents="box-none">
         <View style={rm.card}>
           <View style={rm.header}>
-            <Text style={rm.headerTitle}>Select payment method</Text>
+            <Text style={[rm.headerTitle, { fontFamily: af('semibold') }]}>Select payment method</Text>
           </View>
           {REFUND_METHODS.map((method, i) => (
             <React.Fragment key={method}>
               {i > 0 && <View style={rm.divider} />}
               <TouchableOpacity style={rm.row} onPress={() => onSelect(method)} activeOpacity={0.6}>
-                <Text style={rm.methodText}>{method}</Text>
+                <Text style={[rm.methodText, { fontFamily: af('regular') }]}>{method}</Text>
               </TouchableOpacity>
             </React.Fragment>
           ))}
@@ -1183,7 +1236,7 @@ const rm = StyleSheet.create({
   divider: {
     height: 0.5,
     backgroundColor: 'rgba(60,60,67,0.18)',
-    marginLeft: 24,
+    marginStart: 24,
   },
   row: {
     paddingHorizontal: 28,
@@ -1197,6 +1250,15 @@ const rm = StyleSheet.create({
   },
 });
 
+// ─── Preview mode (Figma capture) ────────────────────────────────────────────
+// Set to: 'return-order' | 'return-reason' | 'return-amount' | 'return-refund' | 'return-receipt'
+//       | 'sync' | 'order-detail' | 'void-list' | 'void-detail'
+//       | 'more-active' | 'more-done' | 'more-void' | 'more-returned'
+//       | 'filter-main' | 'filter-main-scroll' | 'filter-status' | 'filter-type'
+//       | 'filter-source' | 'filter-creator' | 'filter-cashier' | 'filter-driver'
+//       | 'filter-biz-date' | 'filter-due-date' | null
+const PREVIEW_DIALOG: string | null = null;
+
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 interface Props {
   onBack?:        () => void;
@@ -1205,37 +1267,59 @@ interface Props {
 }
 
 export default function OrdersScreen({ onBack, onTotalPress, onLoadOrder }: Props) {
-  const [activeTab, setActiveTab]               = useState<FilterTab>('ALL');
-  const [selectedOrder, setSelectedOrder]       = useState<Order | null>(ORDERS[0]);
+  const { t, af, isRTL } = useI18n();
+  const [activeTab, setActiveTab]               = useState<FilterTab>(
+    PREVIEW_DIALOG === 'void-list' ? 'VOID' : 'ALL'
+  );
+  const [selectedOrder, setSelectedOrder]       = useState<Order | null>(
+    (PREVIEW_DIALOG === 'return-order' || PREVIEW_DIALOG === 'return-receipt') ? ORDERS[2] :
+    PREVIEW_DIALOG === 'more-done'     ? ORDERS[2] :
+    PREVIEW_DIALOG === 'more-void'     ? ORDERS[4] :
+    PREVIEW_DIALOG === 'more-returned' ? { ...ORDERS[2], status: 'RETURNED' as any } :
+    (PREVIEW_DIALOG === 'void-detail' || PREVIEW_DIALOG === 'void-list') ? ORDERS[4] :
+    ORDERS[0]
+  );
   const [search, setSearch]                     = useState('');
   const [searchFocused, setSearchFocused]       = useState(false);
-  const [moreMenuVisible, setMoreMenuVisible]   = useState(false);
-  const [filterVisible, setFilterVisible]       = useState(false);
+  const [moreMenuVisible, setMoreMenuVisible]   = useState(
+    PREVIEW_DIALOG === 'more-active' || PREVIEW_DIALOG === 'more-done' ||
+    PREVIEW_DIALOG === 'more-void'   || PREVIEW_DIALOG === 'more-returned'
+  );
+  const [filterVisible, setFilterVisible]       = useState(PREVIEW_DIALOG?.startsWith('filter-') ?? false);
   const [appliedFilters, setAppliedFilters]     = useState<OrderFilters>(emptyFilters());
-  const [viewMode, setViewMode]                 = useState<'list' | 'detail'>('list');
+  const [viewMode, setViewMode]                 = useState<'list' | 'detail'>((PREVIEW_DIALOG === 'order-detail' || PREVIEW_DIALOG === 'void-detail') ? 'detail' : 'list');
   const searchRef = useRef<TextInput>(null);
   const activeFilterCount = countActiveFilters(appliedFilters);
 
   // ── Receipt ────────────────────────────────────────────────────────────────
-  const [receiptOrder, setReceiptOrder] = useState<Order | null>(null);
+  const [receiptOrder, setReceiptOrder] = useState<Order | null>(
+    PREVIEW_DIALOG === 'return-receipt' ? ORDERS[2] : null
+  );
 
   // ── Return flow state ──────────────────────────────────────────────────────
-  const [returnStep, setReturnStep]     = useState<'select' | 'reason' | 'amount' | 'refund' | null>(null);
+  const [returnStep, setReturnStep]     = useState<'select' | 'reason' | 'amount' | 'refund' | null>(
+    PREVIEW_DIALOG === 'return-order'  ? 'select' :
+    PREVIEW_DIALOG === 'return-reason' ? 'reason' :
+    PREVIEW_DIALOG === 'return-amount' ? 'amount' :
+    PREVIEW_DIALOG === 'return-refund' ? 'refund' : null
+  );
   const [returnItems, setReturnItems]   = useState<ReturnItem[]>([]);
-  const [returnAmount, setReturnAmount] = useState(0);
+  const [returnAmount, setReturnAmount] = useState(
+    PREVIEW_DIALOG === 'return-amount' ? 7.00 : 0
+  );
   // Local orders copy so we can mark RETURNED without mutating the constant
   const [orders, setOrders] = useState<Order[]>(ORDERS);
 
   // ── Sync dialog ─────────────────────────────────────────────────────────────
-  const [syncDialogVisible, setSyncDialogVisible] = useState(false);
+  const [syncDialogVisible, setSyncDialogVisible] = useState(PREVIEW_DIALOG === 'sync');
 
   const TABS: { key: FilterTab; label: string }[] = [
-    { key: 'ALL',      label: `ALL (${orders.length})` },
-    { key: 'ACTIVE',   label: 'ACTIVE' },
-    { key: 'PENDING',  label: 'PENDING' },
-    { key: 'DONE',     label: 'DONE' },
-    { key: 'VOID',     label: 'VOID' },
-    { key: 'RETURNED', label: 'RETURNED' },
+    { key: 'ALL',      label: `${t('allOrders')} (${orders.length})` },
+    { key: 'ACTIVE',   label: t('statusActive') },
+    { key: 'PENDING',  label: t('statusPending') },
+    { key: 'DONE',     label: t('statusDone') },
+    { key: 'VOID',     label: t('statusVoid') },
+    { key: 'RETURNED', label: t('statusReturned') },
   ];
 
   const filtered = orders.filter(o => {
@@ -1329,24 +1413,24 @@ export default function OrdersScreen({ onBack, onTotalPress, onLoadOrder }: Prop
               <View style={s.actionBar}>
                 <TouchableOpacity style={s.backBtn} onPress={() => { if (selectedOrder) onLoadOrder?.(selectedOrder); onBack?.(); }} activeOpacity={0.8}>
                   <Image source={ICONS.arrowLeft} style={s.btnIcon} />
-                  <Text style={s.btnLabel}>BACK</Text>
+                  <Text style={[s.btnLabel, { fontFamily: af('medium') }]}>BACK</Text>
                 </TouchableOpacity>
 
                 <View style={{ flex: 1 }} />
 
                 <TouchableOpacity style={[s.toolBtn, activeFilterCount > 0 && s.toolBtnActive]} onPress={() => setFilterVisible(true)} activeOpacity={0.8}>
-                  <Text style={s.btnLabel}>FILTER</Text>
+                  <Text style={[s.btnLabel, { fontFamily: af('medium') }]}>FILTER</Text>
                   {activeFilterCount > 0 && (
                     <View style={s.filterBadge}>
-                      <Text style={s.filterBadgeText}>{activeFilterCount}</Text>
+                      <Text style={[s.filterBadgeText, { fontFamily: af('bold') }]}>{activeFilterCount}</Text>
                     </View>
                   )}
                 </TouchableOpacity>
                 <TouchableOpacity style={s.toolBtn} activeOpacity={0.8} onPress={() => setSyncDialogVisible(true)}>
-                  <Text style={s.btnLabel}>SYNC</Text>
+                  <Text style={[s.btnLabel, { fontFamily: af('medium') }]}>SYNC</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={s.toolBtn} onPress={() => setMoreMenuVisible(true)} activeOpacity={0.8}>
-                  <Text style={s.btnLabel}>MORE</Text>
+                  <Text style={[s.btnLabel, { fontFamily: af('medium') }]}>MORE</Text>
                 </TouchableOpacity>
               </View>
 
@@ -1362,7 +1446,7 @@ export default function OrdersScreen({ onBack, onTotalPress, onLoadOrder }: Prop
                   <TextInput
                     ref={searchRef}
                     style={layout.searchInput}
-                    placeholder="Search orders"
+                    placeholder={t('searchOrders')}
                     placeholderTextColor={Colors.placeholder}
                     value={search}
                     onChangeText={setSearch}
@@ -1390,6 +1474,7 @@ export default function OrdersScreen({ onBack, onTotalPress, onLoadOrder }: Prop
                     active && tab.key === 'VOID' && s.tabLabelVoidActive,
                     tab.key === 'RETURNED' && s.tabLabelReturned,
                     active && tab.key === 'RETURNED' && s.tabLabelReturnedActive,
+                    { fontFamily: af(active ? 'bold' : 'medium') },
                   ]}>
                         {tab.label}
                       </Text>
@@ -1402,7 +1487,7 @@ export default function OrdersScreen({ onBack, onTotalPress, onLoadOrder }: Prop
               <View style={s.listCard}>
                 {filtered.length === 0 ? (
                   <View style={s.emptyState}>
-                    <Text style={s.emptyText}>No orders found</Text>
+                    <Text style={[s.emptyText, { fontFamily: af('regular') }]}>No orders found</Text>
                   </View>
                 ) : (
                   <FlatList
@@ -1413,24 +1498,24 @@ export default function OrdersScreen({ onBack, onTotalPress, onLoadOrder }: Prop
                       const isSelected = selectedOrder?.id === order.id;
                       return (
                         <TouchableOpacity onPress={() => setSelectedOrder(order)} activeOpacity={0.7}>
-                          {isSelected && <View style={s.selectedAccent} />}
+                          {isSelected && <View style={[s.selectedAccent, isRTL ? { right: 0, left: undefined } : { left: 0 }]} />}
                           <View style={[s.orderRow, isSelected && s.orderRowSelected]}>
                             <View style={s.col1}>
-                              <Text style={[s.orderNum, isSelected && s.orderNumActive]}>{order.orderNumber}</Text>
+                              <Text style={[s.orderNum, isSelected && s.orderNumActive, { fontFamily: af('semibold') }]}>{order.orderNumber}</Text>
                             </View>
                             <View style={s.col2}>
-                              <Text style={s.orderType}>{order.type}{order.tableNumber ? ` (${order.tableNumber})` : ''} ({order.itemCount})</Text>
-                              <Text style={s.orderTime}>{order.time}</Text>
+                              <Text style={[s.orderType, { fontFamily: af('medium') }]}>{TYPE_I18N_KEY[order.type] ? t(TYPE_I18N_KEY[order.type]!) : order.type}{order.tableNumber ? ` (${order.tableNumber})` : ''} ({order.itemCount})</Text>
+                              <Text style={[s.orderTime, { fontFamily: af('regular') }]}>{order.time}</Text>
                             </View>
                             <View style={s.col3}>
-                              {order.customerName  && <Text style={s.customerName}>{order.customerName}</Text>}
-                              {order.customerPhone && <Text style={s.customerPhone}>{order.customerPhone}</Text>}
+                              {order.customerName  && <Text style={[s.customerName, { fontFamily: af('medium') }]}>{order.customerName}</Text>}
+                              {order.customerPhone && <Text style={[s.customerPhone, { fontFamily: af('regular') }]}>{order.customerPhone}</Text>}
                             </View>
                             <View style={s.col4}>
-                              <Text style={[s.orderStatus, { color: STATUS_COLOR[order.status] }]}>{order.status}</Text>
+                              <Text style={[s.orderStatus, { color: STATUS_COLOR[order.status], fontFamily: af('bold') }]}>{STATUS_I18N_KEY[order.status] ? t(STATUS_I18N_KEY[order.status]) : order.status}</Text>
                               <View style={s.amountRow}>
                                 <Image source={ICONS.sar} style={s.sarIcon} />
-                                <Text style={s.orderAmount}>{order.total.toFixed(2)}</Text>
+                                <Text style={[s.orderAmount, { fontFamily: af('medium') }]}>{order.total.toFixed(2)}</Text>
                               </View>
                             </View>
                           </View>
@@ -1459,6 +1544,18 @@ export default function OrdersScreen({ onBack, onTotalPress, onLoadOrder }: Prop
         filters={appliedFilters}
         onApply={f => { setAppliedFilters(f); setFilterVisible(false); }}
         onClose={() => setFilterVisible(false)}
+        initialStep={
+          PREVIEW_DIALOG === 'filter-main-scroll' ? 'main-scrolled' :
+          PREVIEW_DIALOG === 'filter-status'      ? 'status'    :
+          PREVIEW_DIALOG === 'filter-type'        ? 'type'      :
+          PREVIEW_DIALOG === 'filter-source'      ? 'source'    :
+          PREVIEW_DIALOG === 'filter-creator'     ? 'creator'   :
+          PREVIEW_DIALOG === 'filter-cashier'     ? 'cashier'   :
+          PREVIEW_DIALOG === 'filter-driver'      ? 'driver'    :
+          PREVIEW_DIALOG === 'filter-biz-date'    ? 'biz_date'  :
+          PREVIEW_DIALOG === 'filter-due-date'    ? 'due_date'  :
+          'main'
+        }
       />
 
       {/* MORE menu */}
@@ -1586,8 +1683,8 @@ const s = StyleSheet.create({
 
   /* Order row */
   orderRow:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 15, position: 'relative' },
-  orderRowSelected: { backgroundColor: Colors.primaryLight, paddingLeft: 26 },
-  selectedAccent:   { position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, backgroundColor: Colors.primary, zIndex: 1 },
+  orderRowSelected: { backgroundColor: Colors.primaryLight, paddingStart: 26 },
+  selectedAccent:   { position: 'absolute', top: 0, bottom: 0, width: 4, backgroundColor: Colors.primary, zIndex: 1 },
 
   col1: { width: 100 },
   col2: { width: 160, gap: 3 },
