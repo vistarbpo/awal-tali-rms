@@ -64,7 +64,7 @@ import { displayCartItemName } from '../components/OrderPanel';
 //       | 'last-item-void' | 'select-driver'
 //       | 'discount-type' | 'discount-numpad' | 'discount-numpad-pct' | 'discount-predefined' | 'discount-applied'
 //       | 'coupon' | 'item-note' | 'price-tag' | 'redeem' | 'house-account'
-//       | 'reports' | 'drawer-ops' | 'sync' | 'end-of-day' | 'diagnostics' | 'till-amount'
+//       | 'reports' | 'drawer-ops' | 'sync' | 'end-of-day' | 'diagnostics' | 'till-amount' | 'devices'
 //       | 'item-discount-type' | 'item-discount-numpad' | 'item-discount-applied'
 //       | 'page-2' | null
 const PREVIEW_DIALOG: string | null = null;
@@ -423,7 +423,7 @@ export default function HomeProductsScreen({
   const [endOfDayVisible,     setEndOfDayVisible]        = useState(PREVIEW_DIALOG === 'end-of-day');
   const [drawerOpsVisible,    setDrawerOpsVisible]       = useState(PREVIEW_DIALOG === 'drawer-ops');
   const [reportsVisible,      setReportsVisible]         = useState(PREVIEW_DIALOG === 'reports');
-  const [devicesVisible,      setDevicesVisible]         = useState(false);
+  const [devicesVisible,      setDevicesVisible]         = useState(PREVIEW_DIALOG === 'devices');
   const [supportVisible,      setSupportVisible]         = useState(false);
   const [couponVisible,       setCouponVisible]          = useState(PREVIEW_DIALOG === 'coupon');
   const [selectDriverVisible, setSelectDriverVisible]    = useState(PREVIEW_DIALOG === 'select-driver');

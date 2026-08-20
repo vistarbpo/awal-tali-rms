@@ -27,9 +27,9 @@ const ICONS = {
 };
 
 // ─── Mock product data per category ──────────────────────────────────────────
-interface AvailProduct { id: string; name: string; }
+export interface AvailProduct { id: string; name: string; }
 
-const CATEGORY_PRODUCTS: Record<string, AvailProduct[]> = {
+export const CATEGORY_PRODUCTS: Record<string, AvailProduct[]> = {
   c1: [{ id: 'p1', name: 'FRIED RICE' }, { id: 'p2', name: 'PASTA PRIMAVERA' }],
   c2: [{ id: 'p3', name: 'GARDEN SALAD' }, { id: 'p4', name: 'GRILLED CHICKEN' }],
   c3: [{ id: 'p3', name: 'GARDEN SALAD' }, { id: 'p9', name: 'CAESAR SALAD' }],

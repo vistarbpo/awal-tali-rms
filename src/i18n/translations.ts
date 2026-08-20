@@ -535,6 +535,34 @@ export const translations = {
   // ── Assign table ──
   assignTableTitle:   { en: 'Assign Table',                                            ar: 'تعيين طاولة' },
   noTableAssigned:    { en: 'No table assigned',                                       ar: 'لا توجد طاولة محددة' },
+
+  // ── Devices ──
+  printers:           { en: 'Printers',                                                ar: 'الطابعات' },
+  kdsSection:         { en: 'KDS',                                                     ar: 'شاشات المطبخ' },
+  subCashiers:        { en: 'Sub Cashiers',                                            ar: 'الكاشير الفرعي' },
+  ping:               { en: 'Ping',                                                    ar: 'فحص' },
+  pinging:            { en: 'Pinging…',                                                ar: 'جارٍ الفحص…' },
+  online:             { en: 'Online',                                                  ar: 'متصل' },
+  offline:            { en: 'Offline',                                                 ar: 'غير متصل' },
+  categories:         { en: 'Categories',                                              ar: 'الأقسام' },
+  products:           { en: 'Products',                                                ar: 'المنتجات' },
+  printerInfo:        { en: 'Printer Info',                                            ar: 'بيانات الطابعة' },
+  kdsInfo:            { en: 'KDS Info',                                                ar: 'بيانات شاشة المطبخ' },
+  subCashierInfo:     { en: 'Sub Cashier Info',                                        ar: 'بيانات الكاشير الفرعي' },
+  deviceModel:        { en: 'Model',                                                   ar: 'الطراز' },
+  deviceType:         { en: 'Type',                                                    ar: 'النوع' },
+  deviceName:         { en: 'Name',                                                    ar: 'الاسم' },
+  ipAddress:          { en: 'IP address',                                              ar: 'عنوان IP' },
+  numberOfCopies:     { en: 'Number of copies',                                        ar: 'عدد النسخ' },
+  isActive:           { en: 'Is active',                                               ar: 'مُفعّل' },
+  enabledOrderTypes:  { en: 'Enabled order types',                                     ar: 'أنواع الطلبات المفعّلة' },
+  addPrinter:         { en: 'Printer',                                                 ar: 'طابعة' },
+  addKds:             { en: 'KDS',                                                     ar: 'شاشة مطبخ' },
+  addSubCashier:      { en: 'Sub Cashier',                                             ar: 'كاشير فرعي' },
+  noDevices:          { en: 'No devices added yet.',                                   ar: 'لم تتم إضافة أي أجهزة بعد.' },
+  noDevicesHint:      { en: 'Tap + to add a device.',                                  ar: 'اضغط + لإضافة جهاز.' },
+  swipeToRemove:      { en: 'Swipe a device row to remove it.',                        ar: 'اسحب صف الجهاز لحذفه.' },
+  notSet:             { en: 'Not set',                                                 ar: 'غير محدد' },
 } as const;
 
 export type TKey = keyof typeof translations;
