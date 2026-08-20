@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Modal,
-  Platform,
   View,
   Text,
   TouchableOpacity,
@@ -9,6 +7,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import RootModal from './RootModal';
 import { useI18n } from '../i18n';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -31,7 +30,7 @@ const NUMPAD: string[][] = [
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function HoldTimeDialog({ visible, itemName, onClose, onConfirm, onFireLater }: Props) {
-  const { t, af, isRTL } = useI18n();
+  const { t, af, isRTL, rtlText } = useI18n();
   const [customMode,  setCustomMode]  = useState(false);
   const [customInput, setCustomInput] = useState('');
 
@@ -66,8 +65,10 @@ export default function HoldTimeDialog({ visible, itemName, onClose, onConfirm, 
       {/* ── Header ── */}
       <View style={s.header}>
         <View style={s.headerLeft}>
-          <Text style={[s.headerLabel, { fontFamily: af('bold') }]}>{t('holdTimeTitle').toUpperCase()}</Text>
-          <Text style={[s.headerItem, { fontFamily: af('medium') }]} numberOfLines={1}>{itemName}</Text>
+          <Text style={[s.headerLabel, { fontFamily: af('bold') }, isRTL && s.headerLabelPlain]}>
+            {isRTL ? t('holdTimeTitle') : t('holdTimeTitle').toUpperCase()}
+          </Text>
+          <Text style={[s.headerItem, { fontFamily: af('medium'), textAlign: rtlText('left') }]} numberOfLines={1}>{itemName}</Text>
         </View>
 
         {/* Custom input box — amber border, tappable */}
@@ -78,11 +79,11 @@ export default function HoldTimeDialog({ visible, itemName, onClose, onConfirm, 
         >
           {customMode && customInput ? (
             <>
-              <Text style={s.customBoxValue}>{customInput}</Text>
-              <Text style={s.customBoxUnit}>min</Text>
+              <Text style={[s.customBoxValue, { fontFamily: af('bold') }]}>{customInput}</Text>
+              <Text style={[s.customBoxUnit, { fontFamily: af('semibold') }]}>{t('minutesUnit')}</Text>
             </>
           ) : (
-            <Text style={[s.customBoxPlaceholder, { fontFamily: af('semibold') }]}>Custom</Text>
+            <Text style={[s.customBoxPlaceholder, { fontFamily: af('semibold') }]}>{t('holdCustom')}</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -95,7 +96,7 @@ export default function HoldTimeDialog({ visible, itemName, onClose, onConfirm, 
             <Text style={[s.numDisplayValue, { fontFamily: af('bold') }]}>
               {customInput || '0'}
             </Text>
-            <Text style={[s.numDisplayUnit, { fontFamily: af('medium') }]}>min</Text>
+            <Text style={[s.numDisplayUnit, { fontFamily: af('medium') }]}>{t('minutesUnit')}</Text>
           </View>
 
           <View style={s.numpadWrap}>
@@ -110,7 +111,13 @@ export default function HoldTimeDialog({ visible, itemName, onClose, onConfirm, 
                       onPress={() => handleNumKey(key)}
                       activeOpacity={0.6}
                     >
-                      <Text style={[s.numKeyText, isAction && s.numKeyActionText]}>
+                      <Text
+                        style={[
+                          s.numKeyText,
+                          isAction && s.numKeyActionText,
+                          key === '⌫' && isRTL && { transform: [{ scaleX: -1 }] },
+                        ]}
+                      >
                         {key}
                       </Text>
                     </TouchableOpacity>
@@ -126,7 +133,7 @@ export default function HoldTimeDialog({ visible, itemName, onClose, onConfirm, 
                 onPress={() => { setCustomMode(false); setCustomInput(''); }}
                 activeOpacity={0.85}
               >
-                <Text style={[s.numFooterText, { fontFamily: af('bold') }]}>{t('back')}</Text>
+                <Text style={[s.numBackBtnText, { fontFamily: af('bold') }]}>{t('back')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.numConfirmBtn, !customValid && s.numConfirmBtnDisabled]}
@@ -151,7 +158,7 @@ export default function HoldTimeDialog({ visible, itemName, onClose, onConfirm, 
                 activeOpacity={0.75}
               >
                 <Text style={[s.timeBtnValue, { fontFamily: af('bold') }]}>{min}</Text>
-                <Text style={[s.timeBtnUnit, { fontFamily: af('medium') }]}>min</Text>
+                <Text style={[s.timeBtnUnit, { fontFamily: af('medium') }]}>{t('minutesUnit')}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -163,7 +170,7 @@ export default function HoldTimeDialog({ visible, itemName, onClose, onConfirm, 
                 onPress={() => { onFireLater(); onClose(); }}
                 activeOpacity={0.85}
               >
-                <Text style={[s.fireLaterText, { fontFamily: af('bold') }]}>Fire Later</Text>
+                <Text style={[s.fireLaterText, { fontFamily: af('bold') }]}>{t('fireLater')}</Text>
 
               </TouchableOpacity>
             )}
@@ -181,17 +188,8 @@ export default function HoldTimeDialog({ visible, itemName, onClose, onConfirm, 
     </View>
   );
 
-  if (Platform.OS === 'web') {
-    if (!visible) return null;
-    return (
-      <View style={s.inlineOverlay}>
-        {cardJSX}
-      </View>
-    );
-  }
-
   return (
-    <Modal
+    <RootModal
       visible={visible}
       transparent
       animationType="fade"
@@ -205,7 +203,7 @@ export default function HoldTimeDialog({ visible, itemName, onClose, onConfirm, 
       <View style={s.center} pointerEvents="box-none">
         {cardJSX}
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 
@@ -263,6 +261,10 @@ const s = StyleSheet.create({
     letterSpacing: 1.2,
     textTransform: 'uppercase',
     marginBottom: 2,
+  },
+  headerLabelPlain: {
+    textTransform: 'none',
+    letterSpacing: 0,
   },
   headerItem: {
     fontSize: 15,
@@ -456,6 +458,12 @@ const s = StyleSheet.create({
     backgroundColor: Colors.grayLight,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  numBackBtnText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: Colors.black,
+    letterSpacing: -0.2,
   },
   numConfirmBtn: {
     flex: 2,

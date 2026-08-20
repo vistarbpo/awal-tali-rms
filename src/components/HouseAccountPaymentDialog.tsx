@@ -1,17 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  StyleSheet,
-  TouchableWithoutFeedback,
-  ScrollView,
-  TextInput,
-} from 'react-native';
+import RootModal from './RootModal';
+import { View, Text, Image, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, ScrollView, TextInput } from 'react-native';
 import { Colors } from '../constants/colors';
 import { useI18n } from '../i18n';
+import type { TKey } from '../i18n/translations';
 import { iconSarGray, iconSarDark } from '../assets/icons';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -25,7 +17,7 @@ interface Customer {
 
 interface PaymentMethod {
   id:    string;
-  label: string;
+  tKey:  TKey;
 }
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
@@ -41,12 +33,12 @@ const MOCK_CUSTOMERS: Customer[] = [
 ];
 
 const PAYMENT_METHODS: PaymentMethod[] = [
-  { id: 'cash',         label: 'Cash' },
-  { id: 'atm',          label: 'ATM' },
-  { id: 'hungerstation',label: 'HungerStation' },
-  { id: 'keeta',        label: 'Keeta' },
-  { id: 'jahez',        label: 'Jahez' },
-  { id: 'credit',       label: 'Credit Card' },
+  { id: 'cash',          tKey: 'payMethodCash' },
+  { id: 'atm',           tKey: 'payMethodAtm' },
+  { id: 'hungerstation', tKey: 'payMethodHungerStation' },
+  { id: 'keeta',         tKey: 'payMethodKeeta' },
+  { id: 'jahez',         tKey: 'payMethodJahez' },
+  { id: 'credit',        tKey: 'payMethodCredit' },
 ];
 
 const NUMPAD: string[][] = [
@@ -74,7 +66,7 @@ function todayLabel(): string {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function HouseAccountPaymentDialog({ visible, onClose, onSave }: Props) {
-  const { t, af } = useI18n();
+  const { t, af, isRTL } = useI18n();
   const [step,            setStep]            = useState<Step>('form');
   const [customer,        setCustomer]        = useState<Customer | null>(null);
   const [amount,          setAmount]          = useState('');
@@ -123,7 +115,7 @@ export default function HouseAccountPaymentDialog({ visible, onClose, onSave }: 
   // ── Customers step ──────────────────────────────────────────────────────────
   if (step === 'customers') {
     return (
-      <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setStep('form')}>
+      <RootModal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setStep('form')}>
         <TouchableWithoutFeedback onPress={() => setStep('form')}>
           <View style={s.backdrop} />
         </TouchableWithoutFeedback>
@@ -134,9 +126,12 @@ export default function HouseAccountPaymentDialog({ visible, onClose, onSave }: 
             {/* Header */}
             <View style={s.subHeader}>
               <TouchableOpacity style={s.backBtn} onPress={() => setStep('form')} activeOpacity={0.7}>
-                <Text style={[s.backText, { fontFamily: af('medium') }]}>‹ {t('back')}</Text>
+                <Text style={[s.backText, { fontFamily: af('medium') }]}>
+                  {isRTL ? '› ' : '‹ '}
+                  {t('back')}
+                </Text>
               </TouchableOpacity>
-              <Text style={[s.subHeaderTitle, { fontFamily: af('semibold') }]}>Customers</Text>
+              <Text style={[s.subHeaderTitle, { fontFamily: af('semibold') }]}>{t('cfCustomersTitle')}</Text>
               <View style={s.backBtn} />
             </View>
 
@@ -144,7 +139,7 @@ export default function HouseAccountPaymentDialog({ visible, onClose, onSave }: 
             <View style={s.searchWrap}>
               <View style={[s.searchBar, searchFocused && s.searchBarFocused]}>
                 <TextInput
-                  style={s.searchInput}
+                  style={[s.searchInput, { fontFamily: af('regular') }]}
                   placeholder={t('search')}
                   placeholderTextColor={Colors.placeholder}
                   value={customerSearch}
@@ -166,10 +161,10 @@ export default function HouseAccountPaymentDialog({ visible, onClose, onSave }: 
                 >
                   {i > 0 && <View style={s.hairline} />}
                   <View style={s.customerRow}>
-                    <Text style={[s.customerName, customer?.id === c.id && s.customerNameSelected]}>
+                    <Text style={[s.customerName, customer?.id === c.id && s.customerNameSelected, { fontFamily: af('medium') }]}>
                       {c.name}
                     </Text>
-                    <Text style={s.customerPhone}>{c.phone}</Text>
+                    <Text style={[s.customerPhone, { fontFamily: af('regular') }]}>{c.phone}</Text>
                     {customer?.id === c.id && <Text style={s.checkmark}>✓</Text>}
                   </View>
                 </TouchableOpacity>
@@ -178,14 +173,14 @@ export default function HouseAccountPaymentDialog({ visible, onClose, onSave }: 
 
           </View>
         </View>
-      </Modal>
+      </RootModal>
     );
   }
 
   // ── Payment method step ─────────────────────────────────────────────────────
   if (step === 'payment_method') {
     return (
-      <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setStep('form')}>
+      <RootModal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setStep('form')}>
         <TouchableWithoutFeedback onPress={() => setStep('form')}>
           <View style={s.backdrop} />
         </TouchableWithoutFeedback>
@@ -196,9 +191,12 @@ export default function HouseAccountPaymentDialog({ visible, onClose, onSave }: 
             {/* Header */}
             <View style={s.subHeader}>
               <TouchableOpacity style={s.backBtn} onPress={() => setStep('form')} activeOpacity={0.7}>
-                <Text style={[s.backText, { fontFamily: af('medium') }]}>‹ {t('back')}</Text>
+                <Text style={[s.backText, { fontFamily: af('medium') }]}>
+                  {isRTL ? '› ' : '‹ '}
+                  {t('back')}
+                </Text>
               </TouchableOpacity>
-              <Text style={[s.subHeaderTitle, { fontFamily: af('semibold') }]}>Payment Method</Text>
+              <Text style={[s.subHeaderTitle, { fontFamily: af('semibold') }]}>{t('paymentMethodTitle')}</Text>
               <View style={s.backBtn} />
             </View>
 
@@ -212,8 +210,8 @@ export default function HouseAccountPaymentDialog({ visible, onClose, onSave }: 
                 >
                   {i > 0 && <View style={s.hairline} />}
                   <View style={s.pmRow}>
-                    <Text style={[s.pmLabel, paymentMethod?.id === pm.id && s.pmLabelSelected]}>
-                      {pm.label}
+                    <Text style={[s.pmLabel, paymentMethod?.id === pm.id && s.pmLabelSelected, { fontFamily: af('medium') }]}>
+                      {t(pm.tKey)}
                     </Text>
                     {paymentMethod?.id === pm.id && <Text style={s.checkmark}>✓</Text>}
                   </View>
@@ -223,14 +221,14 @@ export default function HouseAccountPaymentDialog({ visible, onClose, onSave }: 
 
           </View>
         </View>
-      </Modal>
+      </RootModal>
     );
   }
 
   // ── Amount step ─────────────────────────────────────────────────────────────
   if (step === 'amount') {
     return (
-      <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setStep('form')}>
+      <RootModal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setStep('form')}>
         <TouchableWithoutFeedback onPress={() => setStep('form')}>
           <View style={s.backdrop} />
         </TouchableWithoutFeedback>
@@ -245,10 +243,10 @@ export default function HouseAccountPaymentDialog({ visible, onClose, onSave }: 
 
             {/* Display */}
             <View style={s.amountDisplay}>
-              <Image source={iconSarGray} style={s.amountCurrency} />
               <Text style={s.amountValue} numberOfLines={1} adjustsFontSizeToFit>
                 {amountDisplay}
               </Text>
+              <Image source={iconSarGray} style={s.amountCurrency} />
             </View>
 
             <View style={s.amountDivider} />
@@ -286,13 +284,13 @@ export default function HouseAccountPaymentDialog({ visible, onClose, onSave }: 
 
           </View>
         </View>
-      </Modal>
+      </RootModal>
     );
   }
 
   // ── Form step (main) ────────────────────────────────────────────────────────
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
+    <RootModal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={s.backdrop} />
       </TouchableWithoutFeedback>
@@ -310,44 +308,44 @@ export default function HouseAccountPaymentDialog({ visible, onClose, onSave }: 
 
             {/* Business Date */}
             <View style={s.formRow}>
-              <Text style={s.fieldLabel}>Business Date</Text>
-              <Text style={s.fieldValue}>{todayLabel()}</Text>
+              <Text style={[s.fieldLabel, { fontFamily: af('medium') }]}>{t('houseFieldBusinessDate')}</Text>
+              <Text style={[s.fieldValue, { fontFamily: af('regular') }]}>{todayLabel()}</Text>
             </View>
 
             <View style={s.hairlineFull} />
 
             {/* Customer */}
             <TouchableOpacity style={s.formRow} onPress={() => setStep('customers')} activeOpacity={0.7}>
-              <Text style={s.fieldLabel}>Customer</Text>
-              <Text style={[s.fieldValue, !customer && s.fieldPlaceholder]}>
-                {customer ? customer.name : 'Select customer'}
+              <Text style={[s.fieldLabel, { fontFamily: af('medium') }]}>{t('houseFieldCustomer')}</Text>
+              <Text style={[s.fieldValue, !customer && s.fieldPlaceholder, { fontFamily: af('regular') }]}>
+                {customer ? customer.name : t('houseSelectCustomer')}
               </Text>
-              <Text style={s.chevron}>›</Text>
+              <Text style={s.chevron}>{isRTL ? '‹' : '›'}</Text>
             </TouchableOpacity>
 
             <View style={s.hairlineFull} />
 
             {/* Amount */}
             <TouchableOpacity style={s.formRow} onPress={() => setStep('amount')} activeOpacity={0.7}>
-              <Text style={s.fieldLabel}>Amount</Text>
+              <Text style={[s.fieldLabel, { fontFamily: af('medium') }]}>{t('houseFieldAmount')}</Text>
               <View style={s.fieldAmountWrap}>
-                <Image source={iconSarDark} style={s.fieldSarIcon} />
-                <Text style={[s.fieldValue, !amount && s.fieldPlaceholder]}>
+                <Text style={[s.fieldValue, !amount && s.fieldPlaceholder, { fontFamily: af('regular') }]}>
                   {amount || '0.00'}
                 </Text>
+                <Image source={iconSarDark} style={s.fieldSarIcon} />
               </View>
-              <Text style={s.chevron}>›</Text>
+              <Text style={s.chevron}>{isRTL ? '‹' : '›'}</Text>
             </TouchableOpacity>
 
             <View style={s.hairlineFull} />
 
             {/* Payment Method */}
             <TouchableOpacity style={s.formRow} onPress={() => setStep('payment_method')} activeOpacity={0.7}>
-              <Text style={s.fieldLabel}>Payment Method</Text>
-              <Text style={[s.fieldValue, !paymentMethod && s.fieldPlaceholder]}>
-                {paymentMethod ? paymentMethod.label : 'Select method'}
+              <Text style={[s.fieldLabel, { fontFamily: af('medium') }]}>{t('houseFieldPaymentMethod')}</Text>
+              <Text style={[s.fieldValue, !paymentMethod && s.fieldPlaceholder, { fontFamily: af('regular') }]}>
+                {paymentMethod ? t(paymentMethod.tKey) : t('houseSelectMethod')}
               </Text>
-              <Text style={s.chevron}>›</Text>
+              <Text style={s.chevron}>{isRTL ? '‹' : '›'}</Text>
             </TouchableOpacity>
 
           </View>
@@ -355,16 +353,16 @@ export default function HouseAccountPaymentDialog({ visible, onClose, onSave }: 
           {/* Footer */}
           <View style={s.footer}>
             <TouchableOpacity style={s.cancelBtn} onPress={onClose} activeOpacity={0.85}>
-              <Text style={s.footerBtnText}>Cancel</Text>
+              <Text style={[s.footerBtnText, { fontFamily: af('bold') }]}>{t('cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={s.saveBtn} onPress={handleSave} activeOpacity={0.85}>
-              <Text style={s.footerBtnText}>Save</Text>
+              <Text style={[s.footerBtnText, { fontFamily: af('bold') }]}>{t('save')}</Text>
             </TouchableOpacity>
           </View>
 
         </View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 
@@ -478,6 +476,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
+    direction: 'ltr',
   },
   fieldSarIcon: {
     width: 14,
@@ -648,6 +647,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 20,
     gap: 8,
+    direction: 'ltr',
   },
   amountCurrency: {
     width: 22,

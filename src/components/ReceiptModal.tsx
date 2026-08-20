@@ -1,13 +1,6 @@
 import React from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  Image,
-} from 'react-native';
+import RootModal from './RootModal';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image } from 'react-native';
 import { Colors } from '../constants/colors';
 import { useI18n } from '../i18n';
 import { Order } from '../screens/OrdersScreen';
@@ -101,10 +94,10 @@ function TotalRow({
     <View style={r.totalRow}>
       <Text style={[r.totalLabel, bold && r.bold, large && r.totalLarge]}>{label}</Text>
       <View style={r.totalRight}>
-        <Sar />
         <Text style={[r.totalVal, bold && r.bold, large && r.totalLarge]}>
           {amount.toFixed(2)}
         </Text>
+        <Sar />
       </View>
     </View>
   );
@@ -127,7 +120,7 @@ export default function ReceiptModal({ visible, onClose, order }: Props) {
   const printTime = now();
 
   return (
-    <Modal
+    <RootModal
       visible={visible}
       transparent
       animationType="fade"
@@ -207,8 +200,8 @@ export default function ReceiptModal({ visible, onClose, order }: Props) {
                 <Text style={[r.tdCell, r.tdQty]}>{item.qty}</Text>
                 <Text style={[r.tdCell, r.tdName]} numberOfLines={2}>{item.name}</Text>
                 <View style={r.tdPriceWrap}>
-                  <Sar />
                   <Text style={r.tdPrice}>{(item.price * item.qty).toFixed(2)}</Text>
+                  <Sar />
                 </View>
               </View>
             ))}
@@ -246,7 +239,7 @@ export default function ReceiptModal({ visible, onClose, order }: Props) {
           </ScrollView>
         </View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 
@@ -443,6 +436,7 @@ const r = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-end',
     gap: 2,
+    direction: 'ltr',
   },
   tdPrice: { fontSize: 13, color: Colors.black, fontWeight: '500' },
 
@@ -465,6 +459,7 @@ const r = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
+    direction: 'ltr',
   },
   totalVal: {
     fontSize: 14,

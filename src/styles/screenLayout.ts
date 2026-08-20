@@ -95,7 +95,7 @@ export const layout = StyleSheet.create({
   searchInputWrap: {
     flex: 1,
     justifyContent: 'center',
-    paddingRight: 16,
+    paddingHorizontal: 16,
   },
   searchInput: {
     fontSize: 16,
@@ -153,5 +153,12 @@ export const layout = StyleSheet.create({
   },
   tabLabelActive: {
     color: Colors.primary,
+  },
+
+  /** Digits + SAR icon: keep LTR so the symbol stays after the amount in RTL screens. */
+  currencyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    direction: 'ltr',
   },
 });

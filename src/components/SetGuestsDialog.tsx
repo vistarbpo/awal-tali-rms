@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Modal,
-  Platform,
   View,
   Text,
   TouchableOpacity,
@@ -9,6 +7,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import RootModal from './RootModal';
 import { useI18n } from '../i18n';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -86,7 +85,13 @@ export default function SetGuestsDialog({ visible, current, onClose, onConfirm }
                       onPress={() => handleKey(key)}
                       activeOpacity={0.65}
                     >
-                      <Text style={[s.keyText, isSpecial && s.keyTextSpecial]}>
+                      <Text
+                        style={[
+                          s.keyText,
+                          isSpecial && s.keyTextSpecial,
+                          key === '⌫' && isRTL && { transform: [{ scaleX: -1 }] },
+                        ]}
+                      >
                         {key}
                       </Text>
                     </TouchableOpacity>
@@ -109,24 +114,15 @@ export default function SetGuestsDialog({ visible, current, onClose, onConfirm }
         </View>
   );
 
-  if (Platform.OS === 'web') {
-    if (!visible) return null;
-    return (
-      <View style={s.inlineOverlay}>
-        {cardJSX}
-      </View>
-    );
-  }
-
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
+    <RootModal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={s.backdrop} />
       </TouchableWithoutFeedback>
       <View style={s.center} pointerEvents="box-none">
         {cardJSX}
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 

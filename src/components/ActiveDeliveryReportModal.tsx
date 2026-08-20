@@ -1,13 +1,6 @@
 import React from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-} from 'react-native';
+import RootModal from './RootModal';
+import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { Colors } from '../constants/colors';
 import { iconSarDark } from '../assets/icons';
 import { useI18n } from '../i18n';
@@ -33,8 +26,8 @@ const DELIVERY_ORDERS: DeliveryOrder[] = [
 function SarAmt({ n, style }: { n: number; style?: object }) {
   return (
     <View style={[r.sarAmtWrap, style]}>
-      <Image source={iconSarDark} style={r.sarAmtIcon} />
       <Text style={r.sarAmtText}>{n.toFixed(2)}</Text>
+      <Image source={iconSarDark} style={r.sarAmtIcon} />
     </View>
   );
 }
@@ -57,7 +50,7 @@ export default function ActiveDeliveryReportModal({ visible, onClose, dateLabel,
   const total = DELIVERY_ORDERS.reduce((s, o) => s + o.amount, 0);
 
   return (
-    <Modal
+    <RootModal
       visible={visible}
       transparent
       animationType="fade"
@@ -140,7 +133,7 @@ export default function ActiveDeliveryReportModal({ visible, onClose, dateLabel,
           </ScrollView>
         </View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 
@@ -228,7 +221,7 @@ const r = StyleSheet.create({
   colDriver:   { width: 60,  fontSize: 12, color: Colors.black },
   colStatus:   { width: 110, fontSize: 12, color: Colors.black },
   colAmount:   { width: 80, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' },
-  sarAmtWrap:  { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  sarAmtWrap:  { flexDirection: 'row', alignItems: 'center', gap: 3, direction: 'ltr' },
   sarAmtIcon:  { width: 11, height: 12, resizeMode: 'contain' },
   sarAmtText:  { fontSize: 12, color: Colors.black },
   colHeader:   { fontWeight: '700' },

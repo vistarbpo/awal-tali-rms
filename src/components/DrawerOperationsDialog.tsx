@@ -1,15 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  TextInput,
-  ScrollView,
-  StyleSheet,
-  TouchableWithoutFeedback,
-} from 'react-native';
+import RootModal from './RootModal';
+import { View, Text, Image, TouchableOpacity, TextInput, ScrollView, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import { Colors } from '../constants/colors';
 import { iconSarDark } from '../assets/icons';
 import { useI18n } from '../i18n';
@@ -57,7 +48,7 @@ function todayFormatted(): string {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function DrawerOperationsDialog({ visible, onClose }: Props) {
-  const { t, af } = useI18n();
+  const { t, af, isRTL } = useI18n();
   const [step,       setStep]       = useState<Step>('main');
   const [entries,    setEntries]    = useState<DrawerEntry[]>([]);
   const [formType,   setFormType]   = useState<DrawerType | ''>('');
@@ -202,8 +193,8 @@ export default function DrawerOperationsDialog({ visible, onClose }: Props) {
                       </View>
                       <View style={s.entryRight}>
                         <View style={s.entryAmountRow}>
-                          <Image source={iconSarDark} style={s.entrySarIcon} />
                           <Text style={s.entryAmount}>{e.amount}</Text>
+                          <Image source={iconSarDark} style={s.entrySarIcon} />
                         </View>
                         <Text style={s.entryDate}>{e.date}</Text>
                       </View>
@@ -239,7 +230,7 @@ export default function DrawerOperationsDialog({ visible, onClose }: Props) {
               <Text style={s.formLabel}>Type</Text>
               <View style={s.formRight}>
                 {formType ? <Text style={s.formValueSelected}>{formType}</Text> : null}
-                <Text style={s.formChevron}>›</Text>
+                <Text style={s.formChevron}>{isRTL ? '‹' : '›'}</Text>
               </View>
             </TouchableOpacity>
 
@@ -248,9 +239,10 @@ export default function DrawerOperationsDialog({ visible, onClose }: Props) {
             {/* Amount */}
             <TouchableOpacity style={s.formRow} activeOpacity={0.7} onPress={() => setStep('amount')}>
               <Text style={s.formLabel}>Amount</Text>
-              <Text style={[s.formValue, formAmount && s.formValueSelected]}>
-                <Image source={iconSarDark} style={s.formSarIcon} />{formAmount || '0.00'}
-              </Text>
+              <View style={s.formAmountCluster}>
+                <Text style={[s.formValue, formAmount && s.formValueSelected]}>{formAmount || '0.00'}</Text>
+                <Image source={iconSarDark} style={s.formSarIcon} />
+              </View>
             </TouchableOpacity>
 
             <View style={s.hairline} />
@@ -265,7 +257,7 @@ export default function DrawerOperationsDialog({ visible, onClose }: Props) {
               <Text style={[s.formLabel, !formType && s.formLabelDisabled]}>Reason</Text>
               <View style={s.formRight}>
                 {formReason ? <Text style={s.formValueSelected}>{formReason}</Text> : null}
-                <Text style={[s.formChevron, !formType && s.formLabelDisabled]}>›</Text>
+                <Text style={[s.formChevron, !formType && s.formLabelDisabled]}>{isRTL ? '‹' : '›'}</Text>
               </View>
             </TouchableOpacity>
 
@@ -356,8 +348,8 @@ export default function DrawerOperationsDialog({ visible, onClose }: Props) {
         <View style={s.numpadContainer}>
           {/* Display */}
           <View style={s.amountDisplay}>
-            <Image source={iconSarDark} style={s.amountDisplaySarIcon} />
             <Text style={s.amountDisplayValue}>{displayAmount}</Text>
+            <Image source={iconSarDark} style={s.amountDisplaySarIcon} />
           </View>
 
           <View style={s.amountDivider} />
@@ -373,7 +365,15 @@ export default function DrawerOperationsDialog({ visible, onClose }: Props) {
                     onPress={() => handleNumKey(key)}
                     activeOpacity={0.6}
                   >
-                    <Text style={[s.numKeyText, key === '⌫' && s.numKeyActionText]}>{key}</Text>
+                    <Text
+                      style={[
+                        s.numKeyText,
+                        key === '⌫' && s.numKeyActionText,
+                        key === '⌫' && isRTL && { transform: [{ scaleX: -1 }] },
+                      ]}
+                    >
+                      {key}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -391,7 +391,7 @@ export default function DrawerOperationsDialog({ visible, onClose }: Props) {
   }
 
   return (
-    <Modal
+    <RootModal
       visible={visible}
       transparent
       animationType="fade"
@@ -408,7 +408,7 @@ export default function DrawerOperationsDialog({ visible, onClose }: Props) {
           {renderContent()}
         </View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 
@@ -529,9 +529,15 @@ const s = StyleSheet.create({
     marginTop: 2,
   },
   entryRight: { alignItems: 'flex-end' },
-  entryAmountRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  entryAmountRow: { flexDirection: 'row', alignItems: 'center', gap: 4, direction: 'ltr' },
   entrySarIcon: { width: 13, height: 14, resizeMode: 'contain' },
-  formSarIcon: { width: 13, height: 14, resizeMode: 'contain', marginRight: 4 },
+  formAmountCluster: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    direction: 'ltr',
+  },
+  formSarIcon: { width: 13, height: 14, resizeMode: 'contain' },
   entryAmount: {
     fontSize: 15,
     fontWeight: '600',
@@ -669,6 +675,7 @@ const s = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'flex-end',
     gap: 6,
+    direction: 'ltr',
   },
   amountDisplayValue: {
     fontSize: 40,

@@ -1,13 +1,6 @@
 import React from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-} from 'react-native';
+import RootModal from './RootModal';
+import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { Colors } from '../constants/colors';
 import { iconSarDark } from '../assets/icons';
 
@@ -73,8 +66,8 @@ const REPORT_DATA: CategoryGroup[] = [
 function SarAmt({ n, style }: { n: number; style?: object }) {
   return (
     <View style={[r.sarAmtWrap, style]}>
-      <Image source={iconSarDark} style={r.sarAmtIcon} />
       <Text style={r.sarAmtText}>{n.toFixed(2)}</Text>
+      <Image source={iconSarDark} style={r.sarAmtIcon} />
     </View>
   );
 }
@@ -118,7 +111,7 @@ export default function ProductsMixReportModal({ visible, onClose, dateLabel, pr
   const totalSales = REPORT_DATA.flatMap(g => g.products).reduce((s, p) => s + p.netSales, 0);
 
   return (
-    <Modal
+    <RootModal
       visible={visible}
       transparent
       animationType="fade"
@@ -195,7 +188,7 @@ export default function ProductsMixReportModal({ visible, onClose, dateLabel, pr
           </ScrollView>
         </View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 
@@ -301,7 +294,7 @@ const r = StyleSheet.create({
     justifyContent: 'flex-end',
     alignItems: 'center',
   },
-  sarAmtWrap: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  sarAmtWrap: { flexDirection: 'row', alignItems: 'center', gap: 3, direction: 'ltr' },
   sarAmtIcon: { width: 11, height: 12, resizeMode: 'contain' },
   sarAmtText: { fontSize: 13, color: Colors.black },
   colHeader: {

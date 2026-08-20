@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState } from 'react';
-import { I18nManager, Platform } from 'react-native';
+import React, { createContext, useContext, useLayoutEffect, useState } from 'react';
+import { I18nManager, Platform, Text, TextInput } from 'react-native';
 import { translations, LangKey, TKey } from './translations';
 
 // ─── Font names (from @expo-google-fonts/ibm-plex-sans-arabic) ────────────────
@@ -47,10 +47,49 @@ function getInitialLang(): LangKey {
   return 'en';
 }
 
+// ─── Capture RN default Text/TextInput styles once (before we patch for Arabic) ─
+let capturedTextStyle: React.ComponentProps<typeof Text>['style'];
+let capturedInputStyle: React.ComponentProps<typeof TextInput>['style'];
+let didCaptureTextDefaults = false;
+
+/** RN types omit defaultProps; runtime still supports it (used for Arabic base font). */
+type WithDefaultProps = { defaultProps?: { style?: React.ComponentProps<typeof Text>['style'] } };
+const TextDP = Text as unknown as WithDefaultProps;
+const TextInputDP = TextInput as unknown as WithDefaultProps;
+
+function captureTextDefaults() {
+  if (didCaptureTextDefaults) return;
+  capturedTextStyle = TextDP.defaultProps?.style;
+  capturedInputStyle = TextInputDP.defaultProps?.style;
+  didCaptureTextDefaults = true;
+}
+
 // ─── Provider ─────────────────────────────────────────────────────────────────
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<LangKey>(getInitialLang);
   const isRTL = lang === 'ar';
+
+  // Patch defaultProps during render (not in useLayoutEffect) so the first paint already
+  // uses IBM Plex on Arabic — effects run after children render and miss the initial tree.
+  captureTextDefaults();
+  const arabicWebFamily = 'IBM Plex Sans Arabic';
+  const defaultArabicFont = Platform.OS === 'web' ? arabicWebFamily : ARABIC_FONTS.regular;
+  const textStyleArabic = [capturedTextStyle, { fontFamily: defaultArabicFont }].filter(Boolean);
+  TextDP.defaultProps = {
+    ...TextDP.defaultProps,
+    style: isRTL ? textStyleArabic : capturedTextStyle,
+  };
+  TextInputDP.defaultProps = {
+    ...TextInputDP.defaultProps,
+    style: isRTL ? [capturedInputStyle, { fontFamily: defaultArabicFont }].filter(Boolean) : capturedInputStyle,
+  };
+
+  useLayoutEffect(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      document.documentElement.lang = isRTL ? 'ar' : 'en';
+      document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
+    }
+  }, [isRTL, lang]);
 
   function setLang(l: LangKey) {
     setLangState(l);
@@ -70,7 +109,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     if (!isRTL) return undefined;
     // Web: font is loaded as "IBM Plex Sans Arabic" via Google Fonts <link> in index.html
     // Native: each weight is a separate named asset from @expo-google-fonts
-    return Platform.OS === 'web' ? 'IBM Plex Sans Arabic' : ARABIC_FONTS[weight];
+    return Platform.OS === 'web' ? arabicWebFamily : ARABIC_FONTS[weight];
   }
 
   function rtlLeft(val: number) {

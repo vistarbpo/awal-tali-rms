@@ -29,6 +29,7 @@ import SupportScreen from './SupportScreen';
 import ScanLoyaltyQRModal from '../components/ScanLoyaltyQRModal';
 import RedeemRewardDialog from '../components/RedeemRewardDialog';
 import { useI18n } from '../i18n';
+import type { TKey } from '../i18n/translations';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 import {
@@ -80,21 +81,21 @@ const TABS = [
 
 interface Category {
   id: string;
-  name: string;
+  nameKey: TKey;
   image?: ImageSourcePropType | null;
 }
 
 const CATEGORIES: Category[] = [
-  { id: 'c1', name: 'MAIN CATEGORY 1', image: CAT_IMG.img0 },
-  { id: 'c2', name: 'MAIN CATEGORY 2', image: CAT_IMG.img1 },
-  { id: 'c3', name: 'SALADS',          image: CAT_IMG.img2 },
-  { id: 'c4', name: 'BREAKFAST',       image: CAT_IMG.img3 },
-  { id: 'c5', name: 'BEVERAGES',       image: CAT_IMG.img4 },
-  { id: 'c6', name: 'MAIN DISHES',     image: CAT_IMG.img0 },
-  { id: 'c7', name: 'SIDE DISHES',     image: CAT_IMG.img1 },
-  { id: 'c8', name: 'DESSERTS',        image: CAT_IMG.img2 },
-  { id: 'c9', name: 'SPECIALS',        image: CAT_IMG.img3 },
-  { id: 'c10', name: 'SEASONAL MENU' },
+  { id: 'c1', nameKey: 'catMainCategory1', image: CAT_IMG.img0 },
+  { id: 'c2', nameKey: 'catMainCategory2', image: CAT_IMG.img1 },
+  { id: 'c3', nameKey: 'catSalads',        image: CAT_IMG.img2 },
+  { id: 'c4', nameKey: 'catBreakfast',     image: CAT_IMG.img3 },
+  { id: 'c5', nameKey: 'catBeverages',     image: CAT_IMG.img4 },
+  { id: 'c6', nameKey: 'catMainDishes',    image: CAT_IMG.img0 },
+  { id: 'c7', nameKey: 'catSideDishes',    image: CAT_IMG.img1 },
+  { id: 'c8', nameKey: 'catDesserts',      image: CAT_IMG.img2 },
+  { id: 'c9', nameKey: 'catSpecials',      image: CAT_IMG.img3 },
+  { id: 'c10', nameKey: 'catSeasonalMenu' },
 ];
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -128,7 +129,7 @@ interface Props {
 }
 
 export default function HomeScreen({ onTabPress, onCategorySelect, cart, selectedCartId, onSelectItem, onRemoveItem, onUpdateQty, onDoneEditing, isTillOpen, onTillToggle, onExit, orderType, onOrderTypeSet, orderSeq, status, onTotalPress, onAvailabilityPress, tableNumber, courses, onAddCourse, onMoveItemToCourse, onHoldCourse }: Props) {
-  const { t, af, isRTL } = useI18n();
+  const { t, af, isRTL, rtlText } = useI18n();
   const TAB_KEY_MAP: Record<string, string> = { home: 'tabHome', orders: 'tabOrders', tables: 'tabTables', new: 'tabNew' };
   const [rightW, setRightW] = useState(IPAD_W - LEFT_PANEL_W);
   const searchRef                   = useRef<TextInput>(null);
@@ -156,7 +157,7 @@ export default function HomeScreen({ onTabPress, onCategorySelect, cart, selecte
   const cardH     = cardW + NAME_H;
 
   const filtered = CATEGORIES.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase()),
+    t(c.nameKey).toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
@@ -204,14 +205,25 @@ export default function HomeScreen({ onTabPress, onCategorySelect, cart, selecte
           </View>
 
           {/* Search bar */}
-          <Pressable style={[layout.searchBar, searchFocused && layout.searchBarFocused]} onPress={() => searchRef.current?.focus()}>
+          <Pressable
+            style={[
+              layout.searchBar,
+              searchFocused && layout.searchBarFocused,
+              isRTL && { flexDirection: 'row-reverse' },
+            ]}
+            onPress={() => searchRef.current?.focus()}
+          >
             <View style={layout.searchIconWrap}>
               <Image source={ICONS.search} style={layout.searchIcon} />
             </View>
             <View style={layout.searchInputWrap}>
               <TextInput
                 ref={searchRef}
-                style={layout.searchInput}
+                style={[
+                  layout.searchInput,
+                  { fontFamily: af(), textAlign: rtlText('left') },
+                  isRTL && { writingDirection: 'rtl' },
+                ]}
                 placeholder={t('searchProducts')}
                 placeholderTextColor={Colors.placeholder}
                 value={search}
@@ -254,8 +266,11 @@ export default function HomeScreen({ onTabPress, onCategorySelect, cart, selecte
                     {selected && <View style={styles.cardAccent} />}
                   </View>
                   <View style={[styles.cardNameWrap, { height: NAME_H }, selected && styles.cardNameWrapSelected]}>
-                    <Text style={[styles.cardName, selected && styles.cardNameSelected]} numberOfLines={2}>
-                      {item.name}
+                    <Text
+                      style={[styles.cardName, selected && styles.cardNameSelected, { fontFamily: af('semibold') }]}
+                      numberOfLines={2}
+                    >
+                      {t(item.nameKey)}
                     </Text>
                   </View>
                 </TouchableOpacity>

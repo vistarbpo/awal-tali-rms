@@ -1,12 +1,6 @@
 import React, { useState } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  TouchableWithoutFeedback,
-} from 'react-native';
+import RootModal from './RootModal';
+import { View, Text, TouchableOpacity, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import { Colors } from '../constants/colors';
 import { useI18n } from '../i18n';
 import OrdersSummaryReportModal from './OrdersSummaryReportModal';
@@ -90,7 +84,7 @@ export default function OrdersSummaryDialog({ visible, onBack, onClose, title = 
 
   return (
     <>
-    <Modal
+    <RootModal
       visible={visible}
       transparent
       animationType="fade"
@@ -142,13 +136,15 @@ export default function OrdersSummaryDialog({ visible, onBack, onClose, title = 
 
             {/* Month nav */}
             <View style={s.monthNav}>
-              <Text style={s.monthLabel}>{MONTHS[viewMonth]} {viewYear} ›</Text>
+              <Text style={s.monthLabel}>
+                {MONTHS[viewMonth]} {viewYear} {isRTL ? '‹' : '›'}
+              </Text>
               <View style={s.monthArrows}>
                 <TouchableOpacity onPress={prevMonth} style={s.arrowBtn} activeOpacity={0.7}>
-                  <Text style={s.arrowText}>‹</Text>
+                  <Text style={s.arrowText}>{isRTL ? '›' : '‹'}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={nextMonth} style={s.arrowBtn} activeOpacity={0.7}>
-                  <Text style={s.arrowText}>›</Text>
+                  <Text style={s.arrowText}>{isRTL ? '‹' : '›'}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -189,7 +185,7 @@ export default function OrdersSummaryDialog({ visible, onBack, onClose, title = 
 
         </View>
       </View>
-    </Modal>
+    </RootModal>
 
     {reportType === 'orders' && (
       <OrdersSummaryReportModal

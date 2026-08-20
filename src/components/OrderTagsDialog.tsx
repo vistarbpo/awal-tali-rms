@@ -1,33 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  TouchableWithoutFeedback,
-  ScrollView,
-} from 'react-native';
+import RootModal from './RootModal';
+import { View, Text, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, ScrollView } from 'react-native';
 import { Colors } from '../constants/colors';
 import { useI18n } from '../i18n';
+import type { TKey } from '../i18n/translations';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface OrderTag {
   id:    string;
-  label: string;
+  tKey:  TKey;
 }
 
 export const ORDER_TAGS: OrderTag[] = [
-  { id: 'no_spice',    label: 'No Spice'        },
-  { id: 'extra_sauce', label: 'Extra Sauce'      },
-  { id: 'no_onion',    label: 'No Onion'         },
-  { id: 'no_garlic',   label: 'No Garlic'        },
-  { id: 'gluten_free', label: 'Gluten Free'      },
-  { id: 'dairy_free',  label: 'Dairy Free'       },
-  { id: 'vegan',       label: 'Vegan'            },
-  { id: 'allergy',     label: 'Allergy Alert'    },
-  { id: 'vip',         label: 'VIP Customer'     },
-  { id: 'priority',    label: 'Priority Order'   },
+  { id: 'no_spice',    tKey: 'tagNoSpice' },
+  { id: 'extra_sauce', tKey: 'tagExtraSauce' },
+  { id: 'no_onion',    tKey: 'tagNoOnion' },
+  { id: 'no_garlic',   tKey: 'tagNoGarlic' },
+  { id: 'gluten_free', tKey: 'tagGlutenFree' },
+  { id: 'dairy_free',  tKey: 'tagDairyFree' },
+  { id: 'vegan',       tKey: 'tagVegan' },
+  { id: 'allergy',     tKey: 'tagAllergy' },
+  { id: 'vip',         tKey: 'tagVip' },
+  { id: 'priority',    tKey: 'tagPriority' },
 ];
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -59,7 +53,7 @@ export default function OrderTagsDialog({ visible, activeTags, onClose, onApply 
   }
 
   return (
-    <Modal
+    <RootModal
       visible={visible}
       transparent
       animationType="fade"
@@ -91,7 +85,7 @@ export default function OrderTagsDialog({ visible, activeTags, onClose, onApply 
                   {index > 0 && <View style={s.divider} />}
                   <View style={s.row}>
                     <Text style={[s.rowLabel, isSelected && s.rowLabelSelected, { fontFamily: af('regular') }]}>
-                      {tag.label}
+                      {t(tag.tKey)}
                     </Text>
                     {isSelected && <Text style={s.checkmark}>✓</Text>}
                   </View>
@@ -112,7 +106,7 @@ export default function OrderTagsDialog({ visible, activeTags, onClose, onApply 
 
         </View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 

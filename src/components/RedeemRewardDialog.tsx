@@ -1,13 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  TextInput,
-  StyleSheet,
-  TouchableWithoutFeedback,
-} from 'react-native';
+import RootModal from './RootModal';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import { Colors } from '../constants/colors';
 import { useI18n } from '../i18n';
 
@@ -36,7 +29,7 @@ export default function RedeemRewardDialog({ visible, code, onClose, onApply, on
   }
 
   return (
-    <Modal
+    <RootModal
       visible={visible}
       transparent
       animationType="fade"
@@ -67,14 +60,14 @@ export default function RedeemRewardDialog({ visible, code, onClose, onApply, on
           {/* Code input */}
           <View style={s.body}>
             <TextInput
-              style={s.codeInput}
+              style={[s.codeInput, { fontFamily: af('semibold') }]}
+              textAlign="center"
               value={value}
               onChangeText={setValue}
-              placeholder="Enter or scan a reward code"
+              placeholder={t('redeemCodePlaceholder')}
               placeholderTextColor={Colors.placeholder}
               autoCapitalize="characters"
               autoCorrect={false}
-              textAlign="center"
               returnKeyType="done"
               onSubmitEditing={handleApply}
             />
@@ -85,18 +78,18 @@ export default function RedeemRewardDialog({ visible, code, onClose, onApply, on
 
           {/* Empty hint area */}
           <View style={s.hint}>
-            <Text style={s.hintText}>
+            <Text style={[s.hintText, { fontFamily: af('regular') }]}>
               <Text
-                style={s.hintScanLink}
+                style={[s.hintScanLink, { fontFamily: af('bold') }]}
                 onPress={() => { onClose(); onScanPress?.(); }}
-              >Scan</Text>
-              {' the customer\'s loyalty QR code or enter the code manually.'}
+              >{t('redeemScanVerb')}</Text>
+              {t('redeemHintRemainder')}
             </Text>
           </View>
 
         </View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 

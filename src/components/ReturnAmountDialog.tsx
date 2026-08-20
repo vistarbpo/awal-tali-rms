@@ -1,7 +1,6 @@
 import React from 'react';
-import {
-  View, Text, Image, TouchableOpacity, TouchableWithoutFeedback, Modal, StyleSheet,
-} from 'react-native';
+import RootModal from './RootModal';
+import { View, Text, Image, TouchableOpacity, TouchableWithoutFeedback, StyleSheet } from 'react-native';
 import { Colors } from '../constants/colors';
 import { useI18n } from '../i18n';
 import { iconSarDark } from '../assets/icons';
@@ -14,9 +13,9 @@ interface Props {
 }
 
 export default function ReturnAmountDialog({ visible, amount, orderNumber, onClose }: Props) {
-  const { t, af, isRTL } = useI18n();
+  const { t, af } = useI18n();
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
+    <RootModal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={s.backdrop} />
       </TouchableWithoutFeedback>
@@ -31,7 +30,7 @@ export default function ReturnAmountDialog({ visible, amount, orderNumber, onClo
           </View>
 
           {/* Amount */}
-          <View style={[s.amountRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <View style={s.amountRow}>
             <Text style={s.amount}>{amount.toFixed(2)}</Text>
             <Image source={iconSarDark} style={s.currency} />
           </View>
@@ -45,7 +44,7 @@ export default function ReturnAmountDialog({ visible, amount, orderNumber, onClo
 
         </View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 
@@ -92,6 +91,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 16,
+    direction: 'ltr',
   },
   amount: {
     fontSize: 32,

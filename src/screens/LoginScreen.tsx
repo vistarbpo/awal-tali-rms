@@ -31,7 +31,7 @@ interface Props {
 export default function LoginScreen({ onLoginSuccess, onDesignSystem }: Props) {
   const [pin, setPin] = useState('');
   const [syncUsersVisible, setSyncUsersVisible] = useState(false);
-  const { t, af, isRTL, rtlRight } = useI18n();
+  const { t, af, isRTL, rtlRight, rtlText } = useI18n();
 
   function handleKey(key: string) {
     if (key === 'C') {
@@ -70,18 +70,20 @@ export default function LoginScreen({ onLoginSuccess, onDesignSystem }: Props) {
           {/* Bottom: user info */}
           <View style={s.userCard}>
             <View style={s.userAvatar}>
-              <Text style={s.userAvatarText}>M</Text>
+              <Text style={[s.userAvatarText, { fontFamily: af('bold') }]}>M</Text>
             </View>
             <View style={s.userDetails}>
-              <Text style={s.userName}>Mohammed</Text>
-              <Text style={s.userMeta}>558665  ·  Ar Rashidiyya Branch</Text>
+              <Text style={[s.userName, { textAlign: rtlText('left'), fontFamily: af('semibold') }]}>Mohammed</Text>
+              <Text style={[s.userMeta, { textAlign: rtlText('left'), fontFamily: af('regular') }]}>
+                558665  ·  Ar Rashidiyya Branch
+              </Text>
             </View>
           </View>
         </View>
 
         {/* ── RIGHT: PIN entry ── */}
         <View style={s.pinPanel}>
-          <View style={s.langRow}>
+          <View style={[s.langRow, rtlRight(62)]}>
             <LangToggle variant="dark" />
           </View>
 
@@ -115,7 +117,13 @@ export default function LoginScreen({ onLoginSuccess, onDesignSystem }: Props) {
                       onPress={() => handleKey(key)}
                       activeOpacity={0.65}
                     >
-                      <Text style={[s.keyText, isDelete && s.keyDeleteText]}>
+                      <Text
+                        style={[
+                          s.keyText,
+                          isDelete && s.keyDeleteText,
+                          isDelete && isRTL && { transform: [{ scaleX: -1 }] },
+                        ]}
+                      >
                         {key === 'C' ? '⌫' : key}
                       </Text>
                     </TouchableOpacity>
@@ -213,6 +221,7 @@ const s = StyleSheet.create({
     paddingTop: 24,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.12)',
+    direction: 'ltr',
   },
   userAvatar: {
     width: 44,
@@ -228,6 +237,8 @@ const s = StyleSheet.create({
     color: Colors.white,
   },
   userDetails: {
+    flex: 1,
+    minWidth: 0,
     gap: 3,
   },
   userName: {
@@ -246,7 +257,6 @@ const s = StyleSheet.create({
   langRow: {
     position: 'absolute',
     top: 20,
-    right: 62, // clear the ⬡ dsBtn (36px wide + 16px margin + 10px gap)
   },
 
   /* ── PIN panel ── */

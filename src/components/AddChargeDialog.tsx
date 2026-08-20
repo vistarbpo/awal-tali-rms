@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Modal,
-  Platform,
   View,
   Text,
   TouchableOpacity,
@@ -10,6 +8,7 @@ import {
 } from 'react-native';
 import { Colors } from '../constants/colors';
 import { useI18n } from '../i18n';
+import RootModal from './RootModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface OrderCharge {
@@ -121,20 +120,15 @@ export default function AddChargeDialog({ visible, chargeName, onClose, onApply 
     </View>
   );
 
-  if (Platform.OS === 'web') {
-    if (!visible) return null;
-    return <View style={s.inlineOverlay}>{cardJSX}</View>;
-  }
-
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
+    <RootModal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={s.backdrop} />
       </TouchableWithoutFeedback>
       <View style={s.center} pointerEvents="box-none">
         {cardJSX}
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 

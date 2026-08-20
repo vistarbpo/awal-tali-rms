@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import {
-  Modal, View, Text, TouchableOpacity, TouchableWithoutFeedback,
-  FlatList, TextInput, Image, StyleSheet, Platform,
+  View, Text, TouchableOpacity, TouchableWithoutFeedback,
+  FlatList, TextInput, Image, StyleSheet,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import RootModal from './RootModal';
 import { useI18n } from '../i18n';
 import { iconSearch } from '../assets/icons';
 
@@ -93,45 +94,26 @@ export default function SelectDriverDialog({ visible, onClose, onSelectDriver }:
     </View>
   );
 
-  if (Platform.OS !== 'web') {
-    return (
-      <Modal
-        visible={visible}
-        transparent
-        animationType="slide"
-        statusBarTranslucent
-        onRequestClose={handleClose}
-      >
-        <TouchableWithoutFeedback onPress={handleClose}>
-          <View style={s.backdrop} />
-        </TouchableWithoutFeedback>
-        <View style={s.container} pointerEvents="box-none">
-          {inner}
-        </View>
-      </Modal>
-    );
-  }
-
-  // Web
-  if (!visible) return null;
   return (
-    <View style={s.webOverlay} pointerEvents="box-none">
+    <RootModal
+      visible={visible}
+      transparent
+      animationType="slide"
+      statusBarTranslucent
+      onRequestClose={handleClose}
+    >
       <TouchableWithoutFeedback onPress={handleClose}>
         <View style={s.backdrop} />
       </TouchableWithoutFeedback>
       <View style={s.container} pointerEvents="box-none">
         {inner}
       </View>
-    </View>
+    </RootModal>
   );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  webOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 200,
-  },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.35)',

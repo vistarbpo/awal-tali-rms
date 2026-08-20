@@ -1,12 +1,6 @@
 import React from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  StyleSheet,
-} from 'react-native';
+import RootModal from './RootModal';
+import { View, Text, TouchableOpacity, TouchableWithoutFeedback, StyleSheet } from 'react-native';
 import { Colors } from '../constants/colors';
 import { useI18n } from '../i18n';
 
@@ -21,7 +15,7 @@ interface Props {
 export default function VoidReasonDialog({ visible, onClose, onSelectReason }: Props) {
   const { t, af } = useI18n();
   return (
-    <Modal
+    <RootModal
       visible={visible}
       transparent
       animationType="fade"
@@ -71,7 +65,7 @@ export default function VoidReasonDialog({ visible, onClose, onSelectReason }: P
 
         </View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 

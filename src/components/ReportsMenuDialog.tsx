@@ -1,12 +1,6 @@
 import React, { useState } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  TouchableWithoutFeedback,
-} from 'react-native';
+import RootModal from './RootModal';
+import { View, Text, TouchableOpacity, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import { Colors } from '../constants/colors';
 import OrdersSummaryDialog from './OrdersSummaryDialog';
 import { useI18n } from '../i18n';
@@ -31,7 +25,7 @@ export default function ReportsMenuDialog({ visible, onClose }: Props) {
 
   return (
     <>
-      <Modal
+      <RootModal
         visible={visible && !activeReport}
         transparent
         animationType="fade"
@@ -84,7 +78,7 @@ export default function ReportsMenuDialog({ visible, onClose }: Props) {
 
           </View>
         </View>
-      </Modal>
+      </RootModal>
 
       <OrdersSummaryDialog
         visible={activeReport === 'orders-summary'}

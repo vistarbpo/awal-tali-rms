@@ -1,15 +1,6 @@
 import React, { useState } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  ScrollView,
-  TextInput,
-  Switch,
-  StyleSheet,
-} from 'react-native';
+import RootModal from '../components/RootModal';
+import { View, Text, TouchableOpacity, TouchableWithoutFeedback, ScrollView, TextInput, Switch, StyleSheet } from 'react-native';
 import { Colors } from '../constants/colors';
 import { useI18n } from '../i18n';
 
@@ -85,6 +76,7 @@ function NavRow({
 }: {
   label: string; value?: string | null; placeholder?: string; onPress: () => void;
 }) {
+  const { isRTL } = useI18n();
   return (
     <TouchableOpacity style={s.row} activeOpacity={0.7} onPress={onPress}>
       <Text style={s.rowLabel}>{label}</Text>
@@ -92,7 +84,7 @@ function NavRow({
         <Text style={value ? s.rowValue : s.rowPlaceholder}>
           {value ?? placeholder ?? 'Not set'}
         </Text>
-        <Text style={s.chevron}>›</Text>
+        <Text style={s.chevron}>{isRTL ? '‹' : '›'}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -182,7 +174,7 @@ export default function DevicesScreen({ visible, onClose }: Props) {
   const hasNoDevices = printers.length === 0 && kdsDevices.length === 0 && subCashiers.length === 0;
 
   return (
-    <Modal
+    <RootModal
       visible={visible}
       transparent
       animationType="fade"
@@ -222,7 +214,7 @@ export default function DevicesScreen({ visible, onClose }: Props) {
                             <Text style={s.rowLabel}>{p.name || 'Unnamed Printer'}</Text>
                             <View style={s.rowRight}>
                               <Text style={s.rowValue}>{p.type ?? ''}</Text>
-                              <Text style={s.chevron}>›</Text>
+                              <Text style={s.chevron}>{isRTL ? '‹' : '›'}</Text>
                             </View>
                           </TouchableOpacity>
                         </React.Fragment>
@@ -243,7 +235,7 @@ export default function DevicesScreen({ visible, onClose }: Props) {
                             <Text style={s.rowLabel}>{k.ipAddress || 'KDS Device'}</Text>
                             <View style={s.rowRight}>
                               <Text style={s.rowValue}>{k.type}</Text>
-                              <Text style={s.chevron}>›</Text>
+                              <Text style={s.chevron}>{isRTL ? '‹' : '›'}</Text>
                             </View>
                           </TouchableOpacity>
                         </React.Fragment>
@@ -262,7 +254,7 @@ export default function DevicesScreen({ visible, onClose }: Props) {
                           <TouchableOpacity style={s.row} activeOpacity={0.7}
                             onPress={() => { setSubCashierDraft(c); setSubView('sub-cashier-info'); }}>
                             <Text style={s.rowLabel}>{c.ipAddress || 'Sub Cashier'}</Text>
-                            <Text style={s.chevron}>›</Text>
+                            <Text style={s.chevron}>{isRTL ? '‹' : '›'}</Text>
                           </TouchableOpacity>
                         </React.Fragment>
                       ))}
@@ -593,7 +585,7 @@ export default function DevicesScreen({ visible, onClose }: Props) {
 
         </View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 

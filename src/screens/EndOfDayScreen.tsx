@@ -1,14 +1,6 @@
 import React, { useState } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  TouchableWithoutFeedback,
-  Image,
-} from 'react-native';
+import RootModal from '../components/RootModal';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TouchableWithoutFeedback, Image } from 'react-native';
 import { Colors } from '../constants/colors';
 import { iconSarGray, iconSarWhite } from '../assets/icons';
 import { useI18n } from '../i18n';
@@ -54,22 +46,41 @@ function fmt(n: number): string {
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
-function SectionHeader({ title }: { title: string }) {
+function SectionHeader({ title, rtl }: { title: string; rtl: boolean }) {
   return (
-    <View style={s.sectionHeader}>
-      <Text style={s.sectionTitle}>{title}</Text>
+    <View style={[s.sectionHeader, rtl && s.sectionHeaderRtl]}>
+      <Text style={[s.sectionTitle, rtl && s.sectionTitleRtl]}>{title}</Text>
     </View>
   );
 }
 
-function Row({ label, value, sub, valueColor }: { label: string; value: string; sub?: string; valueColor?: string }) {
+function Row({
+  label,
+  value,
+  sub,
+  valueColor,
+  rtl,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  valueColor?: string;
+  rtl: boolean;
+}) {
   return (
-    <View style={s.row}>
+    <View style={[s.row, rtl && s.rowRtl]}>
       <View style={s.rowLeft}>
-        <Text style={s.rowLabel}>{label}</Text>
-        {sub ? <Text style={s.rowSub}>{sub}</Text> : null}
+        <Text style={[s.rowLabel, rtl && s.rowLabelRtl]} numberOfLines={2}>
+          {label}
+        </Text>
+        {sub ? <Text style={[s.rowSub, rtl && s.rowSubRtl]}>{sub}</Text> : null}
       </View>
-      <Text style={[s.rowValue, valueColor ? { color: valueColor } : undefined]}>{value}</Text>
+      <Text
+        style={[s.rowValueCell, rtl && s.rowValueCellRtl, valueColor ? { color: valueColor } : undefined]}
+        numberOfLines={2}
+      >
+        {value}
+      </Text>
     </View>
   );
 }
@@ -78,16 +89,33 @@ function Hairline() {
   return <View style={s.hairline} />;
 }
 
-function SarRow({ label, amount, bold, green, red }: { label: string; amount: number; bold?: boolean; green?: boolean; red?: boolean }) {
+function SarRow({
+  label,
+  amount,
+  bold,
+  green,
+  red,
+  rtl,
+}: {
+  label: string;
+  amount: number;
+  bold?: boolean;
+  green?: boolean;
+  red?: boolean;
+  rtl: boolean;
+}) {
   const color = green ? Colors.green : red ? Colors.red : Colors.grayText;
   return (
-    <View style={s.row}>
-      <Text style={[s.rowLabel, bold && s.rowLabelBold]}>{label}</Text>
+    <View style={[s.row, rtl && s.rowRtl]}>
+      <Text style={[s.rowLabel, bold && s.rowLabelBold, rtl && s.rowLabelRtl, s.sarRowLabel]} numberOfLines={2}>
+        {label}
+      </Text>
       <View style={s.sarRow}>
-        <Image source={iconSarGray} style={s.sarIcon} />
-        <Text style={[s.rowValue, bold && s.rowValueBold, { color }]}>
-          {red ? '− ' : ''}{fmt(amount)}
+        <Text style={[s.sarAmountText, bold && s.rowValueBold, { color }]}>
+          {red ? '−' : ''}
+          {fmt(amount)}
         </Text>
+        <Image source={iconSarGray} style={s.sarIcon} />
       </View>
     </View>
   );
@@ -131,13 +159,13 @@ export default function EndOfDayScreen({ visible, onClose, onEndDay }: Props) {
   // ── Summary step ────────────────────────────────────────────────────────────
   if (step === 'summary') {
     return (
-      <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={handleClose}>
+      <RootModal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={handleClose}>
         <TouchableWithoutFeedback onPress={handleClose}>
           <View style={s.backdrop} />
         </TouchableWithoutFeedback>
 
         <View style={s.center} pointerEvents="box-none">
-          <View style={s.card}>
+          <View style={[s.card, isRTL && s.cardRtl]}>
 
             <View style={s.header}>
               <TouchableOpacity onPress={handleClose} activeOpacity={0.7} style={s.headerSide}>
@@ -145,106 +173,111 @@ export default function EndOfDayScreen({ visible, onClose, onEndDay }: Props) {
               </TouchableOpacity>
               <Text style={[s.headerTitle, { fontFamily: af('semibold') }]}>{t('endOfDayTitle')}</Text>
               <View style={s.headerSide}>
-                <Text style={s.headerDate}>{DAY_DATA.date}</Text>
+                <Text style={[s.headerDate, isRTL && s.headerDateRtl]}>{DAY_DATA.date}</Text>
               </View>
             </View>
 
             <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
+              <View style={isRTL ? s.scrollRtl : undefined}>
 
-              <SectionHeader title="Business Day" />
+              <SectionHeader title={t('eodSectionBusiness')} rtl={isRTL} />
               <View style={s.group}>
-                <Row label="Branch"     value={DAY_DATA.branch} />
+                <Row rtl={isRTL} label={t('eodBranch')}     value={DAY_DATA.branch} />
                 <Hairline />
-                <Row label="Opened at"  value={DAY_DATA.openTime} />
+                <Row rtl={isRTL} label={t('eodOpenedAt')}  value={DAY_DATA.openTime} />
                 <Hairline />
-                <Row label="Date"       value={DAY_DATA.date} />
+                <Row rtl={isRTL} label={t('eodDate')}       value={DAY_DATA.date} />
               </View>
 
-              <SectionHeader title="Orders" />
+              <SectionHeader title={t('eodSectionOrders')} rtl={isRTL} />
               <View style={s.group}>
-                <Row label="Total orders"  value={String(DAY_DATA.totalOrders)} />
+                <Row rtl={isRTL} label={t('eodTotalOrders')}  value={String(DAY_DATA.totalOrders)} />
                 <Hairline />
-                <Row label="Completed"     value={String(DAY_DATA.completed)} valueColor={Colors.green} />
+                <Row rtl={isRTL} label={t('eodCompleted')}     value={String(DAY_DATA.completed)} valueColor={Colors.green} />
                 <Hairline />
-                <Row label="Voided"        value={String(DAY_DATA.voided)}    valueColor={Colors.red} />
+                <Row rtl={isRTL} label={t('eodVoided')}        value={String(DAY_DATA.voided)}    valueColor={Colors.red} />
               </View>
 
-              <SectionHeader title="Sales" />
+              <SectionHeader title={t('eodSectionSales')} rtl={isRTL} />
               <View style={s.group}>
-                <SarRow label="Gross Sales"   amount={DAY_DATA.gross} />
+                <SarRow rtl={isRTL} label={t('eodGrossSales')}   amount={DAY_DATA.gross} />
                 <Hairline />
-                <SarRow label="Discount"      amount={DAY_DATA.discount} red />
+                <SarRow rtl={isRTL} label={t('eodDiscount')}      amount={DAY_DATA.discount} red />
                 <Hairline />
-                <SarRow label="Net Sales"     amount={DAY_DATA.netSales} bold />
+                <SarRow rtl={isRTL} label={t('eodNetSales')}     amount={DAY_DATA.netSales} bold />
                 <Hairline />
-                <SarRow label="Tax (incl.)"   amount={DAY_DATA.tax} />
+                <SarRow rtl={isRTL} label={t('eodTaxIncl')}   amount={DAY_DATA.tax} />
               </View>
 
-              <SectionHeader title="Payment Methods" />
+              <SectionHeader title={t('eodSectionPayMethods')} rtl={isRTL} />
               <View style={s.group}>
-                <SarRow label="Cash"   amount={DAY_DATA.cashSales} />
+                <SarRow rtl={isRTL} label={t('eodCash')}   amount={DAY_DATA.cashSales} />
                 <Hairline />
-                <SarRow label="Card"   amount={DAY_DATA.cardSales} />
+                <SarRow rtl={isRTL} label={t('eodCard')}   amount={DAY_DATA.cardSales} />
                 <Hairline />
-                <SarRow label="Total"  amount={DAY_DATA.gross} bold />
+                <SarRow rtl={isRTL} label={t('eodTotal')}  amount={DAY_DATA.gross} bold />
               </View>
 
-              <SectionHeader title="Cash Drawer" />
+              <SectionHeader title={t('eodSectionDrawer')} rtl={isRTL} />
               <View style={s.group}>
-                <SarRow label="Opening Float" amount={DAY_DATA.openingFloat} />
+                <SarRow rtl={isRTL} label={t('eodOpeningFloat')} amount={DAY_DATA.openingFloat} />
                 <Hairline />
-                <SarRow label="Cash Sales"    amount={DAY_DATA.cashSales} />
+                <SarRow rtl={isRTL} label={t('eodCashSales')}    amount={DAY_DATA.cashSales} />
                 <Hairline />
-                <SarRow label="Expected Cash" amount={EXPECTED_CASH} bold green />
+                <SarRow rtl={isRTL} label={t('eodExpectedCash')} amount={EXPECTED_CASH} bold green />
               </View>
 
               <View style={s.bottomPad} />
+              </View>
             </ScrollView>
 
             <View style={s.ctaWrap}>
               <TouchableOpacity style={s.ctaBtn} onPress={() => setStep('cash-count')} activeOpacity={0.85}>
-                <Text style={[s.ctaBtnText, { fontFamily: af('bold') }]}>Count Cash & Close Day</Text>
+                <Text style={[s.ctaBtnText, { fontFamily: af('bold') }]}>{t('eodCountCloseCta')}</Text>
               </TouchableOpacity>
             </View>
 
           </View>
         </View>
-      </Modal>
+      </RootModal>
     );
   }
 
   // ── Cash count step ──────────────────────────────────────────────────────────
   if (step === 'cash-count') {
     return (
-      <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={handleClose}>
+      <RootModal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={handleClose}>
         <TouchableWithoutFeedback onPress={handleClose}>
           <View style={s.backdrop} />
         </TouchableWithoutFeedback>
 
         <View style={s.center} pointerEvents="box-none">
-          <View style={[s.card, s.cardNarrow]}>
+          <View style={[s.card, s.cardNarrow, isRTL && s.cardRtl]}>
 
             <View style={s.header}>
               <TouchableOpacity onPress={() => setStep('summary')} activeOpacity={0.7} style={s.headerSide}>
-                <Text style={[s.headerClose, { fontFamily: af() }]}>‹ {t('back')}</Text>
+                <Text style={[s.headerClose, { fontFamily: af() }]}>
+                  {isRTL ? '› ' : '‹ '}
+                  {t('back')}
+                </Text>
               </TouchableOpacity>
-              <Text style={[s.headerTitle, { fontFamily: af('semibold') }]}>Count Cash</Text>
+              <Text style={[s.headerTitle, { fontFamily: af('semibold') }]}>{t('eodCountCashTitle')}</Text>
               <View style={s.headerSide} />
             </View>
 
             {/* Expected vs entered summary */}
-            <View style={s.cashSummary}>
+            <View style={[s.cashSummary, isRTL && s.cashSummaryRtl]}>
               <View style={s.cashSummaryCol}>
-                <Text style={s.cashSummaryLabel}>Expected</Text>
+                <Text style={[s.cashSummaryLabel, isRTL && s.cashSummaryLabelRtl]}>{t('eodExpected')}</Text>
                 <View style={s.cashSummaryVal}>
-                  <Image source={iconSarGray} style={s.sarIconSm} />
                   <Text style={s.cashSummaryAmt}>{fmt(EXPECTED_CASH)}</Text>
+                  <Image source={iconSarGray} style={s.sarIconSm} />
                 </View>
               </View>
               <View style={s.cashSummaryDivider} />
               <View style={s.cashSummaryCol}>
-                <Text style={s.cashSummaryLabel}>Difference</Text>
-                <Text style={[s.cashSummaryDiff, { color: diffColor }]}>
+                <Text style={[s.cashSummaryLabel, isRTL && s.cashSummaryLabelRtl]}>{t('eodDifference')}</Text>
+                <Text style={[s.cashSummaryDiff, { color: diffColor }, isRTL && s.cashSummaryDiffRtl]}>
                   {cashInput ? diffLabel : '—'}
                 </Text>
               </View>
@@ -252,16 +285,16 @@ export default function EndOfDayScreen({ visible, onClose, onEndDay }: Props) {
 
             {/* Amount display */}
             <View style={s.amountRow}>
-              <Image source={iconSarGray} style={s.amountCurrency} />
               <Text style={s.amountValue} numberOfLines={1} adjustsFontSizeToFit>
                 {cashInput || '0'}
               </Text>
+              <Image source={iconSarGray} style={s.amountCurrency} />
             </View>
 
             <View style={s.divider} />
 
             {/* Numpad */}
-            <View style={s.numpad}>
+            <View style={[s.numpad, s.numpadLtr]}>
               {NUMPAD.map((row, ri) => (
                 <View key={ri} style={s.numRow}>
                   {row.map(key => {
@@ -291,19 +324,19 @@ export default function EndOfDayScreen({ visible, onClose, onEndDay }: Props) {
 
           </View>
         </View>
-      </Modal>
+      </RootModal>
     );
   }
 
   // ── Done step ────────────────────────────────────────────────────────────────
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={handleClose}>
+    <RootModal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={handleClose}>
       <TouchableWithoutFeedback onPress={handleClose}>
         <View style={s.backdrop} />
       </TouchableWithoutFeedback>
 
       <View style={s.center} pointerEvents="box-none">
-        <View style={[s.card, s.cardNarrow]}>
+        <View style={[s.card, s.cardNarrow, isRTL && s.cardRtl]}>
 
           <View style={s.doneWrap}>
             {/* Green circle tick */}
@@ -312,28 +345,28 @@ export default function EndOfDayScreen({ visible, onClose, onEndDay }: Props) {
               <View style={s.doneTick2} />
             </View>
 
-            <Text style={[s.doneTitle, { fontFamily: af('bold') }]}>Business Day Closed</Text>
+            <Text style={[s.doneTitle, { fontFamily: af('bold') }]}>{t('eodDoneTitle')}</Text>
             <Text style={s.doneDate}>{DAY_DATA.date}</Text>
 
             <View style={s.doneSummaryCard}>
-              <View style={s.doneSummaryRow}>
-                <Text style={s.doneSummaryLabel}>Net Sales</Text>
+              <View style={[s.doneSummaryRow, isRTL && s.doneSummaryRowRtl]}>
+                <Text style={[s.doneSummaryLabel, isRTL && s.doneSummaryLabelRtl]}>{t('eodDoneNetSales')}</Text>
                 <View style={s.sarRow}>
-                  <Image source={iconSarGray} style={s.sarIcon} />
                   <Text style={s.doneSummaryVal}>{fmt(DAY_DATA.netSales)}</Text>
+                  <Image source={iconSarGray} style={s.sarIcon} />
                 </View>
               </View>
               <View style={s.doneSummaryDivider} />
-              <View style={s.doneSummaryRow}>
-                <Text style={s.doneSummaryLabel}>Orders</Text>
-                <Text style={s.doneSummaryVal}>{DAY_DATA.completed}</Text>
+              <View style={[s.doneSummaryRow, isRTL && s.doneSummaryRowRtl]}>
+                <Text style={[s.doneSummaryLabel, isRTL && s.doneSummaryLabelRtl]}>{t('eodDoneOrders')}</Text>
+                <Text style={[s.doneSummaryVal, s.doneSummaryValPlain]}>{DAY_DATA.completed}</Text>
               </View>
               <View style={s.doneSummaryDivider} />
-              <View style={s.doneSummaryRow}>
-                <Text style={s.doneSummaryLabel}>Cash (Actual)</Text>
+              <View style={[s.doneSummaryRow, isRTL && s.doneSummaryRowRtl]}>
+                <Text style={[s.doneSummaryLabel, isRTL && s.doneSummaryLabelRtl]}>{t('eodDoneCashActual')}</Text>
                 <View style={s.sarRow}>
-                  <Image source={iconSarGray} style={s.sarIcon} />
                   <Text style={s.doneSummaryVal}>{fmt(cashEntered)}</Text>
+                  <Image source={iconSarGray} style={s.sarIcon} />
                 </View>
               </View>
             </View>
@@ -345,13 +378,13 @@ export default function EndOfDayScreen({ visible, onClose, onEndDay }: Props) {
               onPress={() => { reset(); onEndDay?.(); onClose(); }}
               activeOpacity={0.85}
             >
-              <Text style={[s.ctaBtnText, { fontFamily: af('bold') }]}>Start New Day</Text>
+              <Text style={[s.ctaBtnText, { fontFamily: af('bold') }]}>{t('eodStartNewDay')}</Text>
             </TouchableOpacity>
           </View>
 
         </View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 
@@ -385,6 +418,12 @@ const s = StyleSheet.create({
   cardNarrow: {
     width: KEY_W * 3 + KEY_GAP * 2 + 48,
     maxHeight: 680,
+  },
+  cardRtl: {
+    direction: 'rtl',
+  },
+  scrollRtl: {
+    direction: 'rtl',
   },
 
   // Header
@@ -421,6 +460,9 @@ const s = StyleSheet.create({
     letterSpacing: -0.1,
     textAlign: 'right',
   },
+  headerDateRtl: {
+    textAlign: 'left',
+  },
 
   // Sections
   sectionHeader: {
@@ -428,12 +470,18 @@ const s = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 8,
   },
+  sectionHeaderRtl: {
+    alignItems: 'flex-end',
+  },
   sectionTitle: {
     fontSize: 13,
     fontWeight: '600',
     color: Colors.grayText,
     letterSpacing: 0.2,
     textTransform: 'uppercase',
+  },
+  sectionTitleRtl: {
+    textAlign: 'right',
   },
   group: {
     backgroundColor: Colors.white,
@@ -445,16 +493,23 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 12,
     paddingHorizontal: 20,
     paddingVertical: 15,
     minHeight: 52,
   },
-  rowLeft: { flex: 1 },
+  rowRtl: {
+    flexDirection: 'row-reverse',
+  },
+  rowLeft: { flex: 1, minWidth: 0 },
   rowLabel: {
     fontSize: 15,
     fontWeight: '400',
     color: Colors.black,
     letterSpacing: -0.2,
+  },
+  rowLabelRtl: {
+    textAlign: 'right',
   },
   rowLabelBold: {
     fontWeight: '600',
@@ -465,14 +520,32 @@ const s = StyleSheet.create({
     color: Colors.grayText,
     marginTop: 2,
   },
-  rowValue: {
+  rowSubRtl: {
+    textAlign: 'right',
+  },
+  sarRowLabel: {
+    flex: 1,
+    minWidth: 0,
+  },
+  rowValueCell: {
     fontSize: 15,
     fontWeight: '400',
     color: Colors.grayText,
     letterSpacing: -0.2,
     textAlign: 'right',
-    marginStart: 12,
-    flexShrink: 1,
+    flexShrink: 0,
+    flexGrow: 0,
+    maxWidth: '52%',
+  },
+  rowValueCellRtl: {
+    textAlign: 'left',
+  },
+  sarAmountText: {
+    fontSize: 15,
+    fontWeight: '400',
+    color: Colors.grayText,
+    letterSpacing: -0.2,
+    textAlign: 'right',
   },
   rowValueBold: {
     fontWeight: '600',
@@ -486,7 +559,9 @@ const s = StyleSheet.create({
   sarRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
+    flexShrink: 0,
+    direction: 'ltr',
   },
   sarIcon: {
     width: 11,
@@ -537,6 +612,9 @@ const s = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.grayBorder,
   },
+  cashSummaryRtl: {
+    flexDirection: 'row-reverse',
+  },
   cashSummaryCol: {
     flex: 1,
     alignItems: 'center',
@@ -555,10 +633,14 @@ const s = StyleSheet.create({
     letterSpacing: 0.8,
     textTransform: 'uppercase',
   },
+  cashSummaryLabelRtl: {
+    textAlign: 'center',
+  },
   cashSummaryVal: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    direction: 'ltr',
   },
   cashSummaryAmt: {
     fontSize: 18,
@@ -571,6 +653,9 @@ const s = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: -0.5,
   },
+  cashSummaryDiffRtl: {
+    writingDirection: 'ltr',
+  },
   amountRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -580,6 +665,7 @@ const s = StyleSheet.create({
     paddingBottom: 16,
     gap: 8,
     backgroundColor: Colors.white,
+    direction: 'ltr',
   },
   amountCurrency: {
     width: 22,
@@ -602,6 +688,9 @@ const s = StyleSheet.create({
     padding: 16,
     gap: KEY_GAP,
     backgroundColor: Colors.backgroundAlt,
+  },
+  numpadLtr: {
+    direction: 'ltr',
   },
   numRow: {
     flexDirection: 'row',
@@ -697,8 +786,12 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 12,
     paddingHorizontal: 20,
     paddingVertical: 14,
+  },
+  doneSummaryRowRtl: {
+    flexDirection: 'row-reverse',
   },
   doneSummaryDivider: {
     height: 0.5,
@@ -710,11 +803,20 @@ const s = StyleSheet.create({
     fontWeight: '400',
     color: Colors.grayText,
     letterSpacing: -0.2,
+    flex: 1,
+    minWidth: 0,
+  },
+  doneSummaryLabelRtl: {
+    textAlign: 'right',
   },
   doneSummaryVal: {
     fontSize: 15,
     fontWeight: '600',
     color: Colors.black,
     letterSpacing: -0.2,
+  },
+  doneSummaryValPlain: {
+    flexShrink: 0,
+    writingDirection: 'ltr',
   },
 });

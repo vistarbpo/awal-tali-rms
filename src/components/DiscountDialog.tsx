@@ -1,17 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  TouchableWithoutFeedback,
-} from 'react-native';
+import RootModal from './RootModal';
+import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import { Colors } from '../constants/colors';
 import { iconSarGray } from '../assets/icons';
 import { useI18n } from '../i18n';
+import type { TKey } from '../i18n/translations';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type DiscountKind = 'amount' | 'percentage';
@@ -37,13 +30,13 @@ interface Props {
 type Step = 'type' | 'numpad' | 'predefined';
 
 // ─── Mock predefined discounts (matching Figma) ────────────────────────────────
-const PREDEFINED: { label: string; kind: DiscountKind; value: number }[] = [
-  { label: 'Special Discount',   kind: 'percentage', value: 50 },
-  { label: 'Employee Discount',  kind: 'percentage', value: 10 },
-  { label: 'Happy Hour',         kind: 'percentage', value: 20 },
-  { label: 'Loyalty Member',     kind: 'percentage', value: 15 },
-  { label: 'Manager Override',   kind: 'percentage', value: 25 },
-  { label: 'Complimentary',      kind: 'percentage', value: 100 },
+const PREDEFINED: { labelKey: TKey; kind: DiscountKind; value: number }[] = [
+  { labelKey: 'discountPresetSpecial',    kind: 'percentage', value: 50 },
+  { labelKey: 'discountPresetEmployee',   kind: 'percentage', value: 10 },
+  { labelKey: 'discountPresetHappyHour',  kind: 'percentage', value: 20 },
+  { labelKey: 'discountPresetLoyalty',    kind: 'percentage', value: 15 },
+  { labelKey: 'discountPresetManager',    kind: 'percentage', value: 25 },
+  { labelKey: 'discountPresetComplimentary', kind: 'percentage', value: 100 },
 ];
 
 // ─── Numpad keys ──────────────────────────────────────────────────────────────
@@ -76,7 +69,7 @@ const icon = StyleSheet.create({
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function DiscountDialog({ visible, currentDiscount, subtotal, onClose, onApply, onClear, initialStep, initialKind, initialAmount }: Props) {
-  const { t, af, isRTL, rtlLeft } = useI18n();
+  const { t, af, isRTL, rtlLeft, rtlText } = useI18n();
   const [step, setStep]         = useState<Step>(initialStep ?? 'type');
   const [openKind, setOpenKind] = useState<DiscountKind>(initialKind ?? 'amount');
   const [amount, setAmount]     = useState(initialAmount ?? '');
@@ -104,14 +97,17 @@ export default function DiscountDialog({ visible, currentDiscount, subtotal, onC
     if (!val || val <= 0) return;
     if (openKind === 'percentage' && val > 100) return;
     onApply({
-      label: openKind === 'percentage' ? `${val}% Off` : `${val} Off`,
+      label:
+        openKind === 'percentage'
+          ? `${val}% ${t('discountOffShort')}`
+          : `${val} ${t('discountRiyalAbbr')} ${t('discountOffShort')}`,
       kind: openKind,
       value: val,
     });
   }
 
   function handleApplyPredefined(item: typeof PREDEFINED[0]) {
-    onApply({ label: item.label, kind: item.kind, value: item.value });
+    onApply({ label: t(item.labelKey), kind: item.kind, value: item.value });
   }
 
   const displayValue = amount || '0';
@@ -123,7 +119,7 @@ export default function DiscountDialog({ visible, currentDiscount, subtotal, onC
   const canApply = numericVal > 0 && (!isPercent || numericVal <= 100);
 
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
+    <RootModal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={s.backdrop} />
       </TouchableWithoutFeedback>
@@ -132,7 +128,7 @@ export default function DiscountDialog({ visible, currentDiscount, subtotal, onC
 
         {/* ── Step: Type selection (Amount / Percent / Predefined) ── */}
         {step === 'type' && (
-          <View style={s.typeCard}>
+          <View style={[s.typeCard, isRTL && s.cardRtl]}>
 
             {/* Header */}
             <View style={s.typeHeader}>
@@ -160,8 +156,12 @@ export default function DiscountDialog({ visible, currentDiscount, subtotal, onC
                 onPress={() => { setOpenKind('amount'); setAmount(''); setStep('numpad'); }}
                 activeOpacity={0.75}
               >
-                <Text style={[s.typeRowLabel, { fontFamily: af('regular') }]}>{t('discountAmount')}</Text>
-                <Text style={[s.typeRowHint, { fontFamily: af('regular') }]}>Fixed riyal reduction</Text>
+                <Text style={[s.typeRowLabel, { fontFamily: af('regular'), textAlign: rtlText('left') }]}>
+                  {t('discountAmount')}
+                </Text>
+                <Text style={[s.typeRowHint, { fontFamily: af('regular'), textAlign: rtlText('left') }]}>
+                  {t('discountHintFixedRiyal')}
+                </Text>
               </TouchableOpacity>
 
               <View style={s.hairline} />
@@ -171,8 +171,12 @@ export default function DiscountDialog({ visible, currentDiscount, subtotal, onC
                 onPress={() => { setOpenKind('percentage'); setAmount(''); setStep('numpad'); }}
                 activeOpacity={0.75}
               >
-                <Text style={[s.typeRowLabel, { fontFamily: af('regular') }]}>{t('discountPercent')}</Text>
-                <Text style={[s.typeRowHint, { fontFamily: af('regular') }]}>Percentage reduction</Text>
+                <Text style={[s.typeRowLabel, { fontFamily: af('regular'), textAlign: rtlText('left') }]}>
+                  {t('discountPercent')}
+                </Text>
+                <Text style={[s.typeRowHint, { fontFamily: af('regular'), textAlign: rtlText('left') }]}>
+                  {t('discountHintPercentage')}
+                </Text>
               </TouchableOpacity>
 
               <View style={s.hairline} />
@@ -182,8 +186,12 @@ export default function DiscountDialog({ visible, currentDiscount, subtotal, onC
                 onPress={() => setStep('predefined')}
                 activeOpacity={0.75}
               >
-                <Text style={[s.typeRowLabel, { fontFamily: af('regular') }]}>Predefined</Text>
-                <Text style={[s.typeRowHint, { fontFamily: af('regular') }]}>Manager-configured discounts</Text>
+                <Text style={[s.typeRowLabel, { fontFamily: af('regular'), textAlign: rtlText('left') }]}>
+                  {t('discountPredefinedOption')}
+                </Text>
+                <Text style={[s.typeRowHint, { fontFamily: af('regular'), textAlign: rtlText('left') }]}>
+                  {t('discountHintManagerPresets')}
+                </Text>
               </TouchableOpacity>
 
             </View>
@@ -197,11 +205,13 @@ export default function DiscountDialog({ visible, currentDiscount, subtotal, onC
 
         {/* ── Step: Numpad ── */}
         {step === 'numpad' && (
-          <View style={s.numpadCard}>
+          <View style={[s.numpadCard, isRTL && s.cardRtl]}>
 
             <View style={s.numpadHeader}>
               <TouchableOpacity style={[s.backBtn, rtlLeft(16)]} onPress={() => setStep('type')} activeOpacity={0.7}>
-                <BackArrow />
+                <View style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined}>
+                  <BackArrow />
+                </View>
               </TouchableOpacity>
               <Text style={[s.numpadHeaderLabel, { fontFamily: af('semibold') }]}>
                 {isPercent ? t('enterPercentage') : t('enterAmount')}
@@ -209,19 +219,20 @@ export default function DiscountDialog({ visible, currentDiscount, subtotal, onC
             </View>
 
             <View style={s.valueRow}>
+              <Text style={s.valueNum} numberOfLines={1} adjustsFontSizeToFit>
+                {displayValue}
+              </Text>
               {isPercent
                 ? <Text style={s.valueSuffix}>%</Text>
                 : <Image source={iconSarGray} style={s.valueSuffixIcon} />
               }
-              <Text style={s.valueNum} numberOfLines={1} adjustsFontSizeToFit>
-                {displayValue}
-              </Text>
             </View>
 
             {canApply && (
-              <View style={s.previewRow}>
+              <View style={[s.previewRow, isRTL && s.previewRowRtl]}>
                 <View style={s.previewInner}>
-                  <Text style={[s.previewText, { fontFamily: af('medium') }]}>Saving {previewDiscount.toFixed(2)}</Text>
+                  <Text style={[s.previewText, { fontFamily: af('medium') }]}>{t('discountSavingPrefix')}</Text>
+                  <Text style={[s.previewAmount, { fontFamily: af('semibold') }]}>{previewDiscount.toFixed(2)}</Text>
                   <Image source={iconSarGray} style={s.previewSarIcon} />
                 </View>
               </View>
@@ -263,10 +274,10 @@ export default function DiscountDialog({ visible, currentDiscount, subtotal, onC
 
         {/* ── Step: Predefined (Figma 92-11276 style) ── */}
         {step === 'predefined' && (
-          <View style={s.predefinedCard}>
+          <View style={[s.predefinedCard, isRTL && s.cardRtl]}>
 
             {/* Header — Cancel | Discount */}
-            <View style={s.predefinedHeader}>
+            <View style={[s.predefinedHeader, isRTL && s.predefinedHeaderRtl]}>
               <TouchableOpacity onPress={onClose} activeOpacity={0.75} style={s.predefinedCancelTouch}>
                 <Text style={[s.predefinedCancel, { fontFamily: af('regular') }]}>{t('cancel')}</Text>
               </TouchableOpacity>
@@ -278,12 +289,14 @@ export default function DiscountDialog({ visible, currentDiscount, subtotal, onC
             <ScrollView style={s.predefinedScroll} showsVerticalScrollIndicator={false}>
               {PREDEFINED.map((item) => (
                 <TouchableOpacity
-                  key={item.label}
-                  style={s.predefinedRow}
+                  key={item.labelKey}
+                  style={[s.predefinedRow, isRTL && s.predefinedRowRtl]}
                   onPress={() => handleApplyPredefined(item)}
                   activeOpacity={0.7}
                 >
-                  <Text style={[s.predefinedName, { fontFamily: af('regular') }]}>{item.label}</Text>
+                  <Text style={[s.predefinedName, { fontFamily: af('regular'), textAlign: rtlText('left') }]}>
+                    {t(item.labelKey)}
+                  </Text>
                   <Text style={s.predefinedValue}>
                     {item.kind === 'percentage'
                       ? `${item.value}.0 %`
@@ -299,7 +312,7 @@ export default function DiscountDialog({ visible, currentDiscount, subtotal, onC
         )}
 
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 
@@ -326,6 +339,9 @@ const s = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 24,
     elevation: 12,
+  },
+  cardRtl: {
+    direction: 'rtl',
   },
   typeHeader: {
     backgroundColor: Colors.grayLight,
@@ -395,7 +411,7 @@ const s = StyleSheet.create({
   typeRow: {
     paddingHorizontal: 18,
     paddingVertical: 18,
-    gap: 2,
+    gap: 5,
   },
   typeRowLabel: {
     fontSize: 20,
@@ -448,6 +464,9 @@ const s = StyleSheet.create({
     height: 72,
     backgroundColor: '#ECECEC',
   },
+  predefinedHeaderRtl: {
+    direction: 'rtl',
+  },
   predefinedCancelTouch: {
     paddingVertical: 8,
     width: 80,
@@ -481,6 +500,9 @@ const s = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5E5',
     gap: 20,
+  },
+  predefinedRowRtl: {
+    flexDirection: 'row-reverse',
   },
   predefinedName: {
     fontSize: 20,
@@ -540,6 +562,7 @@ const s = StyleSheet.create({
     alignItems: 'baseline',
     justifyContent: 'flex-end',
     gap: 8,
+    direction: 'ltr',
   },
   valueSuffix: {
     fontSize: 18,
@@ -566,10 +589,14 @@ const s = StyleSheet.create({
     paddingBottom: 12,
     alignItems: 'flex-end',
   },
+  previewRowRtl: {
+    alignItems: 'flex-start',
+  },
   previewInner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    direction: 'ltr',
   },
   previewSarIcon: {
     width: 13,
@@ -580,6 +607,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    direction: 'ltr',
   },
   predefinedSarIcon: {
     width: 14,
@@ -591,6 +619,13 @@ const s = StyleSheet.create({
     fontWeight: '500',
     color: Colors.green,
     letterSpacing: -0.1,
+  },
+  previewAmount: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.green,
+    letterSpacing: -0.1,
+    writingDirection: 'ltr',
   },
   numpadDivider: {
     height: 1,

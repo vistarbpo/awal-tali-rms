@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import {
-  Platform,
   View,
   Text,
   TouchableOpacity,
   Image,
-  Modal,
   TouchableWithoutFeedback,
   ScrollView,
   SafeAreaView,
@@ -13,9 +11,11 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import RootModal from '../components/RootModal';
 import { layout, LEFT_PANEL_W } from '../styles/screenLayout';
 import OrderPanel, { CartItem } from '../components/OrderPanel';
 import { useI18n } from '../i18n';
+import type { TKey } from '../i18n/translations';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 import { iconSarDark, iconSarGray, iconSarWhite } from '../assets/icons';
@@ -45,9 +45,22 @@ const PAYMENT_METHODS: PaymentMethod[] = [
 ];
 
 interface AppliedPayment {
-  method: string;
+  methodKey: PaymentMethod['key'];
   amount: number;
 }
+
+const PM_LABEL_MAP: Record<PaymentMethod['key'], TKey> = {
+  house: 'houseAccount',
+  cash: 'cash',
+  gift: 'giftCard',
+  mada: 'mada',
+};
+const PM_HINT_MAP: Record<PaymentMethod['key'], TKey> = {
+  house: 'houseAccountDesc',
+  cash: 'cashDesc',
+  gift: 'giftCardDesc',
+  mada: 'madaDesc',
+};
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface Props {
@@ -84,7 +97,7 @@ interface CustomKeypadProps {
 }
 
 function CustomAmountKeypad({ visible, remaining, onSelect, onCancel }: CustomKeypadProps) {
-  const { t, af } = useI18n();
+  const { t, af, rtlText } = useI18n();
   const [value, setValue] = useState('');
 
   function handleKey(key: string) {
@@ -112,15 +125,19 @@ function CustomAmountKeypad({ visible, remaining, onSelect, onCancel }: CustomKe
   const cardJSX = (
     <View style={ck.card}>
       <View style={ck.header}>
-        <Text style={ck.headerLabel}>{t('enterAmount')}</Text>
+        <Text style={[ck.headerLabel, { fontFamily: af('semibold') }]}>{t('enterAmount')}</Text>
       </View>
       <View style={ck.amountRow}>
+        <Text style={[ck.amountValue, { fontFamily: af('semibold') }]} numberOfLines={1} adjustsFontSizeToFit>
+          {displayValue}
+        </Text>
         <Image source={ICONS.sarGray} style={ck.amountCurrency} />
-        <Text style={ck.amountValue} numberOfLines={1} adjustsFontSizeToFit>{displayValue}</Text>
       </View>
       <View style={ck.remainingRow}>
-        <Text style={ck.remainingLabel}>Remaining</Text>
-        <Text style={[ck.remainingValue, afterPay === 0 && ck.remainingZero]}>{afterPay.toFixed(2)}</Text>
+        <Text style={[ck.remainingLabel, { fontFamily: af('medium'), textAlign: rtlText('left') }]}>{t('remainingBalance')}</Text>
+        <Text style={[ck.remainingValue, afterPay === 0 && ck.remainingZero, { fontFamily: af('semibold'), textAlign: rtlText('left') }]}>
+          {afterPay.toFixed(2)}
+        </Text>
       </View>
       <View style={ck.divider} />
       <View style={ck.numpad}>
@@ -135,7 +152,7 @@ function CustomAmountKeypad({ visible, remaining, onSelect, onCancel }: CustomKe
                   onPress={() => handleKey(key)}
                   activeOpacity={0.6}
                 >
-                  <Text style={[ck.keyText, isAction && ck.keyActionText]}>{key}</Text>
+                  <Text style={[ck.keyText, isAction && ck.keyActionText, { fontFamily: af('medium') }]}>{key}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -148,20 +165,15 @@ function CustomAmountKeypad({ visible, remaining, onSelect, onCancel }: CustomKe
     </View>
   );
 
-  if (Platform.OS === 'web') {
-    if (!visible) return null;
-    return <View style={ck.inlineOverlay}>{cardJSX}</View>;
-  }
-
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onCancel}>
+    <RootModal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onCancel}>
       <TouchableWithoutFeedback onPress={onCancel}>
         <View style={ck.backdrop} />
       </TouchableWithoutFeedback>
       <View style={ck.center} pointerEvents="box-none">
         {cardJSX}
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 
@@ -183,8 +195,12 @@ function AmountPicker({ visible, remaining, onSelect, onCustom, onCancel }: Amou
     <View style={ap.card}>
       {/* Header */}
       <View style={ap.header}>
-        <Text style={ap.headerTitle}>Select Amount</Text>
-        <Text style={ap.headerSub}>Remaining: {remaining.toFixed(2)}</Text>
+        <Text style={[ap.headerTitle, { fontFamily: af('semibold') }]}>{t('selectPaymentAmount')}</Text>
+        <Text style={[ap.headerSub, { fontFamily: af('regular') }]}>
+          {t('remainingBalance')}
+          {': '}
+          {remaining.toFixed(2)}
+        </Text>
       </View>
 
       {/* Amount buttons */}
@@ -192,21 +208,21 @@ function AmountPicker({ visible, remaining, onSelect, onCustom, onCancel }: Amou
         {quickAmounts.map((amt, i) => (
           <TouchableOpacity
             key={String(amt)}
-            style={[ap.amountBtn, i === 0 && ap.amountBtnExact]}
+            style={[ap.amountBtn, i === 0 && ap.amountBtnExact, { direction: 'ltr' }]}
             onPress={() => onSelect(amt as number)}
             activeOpacity={0.8}
           >
             <View style={ap.amountInner}>
+              <Text style={[ap.amountText, i === 0 && ap.amountTextExact, { fontFamily: af('semibold') }]}>
+                {(amt as number).toFixed(2)}
+              </Text>
               <Image
                 source={i === 0 ? ICONS.sarWhite : ICONS.sarDark}
                 style={ap.sar}
               />
-              <Text style={[ap.amountText, i === 0 && ap.amountTextExact]}>
-                {(amt as number).toFixed(2)}
-              </Text>
             </View>
             {i === 0 && (
-              <Text style={ap.exactBadge}>Exact</Text>
+              <Text style={[ap.exactBadge, { fontFamily: af('bold') }]}>{t('exactAmount')}</Text>
             )}
           </TouchableOpacity>
         ))}
@@ -224,20 +240,15 @@ function AmountPicker({ visible, remaining, onSelect, onCustom, onCancel }: Amou
     </View>
   );
 
-  if (Platform.OS === 'web') {
-    if (!visible) return null;
-    return <View style={ap.inlineOverlay}>{cardJSX}</View>;
-  }
-
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onCancel}>
+    <RootModal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onCancel}>
       <TouchableWithoutFeedback onPress={onCancel}>
         <View style={ap.backdrop} />
       </TouchableWithoutFeedback>
       <View style={ap.center} pointerEvents="box-none">
         {cardJSX}
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 
@@ -247,15 +258,13 @@ const PREVIEW_DIALOG: string | null = null;
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function PaymentScreen({ cart, orderType, orderSeq, status, onBack, onNewOrder }: Props) {
-  const { t, af } = useI18n();
-  const PM_LABEL_MAP: Record<string, string> = { house: 'houseAccount', cash: 'cash', gift: 'giftCard', mada: 'mada' };
-  const PM_HINT_MAP: Record<string, string> = { house: 'houseAccountDesc', cash: 'cashDesc', gift: 'giftCardDesc', mada: 'madaDesc' };
+  const { t, af, isRTL, rtlRight, rtlText } = useI18n();
   const fullTotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0) * (1 + TAX_RATE);
   const [appliedPayments, setAppliedPayments] = useState<AppliedPayment[]>(
-    PREVIEW_DIALOG === 'paid' ? [{ method: 'Cash', amount: parseFloat(fullTotal.toFixed(2)) }] : []
+    PREVIEW_DIALOG === 'paid' ? [{ methodKey: 'cash', amount: parseFloat(fullTotal.toFixed(2)) }] : []
   );
-  const [pendingMethod, setPendingMethod]     = useState<string | null>(
-    PREVIEW_DIALOG === 'amount-picker' ? 'Cash' : null
+  const [pendingMethod, setPendingMethod]     = useState<PaymentMethod['key'] | null>(
+    PREVIEW_DIALOG === 'amount-picker' ? 'cash' : null
   );
   const [showAmountPicker, setShowAmountPicker]   = useState(PREVIEW_DIALOG === 'amount-picker');
   const [showCustomKeypad, setShowCustomKeypad]   = useState(PREVIEW_DIALOG === 'custom-keypad');
@@ -271,14 +280,14 @@ export default function PaymentScreen({ cart, orderType, orderSeq, status, onBac
 
   function handleMethodPress(method: PaymentMethod) {
     if (remaining <= 0) return;
-    setPendingMethod(method.label);
+    setPendingMethod(method.key);
     setShowAmountPicker(true);
   }
 
   function handleAmountSelect(amount: number) {
     if (pendingMethod) {
       const apply = Math.min(amount, remaining);
-      setAppliedPayments(prev => [...prev, { method: pendingMethod, amount: apply }]);
+      setAppliedPayments(prev => [...prev, { methodKey: pendingMethod, amount: apply }]);
     }
     setShowAmountPicker(false);
     setPendingMethod(null);
@@ -308,11 +317,15 @@ export default function PaymentScreen({ cart, orderType, orderSeq, status, onBac
           {/* Header */}
           <View style={s.header}>
             <TouchableOpacity style={s.headerBtn} onPress={onBack} activeOpacity={0.8}>
-              <Text style={[s.headerBtnText, { fontFamily: af('semibold') }]}>{t('back').toUpperCase()}</Text>
+              <Text style={[s.headerBtnText, { fontFamily: af('semibold') }]}>
+                {isRTL ? t('back') : t('back').toUpperCase()}
+              </Text>
             </TouchableOpacity>
             <Text style={[s.headerTitle, { fontFamily: af('bold') }]}>{t('paymentTitle')}</Text>
             <TouchableOpacity style={s.headerBtn} activeOpacity={0.8}>
-              <Text style={s.headerBtnText}>CURRENCY</Text>
+              <Text style={[s.headerBtnText, { fontFamily: af('semibold') }]}>
+                {isRTL ? t('paymentCurrency') : t('paymentCurrency').toUpperCase()}
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -321,7 +334,9 @@ export default function PaymentScreen({ cart, orderType, orderSeq, status, onBac
 
             {/* Left col: payment methods */}
             <View style={s.methodsCol}>
-              <Text style={s.sectionLabel}>PAYMENT METHODS</Text>
+              <Text style={[s.sectionLabel, { fontFamily: af('semibold') }, isRTL && s.sectionLabelNoCaps]}>
+                {t('paymentMethodsSection')}
+              </Text>
               {PAYMENT_METHODS.map(method => (
                 <TouchableOpacity
                   key={method.key}
@@ -329,22 +344,21 @@ export default function PaymentScreen({ cart, orderType, orderSeq, status, onBac
                   onPress={() => handleMethodPress(method)}
                   activeOpacity={0.8}
                 >
-                  {/* Left accent bar */}
-                  <View style={[s.methodAccent, { backgroundColor: method.color }]} />
-
-                  {/* Icon */}
-                  <View style={[s.methodIconWrap, { backgroundColor: method.bg }]}>
-                    <Text style={s.methodIcon}>{method.emoji}</Text>
+                  <View style={s.methodCardTouch}>
+                    <View style={[s.methodCardInner, { direction: 'ltr' }]}>
+                      <View style={[s.methodAccent, { backgroundColor: method.color }]} />
+                      <View style={[s.methodIconWrap, { backgroundColor: method.bg }]}>
+                        <Text style={s.methodIcon}>{method.emoji}</Text>
+                      </View>
+                      <View style={[s.methodTextWrap, { minWidth: 0, flex: 1 }]}>
+                        <Text style={[s.methodLabel, { fontFamily: af('semibold'), textAlign: rtlText('left') }]}>{t(PM_LABEL_MAP[method.key])}</Text>
+                        <Text style={[s.methodHint, { fontFamily: af('regular'), textAlign: rtlText('left') }]}>{t(PM_HINT_MAP[method.key])}</Text>
+                      </View>
+                    </View>
+                    <View style={s.methodChevronWrap} pointerEvents="none">
+                      <Text style={[s.methodChevron, { fontFamily: af('regular') }]}>›</Text>
+                    </View>
                   </View>
-
-                  {/* Labels */}
-                  <View style={s.methodTextWrap}>
-                    <Text style={[s.methodLabel, { fontFamily: af('semibold') }]}>{t(PM_LABEL_MAP[method.key] as any)}</Text>
-                    <Text style={s.methodHint}>{t(PM_HINT_MAP[method.key] as any)}</Text>
-                  </View>
-
-                  {/* Chevron */}
-                  <Text style={s.methodChevron}>›</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -353,33 +367,55 @@ export default function PaymentScreen({ cart, orderType, orderSeq, status, onBac
             <View style={s.summaryCol}>
 
               {/* Remaining card */}
-              <View style={[s.remainingCard, isFullyPaid && s.remainingCardPaid]}>
-                <Text style={[s.remainingLabel, isFullyPaid && s.remainingLabelPaid]}>
-                  {isFullyPaid ? 'Paid in full' : 'Remaining'}
+              <View style={[s.remainingCard, isFullyPaid && s.remainingCardPaid, isRTL && s.remainingCardRtl]}>
+                <Text style={[s.remainingLabel, isFullyPaid && s.remainingLabelPaid, { fontFamily: af('medium'), textAlign: rtlText('left') }]}>
+                  {isFullyPaid ? t('paidInFull') : t('remainingBalance')}
                 </Text>
                 <View style={s.sarRow}>
+                  <Text style={[s.remainingAmount, isFullyPaid && s.remainingAmountPaid, { fontFamily: af('semibold'), textAlign: rtlText('left') }]}>
+                    {remaining.toFixed(2)}
+                  </Text>
                   <Image
                     source={isFullyPaid ? ICONS.sarWhite : ICONS.sarDark}
                     style={[s.sarIcon, { width: 20, height: 22 }]}
                   />
-                  <Text style={[s.remainingAmount, isFullyPaid && s.remainingAmountPaid]}>
-                    {remaining.toFixed(2)}
-                  </Text>
                 </View>
               </View>
 
               {/* Applied payments */}
               {appliedPayments.length > 0 && (
                 <View style={s.summaryCard}>
-                  <Text style={s.summaryTitle}>APPLIED</Text>
+                  <Text style={[s.summaryTitle, { fontFamily: af('semibold') }, isRTL && s.sectionLabelNoCaps]}>{t('appliedPaymentsTitle')}</Text>
                   <ScrollView showsVerticalScrollIndicator={false}>
                     {appliedPayments.map((p, i) => (
                       <View key={i} style={[s.summaryRow, i > 0 && s.summaryRowBorder]}>
-                        <Text style={s.summaryMethod}>{p.method}</Text>
-                        <View style={s.sarRow}>
-                          <Image source={ICONS.sarDark} style={s.sarIcon} />
-                          <Text style={s.summaryAmount}>{p.amount.toFixed(2)}</Text>
-                        </View>
+                        {isRTL ? (
+                          <>
+                            <View style={[s.sarRow, s.summaryAmountCluster]}>
+                              <Text style={[s.summaryAmount, { fontFamily: af('semibold') }]}>{p.amount.toFixed(2)}</Text>
+                              <Image source={ICONS.sarDark} style={s.sarIcon} />
+                            </View>
+                            <Text
+                              style={[s.summaryMethod, { fontFamily: af('medium'), textAlign: rtlText('left'), flex: 1, minWidth: 0 }]}
+                              numberOfLines={1}
+                            >
+                              {t(PM_LABEL_MAP[p.methodKey])}
+                            </Text>
+                          </>
+                        ) : (
+                          <>
+                            <Text
+                              style={[s.summaryMethod, { fontFamily: af('medium'), textAlign: rtlText('left'), flex: 1, minWidth: 0 }]}
+                              numberOfLines={1}
+                            >
+                              {t(PM_LABEL_MAP[p.methodKey])}
+                            </Text>
+                            <View style={[s.sarRow, s.summaryAmountCluster]}>
+                              <Text style={[s.summaryAmount, { fontFamily: af('semibold') }]}>{p.amount.toFixed(2)}</Text>
+                              <Image source={ICONS.sarDark} style={s.sarIcon} />
+                            </View>
+                          </>
+                        )}
                       </View>
                     ))}
                   </ScrollView>
@@ -390,14 +426,16 @@ export default function PaymentScreen({ cart, orderType, orderSeq, status, onBac
           </View>
 
           {/* PAY + ... — full width at bottom */}
-          <View style={s.actions}>
+          <View style={[s.actions, isRTL && s.actionsRtl]}>
             {paidWithoutClose ? (
               <TouchableOpacity
                 style={s.closeOrderBtn}
                 activeOpacity={0.85}
                 onPress={onNewOrder ?? onBack}
               >
-                <Text style={s.closeOrderText}>Close Order</Text>
+                <Text style={[s.closeOrderText, { fontFamily: af('bold') }]} numberOfLines={2} adjustsFontSizeToFit>
+                  {t('closeOrder')}
+                </Text>
               </TouchableOpacity>
             ) : (
               <>
@@ -406,18 +444,20 @@ export default function PaymentScreen({ cart, orderType, orderSeq, status, onBac
                   activeOpacity={0.85}
                   onPress={isFullyPaid ? (onNewOrder ?? onBack) : undefined}
                 >
-                  <Text style={[s.payBtnText, isFullyPaid && s.payBtnTextActive]}>PAY</Text>
+                  <Text style={[s.payBtnText, isFullyPaid && s.payBtnTextActive, { fontFamily: af('bold') }]}>
+                    {t('payButton')}
+                  </Text>
                 </TouchableOpacity>
 
                 {/* ... button with tooltip */}
-                <View>
+                <View style={s.moreWrap}>
                   {showMoreTooltip && (
                     <TouchableOpacity
-                      style={s.tooltip}
+                      style={[s.tooltip, rtlRight(0)]}
                       activeOpacity={0.8}
                       onPress={() => { setShowMoreTooltip(false); setPaidWithoutClose(true); }}
                     >
-                      <Text style={s.tooltipText}>Pay without close</Text>
+                      <Text style={[s.tooltipText, { fontFamily: af('medium') }]}>{t('payWithoutClose')}</Text>
                     </TouchableOpacity>
                   )}
                   <TouchableOpacity
@@ -425,7 +465,7 @@ export default function PaymentScreen({ cart, orderType, orderSeq, status, onBac
                     activeOpacity={0.85}
                     onPress={() => setShowMoreTooltip(prev => !prev)}
                   >
-                    <Text style={[s.moreBtnDots, isFullyPaid && s.moreDotsActive]}>•••</Text>
+                    <Text style={[s.moreBtnDots, isFullyPaid && s.moreDotsActive, { fontFamily: af('bold') }]}>•••</Text>
                   </TouchableOpacity>
                 </View>
               </>
@@ -505,13 +545,15 @@ const s = StyleSheet.create({
     letterSpacing: 1.2,
     textTransform: 'uppercase',
     marginBottom: 4,
-    marginLeft: 2,
+    marginStart: 2,
+  },
+  sectionLabelNoCaps: {
+    textTransform: 'none',
+    letterSpacing: 0,
   },
   methodCard: {
     backgroundColor: Colors.white,
     borderRadius: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
     overflow: 'hidden',
     height: 76,
     shadowColor: Colors.black,
@@ -519,6 +561,18 @@ const s = StyleSheet.create({
     shadowOpacity: 0.07,
     shadowRadius: 10,
     elevation: 3,
+  },
+  methodCardTouch: {
+    flex: 1,
+    height: '100%',
+    position: 'relative',
+  },
+  methodCardInner: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: '100%',
+    paddingEnd: 36,
   },
   methodAccent: {
     width: 5,
@@ -530,7 +584,7 @@ const s = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 16,
+    marginStart: 16,
   },
   methodIcon: {
     fontSize: 22,
@@ -552,11 +606,18 @@ const s = StyleSheet.create({
     marginTop: 2,
     letterSpacing: -0.1,
   },
+  methodChevronWrap: {
+    position: 'absolute',
+    right: 14,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    pointerEvents: 'none',
+  },
   methodChevron: {
     fontSize: 26,
     fontWeight: '300',
     color: Colors.grayMid,
-    marginRight: 18,
     lineHeight: 30,
   },
 
@@ -590,10 +651,15 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 10,
+    gap: 12,
   },
   summaryRowBorder: {
     borderTopWidth: 1,
     borderTopColor: Colors.grayBorder,
+  },
+  /** Keeps digits + SAR from shrinking; pair with RTL child order instead of row-reverse. */
+  summaryAmountCluster: {
+    flexShrink: 0,
   },
   summaryMethod: {
     fontSize: 15,
@@ -611,6 +677,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
+    direction: 'ltr',
   },
   sarIcon: {
     width: 15,
@@ -640,6 +707,9 @@ const s = StyleSheet.create({
     shadowRadius: 14,
     elevation: 6,
   },
+  remainingCardRtl: {
+    flexDirection: 'row-reverse',
+  },
   remainingLabel: {
     fontSize: 15,
     fontWeight: '600',
@@ -664,6 +734,13 @@ const s = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     gap: 10,
+    paddingHorizontal: 4,
+  },
+  actionsRtl: {
+    flexDirection: 'row-reverse',
+  },
+  moreWrap: {
+    position: 'relative',
   },
   payBtn: {
     flex: 1,
@@ -694,7 +771,9 @@ const s = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.primary,
     borderRadius: 16,
-    height: 64,
+    minHeight: 64,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: Colors.primary,
@@ -713,7 +792,6 @@ const s = StyleSheet.create({
   tooltip: {
     position: 'absolute',
     bottom: 74,
-    right: 0,
     backgroundColor: Colors.primary,
     borderRadius: 12,
     paddingHorizontal: 16,
@@ -836,6 +914,7 @@ const ap = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    direction: 'ltr',
   },
   sar: {
     width: 16,
@@ -856,7 +935,6 @@ const ap = StyleSheet.create({
     fontWeight: '600',
     color: 'rgba(255,255,255,0.75)',
     letterSpacing: 0.3,
-    textTransform: 'uppercase',
   },
 
   // Custom button
@@ -947,6 +1025,7 @@ const ck = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 20,
     gap: 8,
+    direction: 'ltr',
   },
   amountCurrency: {
     width: 22,

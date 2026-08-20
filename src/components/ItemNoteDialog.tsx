@@ -1,13 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  TextInput,
-  StyleSheet,
-  TouchableWithoutFeedback,
-} from 'react-native';
+import RootModal from './RootModal';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import { Colors } from '../constants/colors';
 import { useI18n } from '../i18n';
 
@@ -34,7 +27,7 @@ export default function ItemNoteDialog({ visible, itemName, note: initialNote, o
   }
 
   return (
-    <Modal
+    <RootModal
       visible={visible}
       transparent
       animationType="fade"
@@ -88,7 +81,7 @@ export default function ItemNoteDialog({ visible, itemName, note: initialNote, o
 
         </View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 

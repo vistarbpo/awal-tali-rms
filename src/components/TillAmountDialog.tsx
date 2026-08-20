@@ -1,13 +1,6 @@
 import React, { useState } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  StyleSheet,
-  TouchableWithoutFeedback,
-} from 'react-native';
+import RootModal from './RootModal';
+import { View, Text, Image, TouchableOpacity, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import { Colors } from '../constants/colors';
 import { iconSarGray } from '../assets/icons';
 import { useI18n } from '../i18n';
@@ -50,7 +43,7 @@ export default function TillAmountDialog({ visible, onClose, onDone, ctaLabel }:
   const displayValue = amount || '0';
 
   return (
-    <Modal
+    <RootModal
       visible={visible}
       transparent
       animationType="fade"
@@ -71,10 +64,10 @@ export default function TillAmountDialog({ visible, onClose, onDone, ctaLabel }:
 
           {/* Amount display */}
           <View style={s.amountRow}>
-            <Image source={iconSarGray} style={s.amountCurrency} />
             <Text style={s.amountValue} numberOfLines={1} adjustsFontSizeToFit>
               {displayValue}
             </Text>
+            <Image source={iconSarGray} style={s.amountCurrency} />
           </View>
 
           {/* Divider */}
@@ -110,7 +103,7 @@ export default function TillAmountDialog({ visible, onClose, onDone, ctaLabel }:
 
         </View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 
@@ -163,6 +156,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 20,
     gap: 8,
+    direction: 'ltr',
   },
   amountCurrency: {
     width: 22,

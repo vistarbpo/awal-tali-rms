@@ -1,22 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View, Text, TouchableOpacity, Modal, ScrollView, StyleSheet,
-} from 'react-native';
+import RootModal from './RootModal';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { Colors } from '../constants/colors';
 import { useI18n } from '../i18n';
+import type { TKey } from '../i18n/translations';
 
 export interface ReturnItem {
   name: string;
+  nameKey?: TKey;
   qty: number;
   price: number;
   isWaste: boolean;
+  note?: string;
+  noteKey?: TKey;
 }
 
 interface OrderItem {
   name: string;
+  nameKey?: TKey;
   qty: number;
   price: number;
   note?: string;
+  noteKey?: TKey;
 }
 
 interface Props {
@@ -94,13 +99,20 @@ export default function ReturnOrderDialog({ visible, items, onClose, onDone }: P
 
   function handleDone() {
     const selected = items
-      .map((item, i) => ({ name: item.name, qty: returnQtys[i], price: item.price, isWaste: wastes[i] }))
+      .map((item, i) => ({
+        name: item.name,
+        nameKey: item.nameKey,
+        qty: returnQtys[i],
+        price: item.price,
+        isWaste: wastes[i],
+        ...(item.note || item.noteKey ? { note: item.note, noteKey: item.noteKey } : {}),
+      }))
       .filter(r => r.qty > 0);
     onDone(selected);
   }
 
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
+    <RootModal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <View style={s.backdrop}>
         <View style={s.card}>
 
@@ -141,8 +153,12 @@ export default function ReturnOrderDialog({ visible, items, onClose, onDone }: P
 
                     {/* Name + note */}
                     <View style={s.nameCol}>
-                      <Text style={s.itemName} numberOfLines={2}>{item.name}</Text>
-                      {item.note && <Text style={s.itemNote}>{item.note}</Text>}
+                      <Text style={s.itemName} numberOfLines={2}>
+                        {item.nameKey ? t(item.nameKey) : item.name}
+                      </Text>
+                      {(item.note || item.noteKey) && (
+                        <Text style={s.itemNote}>{item.noteKey ? t(item.noteKey) : item.note}</Text>
+                      )}
                     </View>
 
                     {/* Stepper */}
@@ -199,7 +215,7 @@ export default function ReturnOrderDialog({ visible, items, onClose, onDone }: P
 
         </View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 
@@ -224,7 +240,7 @@ const s = StyleSheet.create({
 
   /* Header */
   header: {
-    backgroundColor: Colors.grayLight,
+    backgroundColor: Colors.warmTint,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 28,
@@ -236,7 +252,7 @@ const s = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.primary,
+    color: Colors.black,
     letterSpacing: -0.4,
     textAlign: 'center',
   },
@@ -267,8 +283,8 @@ const s = StyleSheet.create({
     paddingVertical: 9,
   },
   selectAllBtnOn: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: Colors.darkInk,
+    borderColor: Colors.darkInk,
   },
   checkbox: {
     width: 18,
@@ -353,7 +369,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   stepBtnMinus: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.darkInk,
   },
   stepBtnPlus: {
     backgroundColor: Colors.goldShade,
@@ -372,7 +388,7 @@ const s = StyleSheet.create({
   qtyNum: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.primary,
+    color: Colors.brand,
     letterSpacing: -0.3,
   },
   qtyOf: {
@@ -394,8 +410,8 @@ const s = StyleSheet.create({
     backgroundColor: Colors.white,
   },
   wasteBtnOn: {
-    backgroundColor: '#FEF0F0',
-    borderColor: Colors.red,
+    backgroundColor: Colors.cancelSurface,
+    borderColor: Colors.darkInk,
   },
   wasteDot: {
     width: 8,
@@ -404,7 +420,7 @@ const s = StyleSheet.create({
     backgroundColor: Colors.grayMid,
   },
   wasteDotOn: {
-    backgroundColor: Colors.red,
+    backgroundColor: Colors.darkInk,
   },
   wasteLabel: {
     fontSize: 13,
@@ -412,7 +428,7 @@ const s = StyleSheet.create({
     color: Colors.grayText,
   },
   wasteLabelOn: {
-    color: Colors.red,
+    color: Colors.darkInk,
     fontWeight: '600',
   },
 
@@ -431,19 +447,19 @@ const s = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FEF0F0',
+    backgroundColor: Colors.cancelSurface,
   },
   cancelText: {
     fontSize: 17,
     fontWeight: '600',
-    color: Colors.red,
+    color: Colors.darkInk,
     letterSpacing: -0.2,
   },
   doneBtn: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.brand,
   },
   footerText: {
     fontSize: 17,

@@ -5,27 +5,41 @@
     <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
     <title>Awal &amp; Tali TalabOS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <style id="expo-reset">
-      html,
+      /* Full viewport — fixed 1180×820 was pinning the app to the top-left on large screens */
+      html {
+        height: 100%;
+      }
       body {
-        width: 1180px;
-        height: 820px;
-        overflow: hidden;
         margin: 0;
-        padding: 0;
+        min-height: 100%;
+        min-height: 100dvh;
+        background-color: #e7e2dc;
       }
       #root {
+        min-height: 100%;
+        min-height: 100dvh;
         display: flex;
-        width: 1180px;
-        height: 820px;
-        overflow: hidden;
+        flex-direction: column;
+      }
+      html[lang='ar'] #root {
+        font-family: 'IBM Plex Sans Arabic', Tahoma, sans-serif;
       }
     </style>
     <script>
-      if (window.location.pathname === '/design-system') {
+      (function () {
         var st = document.getElementById('expo-reset');
-        st.textContent = 'html,body{width:100%;height:auto;overflow:auto;margin:0;padding:0;}#root{display:flex;flex-direction:column;width:100%;height:auto;min-height:100vh;}';
-      }
+        if (window.location.pathname === '/design-system') {
+          st.textContent =
+            'html,body{width:100%;height:auto;overflow:auto;margin:0;padding:0;background-color:#e7e2dc;}#root{display:flex;flex-direction:column;width:100%;height:auto;min-height:100vh;}';
+        }
+      })();
     </script>
     <script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
   </head>

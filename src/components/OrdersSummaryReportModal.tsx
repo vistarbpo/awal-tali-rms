@@ -1,13 +1,6 @@
 import React from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-} from 'react-native';
+import RootModal from './RootModal';
+import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { Colors } from '../constants/colors';
 import { iconSarDark } from '../assets/icons';
 import { useI18n } from '../i18n';
@@ -98,8 +91,8 @@ function AmtCell({ val, style }: { val: number | string; style?: object }) {
   if (typeof val === 'number') {
     return (
       <View style={[r.sarAmtWrap, style]}>
-        <Image source={iconSarDark} style={r.sarAmtIcon} />
         <Text style={r.sarAmtText}>{val.toFixed(2)}</Text>
+        <Image source={iconSarDark} style={r.sarAmtIcon} />
       </View>
     );
   }
@@ -158,7 +151,7 @@ export default function OrdersSummaryReportModal({
   const sections  = buildReportData(dateLabel);
 
   return (
-    <Modal
+    <RootModal
       visible={visible}
       transparent
       animationType="fade"
@@ -216,7 +209,7 @@ export default function OrdersSummaryReportModal({
           </ScrollView>
         </View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 
@@ -339,7 +332,7 @@ const r = StyleSheet.create({
     fontSize: 13,
     color: Colors.black,
   },
-  sarAmtWrap: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  sarAmtWrap: { flexDirection: 'row', alignItems: 'center', gap: 3, direction: 'ltr' },
   sarAmtIcon: { width: 11, height: 12, resizeMode: 'contain' },
   sarAmtText: { fontSize: 13, color: Colors.black },
   colAmt: {

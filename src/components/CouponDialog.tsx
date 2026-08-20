@@ -1,7 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  Modal,
-  Platform,
   View,
   Text,
   TextInput,
@@ -11,6 +9,7 @@ import {
   Animated,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import RootModal from './RootModal';
 import { OrderDiscount, DiscountKind } from './DiscountDialog';
 
 // ─── Mock coupon database ─────────────────────────────────────────────────────
@@ -160,17 +159,8 @@ export default function CouponDialog({ visible, onClose, onApply }: Props) {
     </>
   );
 
-  if (Platform.OS === 'web') {
-    if (!visible) return null;
-    return (
-      <View style={s.inlineOverlay}>
-        <View style={s.card}>{cardJSX}</View>
-      </View>
-    );
-  }
-
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={handleClose}>
+    <RootModal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={handleClose}>
       <TouchableWithoutFeedback onPress={handleClose}>
         <View style={s.backdrop} />
       </TouchableWithoutFeedback>
@@ -180,7 +170,7 @@ export default function CouponDialog({ visible, onClose, onApply }: Props) {
           {cardJSX}
         </Animated.View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 

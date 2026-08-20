@@ -1,14 +1,13 @@
 import React from 'react';
 import {
-  Modal,
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   TouchableWithoutFeedback,
-  Platform,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import RootModal from './RootModal';
 import { useI18n } from '../i18n';
 
 // ─── Menu definitions ─────────────────────────────────────────────────────────
@@ -26,7 +25,6 @@ interface Props {
   orderType?:   string | null;
   anchorRight?: number;
   anchorTop?:   number;
-  useModal?:    boolean;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -39,9 +37,8 @@ export default function OrderMoreMenu({
   orderType,
   anchorRight = 20,
   anchorTop   = 130,
-  useModal    = Platform.OS !== 'web',
 }: Props) {
-  const { t, af } = useI18n();
+  const { t, af, isRTL, rtlRight } = useI18n();
 
   const ACTIVE_ITEMS: MenuItem[] = [
     { key: 'set_guests',       label: t('setGuests') },
@@ -98,11 +95,14 @@ export default function OrderMoreMenu({
         <View style={s.backdrop} />
       </TouchableWithoutFeedback>
       <View
-        style={[s.anchor, { right: anchorRight, top: anchorTop }]}
+        style={[s.anchor, { top: anchorTop }, rtlRight(anchorRight)]}
         pointerEvents="box-none"
       >
         <View style={s.card}>
-          <View style={s.triangleWrap} pointerEvents="none">
+          <View
+            style={[s.triangleWrap, isRTL ? s.triangleWrapRTL : s.triangleWrapLTR]}
+            pointerEvents="none"
+          >
             <View style={s.triangle} />
           </View>
           {items.map((item, index) => (
@@ -124,32 +124,23 @@ export default function OrderMoreMenu({
     </>
   );
 
-  if (useModal) {
-    return (
-      <Modal
-        visible={visible}
-        transparent
-        animationType="fade"
-        statusBarTranslucent
-        onRequestClose={onClose}
-      >
-        {inner}
-      </Modal>
-    );
-  }
-
-  if (!visible) return null;
-  return <View style={s.inlineOverlay} pointerEvents="box-none">{inner}</View>;
+  return (
+    <RootModal
+      visible={visible}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
+      {inner}
+    </RootModal>
+  );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const MENU_W = 280;
 
 const s = StyleSheet.create({
-  inlineOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 100,
-  },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'transparent',
@@ -162,7 +153,12 @@ const s = StyleSheet.create({
   triangleWrap: {
     position: 'absolute',
     top: -12,
+  },
+  triangleWrapLTR: {
     right: 24,
+  },
+  triangleWrapRTL: {
+    left: 24,
   },
   triangle: {
     width: 0,

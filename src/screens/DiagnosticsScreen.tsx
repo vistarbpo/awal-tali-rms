@@ -1,14 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  TouchableWithoutFeedback,
-  Animated,
-} from 'react-native';
+import RootModal from '../components/RootModal';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TouchableWithoutFeedback, Animated } from 'react-native';
 import { Colors } from '../constants/colors';
 import { useI18n } from '../i18n';
 
@@ -39,38 +31,73 @@ function lastSyncFormatted(): string {
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
-function SectionHeader({ title }: { title: string }) {
+function SectionHeader({ title, rtl }: { title: string; rtl: boolean }) {
   return (
-    <View style={s.sectionHeader}>
-      <Text style={s.sectionTitle}>{title}</Text>
+    <View style={[s.sectionHeader, rtl && s.sectionHeaderRtl]}>
+      <Text style={[s.sectionTitle, rtl && s.sectionTitleRtl]}>{title}</Text>
     </View>
   );
 }
 
-function Row({ label, value, valueStyle }: { label: string; value: string; valueStyle?: object }) {
+function Row({
+  label,
+  value,
+  valueStyle,
+  rtl,
+  valueLtr,
+}: {
+  label: string;
+  value: string;
+  valueStyle?: object;
+  rtl: boolean;
+  valueLtr?: boolean;
+}) {
   return (
-    <View style={s.row}>
-      <Text style={s.rowLabel}>{label}</Text>
-      <Text style={[s.rowValue, valueStyle]}>{value}</Text>
+    <View style={[s.row, rtl && s.rowRtl]}>
+      <Text style={[s.rowLabel, rtl && s.rowLabelRtl]} numberOfLines={2}>
+        {label}
+      </Text>
+      <Text
+        style={[
+          s.rowValue,
+          rtl && s.rowValueRtl,
+          valueLtr && s.rowValueLtr,
+          valueStyle,
+        ]}
+        numberOfLines={2}
+      >
+        {value}
+      </Text>
     </View>
   );
 }
 
-function ActionRow({ label, onPress }: { label: string; onPress?: () => void }) {
+function ActionRow({ label, onPress, rtl }: { label: string; onPress?: () => void; rtl: boolean }) {
   return (
-    <TouchableOpacity style={s.row} activeOpacity={0.7} onPress={onPress}>
-      <Text style={s.rowLabelPrimary}>{label}</Text>
+    <TouchableOpacity style={[s.row, rtl && s.rowRtl]} activeOpacity={0.7} onPress={onPress}>
+      <Text style={[s.rowLabelPrimary, rtl && s.rowLabelPrimaryRtl]}>{label}</Text>
     </TouchableOpacity>
   );
 }
 
-function ChevronRow({ label, value, onPress }: { label: string; value: string; onPress?: () => void }) {
+function ChevronRow({
+  label,
+  value,
+  onPress,
+  rtl,
+}: {
+  label: string;
+  value: string;
+  onPress?: () => void;
+  rtl: boolean;
+}) {
+  const { isRTL } = useI18n();
   return (
-    <TouchableOpacity style={s.row} activeOpacity={0.7} onPress={onPress}>
-      <Text style={s.rowLabelPrimary}>{label}</Text>
-      <View style={s.rowRight}>
-        <Text style={s.rowValue}>{value}</Text>
-        <Text style={s.chevron}>›</Text>
+    <TouchableOpacity style={[s.row, rtl && s.rowRtl]} activeOpacity={0.7} onPress={onPress}>
+      <Text style={[s.rowLabelPrimary, rtl && s.rowLabelPrimaryRtl]}>{label}</Text>
+      <View style={[s.rowRight, rtl && s.rowRightRtl]}>
+        <Text style={[s.rowValue, s.rowValueLtr]}>{value}</Text>
+        <Text style={s.chevron}>{isRTL ? '‹' : '›'}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -127,7 +154,7 @@ export default function DiagnosticsScreen({
     : s.rowValueGreen;
 
   return (
-    <Modal
+    <RootModal
       visible={visible}
       transparent
       animationType="fade"
@@ -139,87 +166,94 @@ export default function DiagnosticsScreen({
       </TouchableWithoutFeedback>
 
       <View style={s.center} pointerEvents="box-none">
-        <View style={s.card}>
+        <View style={[s.card, isRTL && s.cardRtl]}>
 
           {/* ── Header ── */}
-          <View style={s.header}>
+          <View style={[s.header, isRTL && s.headerRtl]}>
             <TouchableOpacity onPress={onClose} activeOpacity={0.7} style={s.headerSide}>
               <Text style={[s.headerClose, { fontFamily: af() }]}>{t('close')}</Text>
             </TouchableOpacity>
-            <Text style={[s.headerTitle, { fontFamily: af('semibold') }]}>Diagnostics</Text>
+            <Text style={[s.headerTitle, { fontFamily: af('semibold') }]}>{t('diagTitle')}</Text>
             <TouchableOpacity onPress={handleSend} activeOpacity={0.7} style={s.headerSide} disabled={sending}>
-              <Text style={[s.headerSend, sent && s.headerSendDone]}>
-                {sending ? 'Sending…' : sent ? 'Sent ✓' : 'Send'}
+              <Text style={[s.headerSend, isRTL && s.headerSendRtl, sent && s.headerSendDone]}>
+                {sending ? t('diagSending') : sent ? t('diagSent') : t('diagSend')}
               </Text>
             </TouchableOpacity>
           </View>
 
           <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
+            <View style={isRTL ? s.scrollRtl : undefined}>
 
             {/* ── General ── */}
-            <SectionHeader title="General" />
+            <SectionHeader title={t('diagSectionGeneral')} rtl={isRTL} />
             <View style={s.group}>
-              <ActionRow label="Settings" />
+              <ActionRow rtl={isRTL} label={t('diagSettings')} />
               <Hairline />
-              <Row label="Name" value="Branch Manager" />
+              <Row rtl={isRTL} label={t('diagName')} value={t('branchManager')} valueLtr />
               <Hairline />
               <Row
-                label="Shift status"
-                value={isClockedIn ? 'Clocked in' : 'Clocked out'}
+                rtl={isRTL}
+                label={t('diagShiftStatus')}
+                value={isClockedIn ? t('diagClockedIn') : t('diagClockedOut')}
                 valueStyle={isClockedIn ? s.rowValueGreen : undefined}
               />
               <Hairline />
               <Row
-                label="Till status"
-                value={isTillOpen ? 'Till opened' : 'Till closed'}
+                rtl={isRTL}
+                label={t('diagTillStatus')}
+                value={isTillOpen ? t('diagTillOpened') : t('diagTillClosed')}
                 valueStyle={isTillOpen ? s.rowValueGreen : undefined}
               />
               <Hairline />
-              <Row label="Business day" value={todayFormatted()} />
+              <Row rtl={isRTL} label={t('diagBusinessDay')} value={todayFormatted()} valueLtr />
               <Hairline />
-              <ChevronRow label="Clocked in Users" value="1" />
+              <ChevronRow rtl={isRTL} label={t('diagClockedInUsers')} value="1" />
             </View>
 
             {/* ── Sync ── */}
-            <SectionHeader title="Sync" />
+            <SectionHeader title={t('diagSectionSync')} rtl={isRTL} />
             <View style={s.group}>
-              <Row label="Last synced at" value={lastSyncFormatted()} />
+              <Row rtl={isRTL} label={t('diagLastSynced')} value={lastSyncFormatted()} valueLtr />
               <Hairline />
-              <View style={s.row}>
-                <Text style={s.rowLabel}>Orders pending sync</Text>
-                <Text style={[s.rowValue, pendingSyncStyle]}>{ordersPendingSync}</Text>
+              <View style={[s.row, isRTL && s.rowRtl]}>
+                <Text style={[s.rowLabel, isRTL && s.rowLabelRtl]}>{t('diagOrdersPending')}</Text>
+                <Text style={[s.rowValue, isRTL && s.rowValueRtl, s.rowValueLtr, pendingSyncStyle]}>
+                  {ordersPendingSync}
+                </Text>
               </View>
               <Hairline />
-              <ActionRow label="Cleaning Database" />
+              <ActionRow rtl={isRTL} label={t('diagCleaningDb')} />
               <Hairline />
-              <ActionRow label="Remove Duplicated Customers" />
+              <ActionRow rtl={isRTL} label={t('diagRemoveDupes')} />
             </View>
 
             {/* ── Diagnostics ── */}
-            <SectionHeader title="Diagnostics" />
+            <SectionHeader title={t('diagSectionDiag')} rtl={isRTL} />
             <View style={s.group}>
               <Row
-                label="Internet status"
-                value="Connected"
+                rtl={isRTL}
+                label={t('diagInternet')}
+                value={t('diagConnected')}
                 valueStyle={s.rowValueGreen}
               />
               <Hairline />
-              <Row label="IP address" value="192.168.2.209" />
+              <Row rtl={isRTL} label={t('diagIpAddress')} value="192.168.2.209" valueLtr />
               <Hairline />
-              <Row label="Account number" value="302641" />
+              <Row rtl={isRTL} label={t('diagAccountNum')} value="302641" valueLtr />
               <Hairline />
-              <Row label="Business name" value="اول و تالي" />
+              <Row rtl={isRTL} label={t('diagBusinessName')} value="اول و تالي" />
               <Hairline />
-              <Row label="Branch name" value="Branch Shawqiyah -Makkah (B02)" />
+              <Row rtl={isRTL} label={t('diagBranchName')} value="Branch Shawqiyah -Makkah (B02)" valueLtr />
               <Hairline />
-              <Row label="Device name" value="Cashier Test (B02C02)" />
+              <Row rtl={isRTL} label={t('diagDeviceName')} value="Cashier Test (B02C02)" valueLtr />
               <Hairline />
-              <Row label="Application version" value="5.0.131 (11336)" />
+              <Row rtl={isRTL} label={t('diagAppVersion')} value="5.0.131 (11336)" valueLtr />
               <Hairline />
-              <Row label="System version" value="iOS 17.6.1" />
+              <Row rtl={isRTL} label={t('diagSystemVersion')} value="iOS 17.6.1" valueLtr />
             </View>
 
             <View style={s.bottomPad} />
+            </View>
           </ScrollView>
 
           {/* ── Sending overlay ── */}
@@ -234,7 +268,7 @@ export default function DiagnosticsScreen({
 
         </View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 
@@ -261,6 +295,9 @@ const s = StyleSheet.create({
     shadowRadius: 28,
     elevation: 16,
   },
+  cardRtl: {
+    direction: 'rtl',
+  },
 
   // Header
   header: {
@@ -271,6 +308,9 @@ const s = StyleSheet.create({
     paddingVertical: 18,
     borderBottomWidth: 0.5,
     borderBottomColor: Colors.grayBorder,
+  },
+  headerRtl: {
+    flexDirection: 'row-reverse',
   },
   headerSide: { width: 80 },
   headerTitle: {
@@ -294,8 +334,15 @@ const s = StyleSheet.create({
     letterSpacing: -0.2,
     textAlign: 'right',
   },
+  headerSendRtl: {
+    textAlign: 'left',
+  },
   headerSendDone: {
     color: Colors.green,
+  },
+
+  scrollRtl: {
+    direction: 'rtl',
   },
 
   // Section headers
@@ -304,11 +351,17 @@ const s = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 8,
   },
+  sectionHeaderRtl: {
+    alignItems: 'flex-end',
+  },
   sectionTitle: {
     fontSize: 13,
     fontWeight: '600',
     color: Colors.grayText,
     letterSpacing: 0.2,
+  },
+  sectionTitleRtl: {
+    textAlign: 'right',
   },
 
   // Groups (white cards)
@@ -324,30 +377,50 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 12,
     paddingHorizontal: 20,
     paddingVertical: 16,
     minHeight: 52,
+  },
+  rowRtl: {
+    flexDirection: 'row-reverse',
   },
   rowLabel: {
     fontSize: 15,
     fontWeight: '400',
     color: Colors.black,
     letterSpacing: -0.2,
+    flex: 1,
+    minWidth: 0,
+  },
+  rowLabelRtl: {
+    textAlign: 'right',
   },
   rowLabelPrimary: {
     fontSize: 15,
     fontWeight: '400',
     color: Colors.primary,
     letterSpacing: -0.2,
+    flex: 1,
+    minWidth: 0,
+  },
+  rowLabelPrimaryRtl: {
+    textAlign: 'right',
   },
   rowValue: {
     fontSize: 15,
     fontWeight: '400',
     color: Colors.grayText,
     letterSpacing: -0.2,
-    flexShrink: 1,
+    flexShrink: 0,
+    maxWidth: '48%',
     textAlign: 'right',
-    marginStart: 12,
+  },
+  rowValueRtl: {
+    textAlign: 'left',
+  },
+  rowValueLtr: {
+    writingDirection: 'ltr',
   },
   rowValueGreen:   { color: Colors.green,  fontWeight: '500' },
   rowValueWarning: { color: '#F59E0B',     fontWeight: '600' },
@@ -355,6 +428,10 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    flexShrink: 0,
+  },
+  rowRightRtl: {
+    flexDirection: 'row-reverse',
   },
   chevron: {
     fontSize: 18,

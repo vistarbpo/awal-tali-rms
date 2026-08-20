@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Modal,
-  Platform,
   View,
   Text,
   TouchableOpacity,
@@ -10,6 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import RootModal from './RootModal';
 import { useI18n } from '../i18n';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -79,13 +78,8 @@ export default function AssignPriceTagDialog({ visible, activePriceTag, onClose,
     </View>
   );
 
-  if (Platform.OS === 'web') {
-    if (!visible) return null;
-    return <View style={s.inlineOverlay}>{cardJSX}</View>;
-  }
-
   return (
-    <Modal
+    <RootModal
       visible={visible}
       transparent
       animationType="fade"
@@ -99,7 +93,7 @@ export default function AssignPriceTagDialog({ visible, activePriceTag, onClose,
       <View style={s.center} pointerEvents="box-none">
         {cardJSX}
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 

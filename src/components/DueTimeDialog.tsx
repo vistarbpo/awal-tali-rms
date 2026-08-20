@@ -1,9 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Modal,
   NativeScrollEvent,
   NativeSyntheticEvent,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import RootModal from './RootModal';
 import { useI18n } from '../i18n';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -198,7 +197,7 @@ const drum = StyleSheet.create({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function DueTimeDialog({ visible, current, onClose, onSave }: Props) {
-  const { t, af } = useI18n();
+  const { t, af, isRTL } = useI18n();
   const today = useMemo(() => new Date(), []);
 
   // ── Calendar state ──────────────────────────────────────────────────────────
@@ -381,7 +380,7 @@ export default function DueTimeDialog({ visible, current, onClose, onSave }: Pro
                 {/* Month nav */}
                 <View style={s.monthRow}>
                   <TouchableOpacity onPress={handlePrevMonth} style={s.chevronBtn} hitSlop={8}>
-                    <Text style={s.chevronText}>{'<'}</Text>
+                    <Text style={s.chevronText}>{isRTL ? '>' : '<'}</Text>
                   </TouchableOpacity>
 
                   <Text style={s.monthLabel}>
@@ -389,7 +388,7 @@ export default function DueTimeDialog({ visible, current, onClose, onSave }: Pro
                   </Text>
 
                   <TouchableOpacity onPress={handleNextMonth} style={s.chevronBtn} hitSlop={8}>
-                    <Text style={s.chevronText}>{'>'}</Text>
+                    <Text style={s.chevronText}>{isRTL ? '<' : '>'}</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -454,17 +453,8 @@ export default function DueTimeDialog({ visible, current, onClose, onSave }: Pro
         </View>
   );
 
-  if (Platform.OS === 'web') {
-    if (!visible) return null;
-    return (
-      <View style={s.inlineOverlay}>
-        {cardJSX}
-      </View>
-    );
-  }
-
   return (
-    <Modal
+    <RootModal
       visible={visible}
       transparent
       animationType="fade"
@@ -477,7 +467,7 @@ export default function DueTimeDialog({ visible, current, onClose, onSave }: Pro
       <View style={s.center} pointerEvents="box-none">
         {cardJSX}
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 

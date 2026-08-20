@@ -1,12 +1,6 @@
 import React from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  TouchableWithoutFeedback,
-} from 'react-native';
+import RootModal from './RootModal';
+import { View, Text, TouchableOpacity, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import { Colors } from '../constants/colors';
 import { useI18n } from '../i18n';
 
@@ -14,7 +8,7 @@ export type OrderType = 'Dine in' | 'Pick up' | 'Delivery' | 'Drive thru';
 
 const ORDER_TYPES: OrderType[] = ['Dine in', 'Pick up', 'Delivery', 'Drive thru'];
 
-const ORDER_TYPE_KEYS: Record<OrderType, 'dineIn' | 'pickUp' | 'delivery' | 'driveThru'> = {
+export const ORDER_TYPE_KEYS: Record<OrderType, 'dineIn' | 'pickUp' | 'delivery' | 'driveThru'> = {
   'Dine in':   'dineIn',
   'Pick up':   'pickUp',
   'Delivery':  'delivery',
@@ -30,7 +24,7 @@ interface Props {
 export default function OrderTypeDialog({ visible, onClose, onSelect }: Props) {
   const { t, af } = useI18n();
   return (
-    <Modal
+    <RootModal
       visible={visible}
       transparent
       animationType="fade"
@@ -67,7 +61,7 @@ export default function OrderTypeDialog({ visible, onClose, onSelect }: Props) {
 
         </View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 

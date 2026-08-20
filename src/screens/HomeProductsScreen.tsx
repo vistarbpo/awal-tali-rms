@@ -52,6 +52,8 @@ import DevicesScreen from './DevicesScreen';
 import SupportScreen from './SupportScreen';
 import { ProductAvailabilityMap } from './ProductAvailabilityProductsScreen';
 import { useI18n } from '../i18n';
+import type { TKey } from '../i18n/translations';
+import { displayCartItemName } from '../components/OrderPanel';
 
 // ─── Preview mode (Figma capture) ────────────────────────────────────────────
 // Set to: 'charges-sheet' | 'add-charge' | 'call-name' | 'assign-table' | 'join-order' | 'join-order-selected' | 'split-order' | 'split-order-split'
@@ -122,6 +124,7 @@ export type { ComboOption, ComboGroup };
 interface Product {
   id: string;
   name: string;
+  nameKey: TKey;
   price: number;
   img?: ImageSourcePropType | null;
   isCombo?: boolean;
@@ -129,37 +132,37 @@ interface Product {
 }
 
 const PRODUCTS: Product[] = [
-  { id: 'p1',  name: 'Fried Rice',         price: 25, img: PROD_IMG[0] },
-  { id: 'p2',  name: 'Pasta Primavera',     price: 30, img: PROD_IMG[1] },
-  { id: 'p3',  name: 'Garden Salad',        price: 18, img: PROD_IMG[2] },
-  { id: 'p4',  name: 'Grilled Chicken',     price: 45, img: PROD_IMG[3] },
-  { id: 'p5',  name: 'Beef Steak',          price: 65, img: PROD_IMG[0] },
-  { id: 'p6',  name: 'Seafood Platter',     price: 80, img: PROD_IMG[1] },
-  { id: 'p7',  name: 'Lamb Chops',          price: 70, img: PROD_IMG[2] },
-  { id: 'p8',  name: 'Veggie Wrap',         price: 20, img: PROD_IMG[3] },
-  { id: 'p9',  name: 'Caesar Salad',        price: 22, img: PROD_IMG[0] },
-  { id: 'p10', name: 'Chicken Tikka',       price: 40, img: PROD_IMG[1] },
-  { id: 'p11', name: 'Mixed Grill',         price: 75, img: PROD_IMG[2] },
-  { id: 'p12', name: 'Fish & Chips',        price: 35, img: PROD_IMG[3] },
-  { id: 'p13', name: 'Chef\'s Special',     price: 55 },
+  { id: 'p1',  name: 'Fried Rice',         nameKey: 'prodFriedRice',       price: 25, img: PROD_IMG[0] },
+  { id: 'p2',  name: 'Pasta Primavera',    nameKey: 'prodPastaPrimavera',  price: 30, img: PROD_IMG[1] },
+  { id: 'p3',  name: 'Garden Salad',       nameKey: 'prodGardenSalad',     price: 18, img: PROD_IMG[2] },
+  { id: 'p4',  name: 'Grilled Chicken',    nameKey: 'prodGrilledChicken',  price: 45, img: PROD_IMG[3] },
+  { id: 'p5',  name: 'Beef Steak',         nameKey: 'prodBeefSteak',       price: 65, img: PROD_IMG[0] },
+  { id: 'p6',  name: 'Seafood Platter',    nameKey: 'prodSeafoodPlatter',  price: 80, img: PROD_IMG[1] },
+  { id: 'p7',  name: 'Lamb Chops',         nameKey: 'prodLambChops',       price: 70, img: PROD_IMG[2] },
+  { id: 'p8',  name: 'Veggie Wrap',        nameKey: 'prodVeggieWrap',      price: 20, img: PROD_IMG[3] },
+  { id: 'p9',  name: 'Caesar Salad',       nameKey: 'prodCaesarSalad',     price: 22, img: PROD_IMG[0] },
+  { id: 'p10', name: 'Chicken Tikka',      nameKey: 'prodChickenTikka',    price: 40, img: PROD_IMG[1] },
+  { id: 'p11', name: 'Mixed Grill',        nameKey: 'prodMixedGrill',      price: 75, img: PROD_IMG[2] },
+  { id: 'p12', name: 'Fish & Chips',       nameKey: 'prodFishAndChips',    price: 35, img: PROD_IMG[3] },
+  { id: 'p13', name: 'Chef\'s Special',    nameKey: 'prodChefsSpecial',    price: 55 },
   {
-    id: 'p14', name: 'Combo Meal Sandwich', price: 28, img: PROD_IMG[0],
+    id: 'p14', name: 'Combo Meal Sandwich', nameKey: 'prodComboMealSandwich', price: 28, img: PROD_IMG[0],
     isCombo: true,
     comboGroups: [
       {
-        id: 'drink', label: 'DRINK', required: true,
+        id: 'drink', label: 'DRINK', labelKey: 'comboGroupDrink', required: true,
         options: [
-          { id: 'pepsi',    name: 'Pepsi'          },
-          { id: '7up',      name: '7Up'            },
-          { id: 'laban',    name: 'Laban Qariyah'  },
+          { id: 'pepsi',    name: 'Pepsi',          nameKey: 'optPepsi' },
+          { id: '7up',      name: '7Up',            nameKey: 'opt7Up' },
+          { id: 'laban',    name: 'Laban Qariyah',  nameKey: 'optLaban' },
         ],
       },
       {
-        id: 'side', label: 'SIDE', required: false,
+        id: 'side', label: 'SIDE', labelKey: 'comboGroupSide', required: false,
         options: [
-          { id: 'fries',    name: 'Fries'          },
-          { id: 'salad',    name: 'Garden Salad'   },
-          { id: 'coleslaw', name: 'Coleslaw'       },
+          { id: 'fries',    name: 'Fries',          nameKey: 'optFries' },
+          { id: 'salad',    name: 'Garden Salad',   nameKey: 'optGardenSaladSide' },
+          { id: 'coleslaw', name: 'Coleslaw',       nameKey: 'optColeslaw' },
         ],
       },
     ],
@@ -207,12 +210,16 @@ interface ProductCardProps {
 }
 
 function ProductCard({ item, size, onBack, onAddProduct, onPrevious, onNext, productAvailability }: ProductCardProps) {
+  const { t, af, isRTL } = useI18n();
   const sizeStyle = { width: size, height: size };
 
   if (item.type === 'back') {
     return (
       <TouchableOpacity style={[grid.card, grid.navCard, grid.cardCentered, sizeStyle]} onPress={onBack} activeOpacity={0.7}>
-        <Image source={ICONS.arrowLeft} style={grid.navIcon} />
+        <Image
+          source={ICONS.arrowLeft}
+          style={[grid.navIcon, isRTL && { transform: [{ scaleX: -1 }] }]}
+        />
       </TouchableOpacity>
     );
   }
@@ -220,7 +227,7 @@ function ProductCard({ item, size, onBack, onAddProduct, onPrevious, onNext, pro
   if (item.type === 'previous') {
     return (
       <TouchableOpacity style={[grid.card, grid.navCard, grid.cardCentered, sizeStyle]} onPress={onPrevious} activeOpacity={0.7}>
-        <Text style={grid.navLabelGray}>PREVIOUS</Text>
+        <Text style={[grid.navLabelGray, { fontFamily: af('medium') }]}>{t('previousPage')}</Text>
       </TouchableOpacity>
     );
   }
@@ -228,13 +235,17 @@ function ProductCard({ item, size, onBack, onAddProduct, onPrevious, onNext, pro
   if (item.type === 'next') {
     return (
       <TouchableOpacity style={[grid.card, grid.navCard, grid.cardCentered, sizeStyle]} onPress={onNext} activeOpacity={0.7}>
-        <Text style={grid.navLabelDark}>NEXT</Text>
+        <Text style={[grid.navLabelDark, { fontFamily: af('semibold') }]}>
+          {t('next')}
+          {isRTL ? ' ←' : ' →'}
+        </Text>
       </TouchableOpacity>
     );
   }
 
   const avail = productAvailability?.[item.product.id];
   const hasImage = !!item.product.img;
+  const productLabel = t(item.product.nameKey);
   return (
     <TouchableOpacity
       style={[grid.card, sizeStyle]}
@@ -245,17 +256,21 @@ function ProductCard({ item, size, onBack, onAddProduct, onPrevious, onNext, pro
         <>
           <Image source={item.product.img!} style={grid.productImg} />
           <View style={grid.overlay}>
-            <Text style={grid.productName} numberOfLines={2}>{item.product.name}</Text>
+            <Text style={[grid.productName, { fontFamily: af('semibold') }]} numberOfLines={2}>
+              {productLabel}
+            </Text>
           </View>
         </>
       ) : (
         <View style={grid.noImageWrap}>
-          <Text style={grid.noImageName} numberOfLines={3}>{item.product.name}</Text>
+          <Text style={[grid.noImageName, { fontFamily: af('semibold') }]} numberOfLines={3}>
+            {productLabel}
+          </Text>
         </View>
       )}
       {avail !== undefined && (
         <View style={[grid.availBadge, !avail.available && grid.availBadgeDanger]}>
-          <Text style={grid.availBadgeText}>
+          <Text style={[grid.availBadgeText, { fontFamily: af('bold') }]}>
             {avail.available ? String(avail.quantity ?? '∞') : '0'}
           </Text>
         </View>
@@ -293,7 +308,13 @@ interface Props {
   onAddCourse?:          () => void;
   onMoveItemToCourse?:   (itemId: string, courseId: string) => void;
   onHoldCourse?:         (courseId: string) => void;
-  onUpdateItemComboSelections?: (id: string, labels: string[], selections: Record<string, string>, groups: ComboGroup[]) => void;
+  onUpdateItemComboSelections?: (
+    id: string,
+    labels: string[],
+    selections: Record<string, string>,
+    groups: ComboGroup[],
+    comboOptionKeys?: TKey[],
+  ) => void;
   onUpdateItemNote?:            (id: string, note: string) => void;
   charges?:                     OrderCharge[];
   onAddCharge?:                 (charge: OrderCharge) => void;
@@ -344,7 +365,7 @@ export default function HomeProductsScreen({
   onSplitsChange,
   onSplitNavigate,
 }: Props) {
-  const { t, af, isRTL } = useI18n();
+  const { t, af, isRTL, rtlText } = useI18n();
   const TAB_KEY_MAP: Record<string, string> = { home: 'tabHome', orders: 'tabOrders', tables: 'tabTables', new: 'tabNew' };
   const [rightW, setRightW] = useState(IPAD_W - LEFT_PANEL_W);
   const searchRef                         = useRef<TextInput>(null);
@@ -461,6 +482,7 @@ export default function HomeProductsScreen({
     const item: CartItem = {
       id: itemId,
       name: product.name,
+      nameKey: product.nameKey,
       qty: 1,
       price: product.price,
       isCombo: product.isCombo,
@@ -492,7 +514,13 @@ export default function HomeProductsScreen({
         return selId ? g.options.find(o => o.id === selId)?.name ?? null : null;
       })
       .filter((l): l is string => l !== null);
-    onUpdateItemComboSelections?.(comboConfig.itemId, labels, comboConfig.selections, comboConfig.groups);
+    const comboOptionKeys = comboConfig.groups
+      .map(g => {
+        const selId = comboConfig.selections[g.id];
+        return g.options.find(o => o.id === selId)?.nameKey;
+      })
+      .filter((k): k is TKey => k !== undefined);
+    onUpdateItemComboSelections?.(comboConfig.itemId, labels, comboConfig.selections, comboConfig.groups, comboOptionKeys);
     setComboErrors(false);
     setComboConfig(null);
     setIsEditingItem(false);
@@ -758,12 +786,24 @@ export default function HomeProductsScreen({
                   return (
                   <View key={group.id} style={styles.comboGroup}>
                     <View style={styles.comboGroupHeader}>
-                      <Text style={[styles.comboGroupLabel, hasError && styles.comboGroupLabelError]}>
-                        {group.label}
+                      <Text
+                        style={[
+                          styles.comboGroupLabel,
+                          hasError && styles.comboGroupLabelError,
+                          { fontFamily: af('semibold') },
+                        ]}
+                      >
+                        {group.labelKey ? t(group.labelKey) : group.label}
                       </Text>
                       {group.required && (
-                        <Text style={[styles.comboGroupRequired, hasError && styles.comboGroupRequiredError]}>
-                          {hasError ? '— Select one' : 'Required'}
+                        <Text
+                          style={[
+                            styles.comboGroupRequired,
+                            hasError && styles.comboGroupRequiredError,
+                            { fontFamily: af('medium') },
+                          ]}
+                        >
+                          {hasError ? t('comboSelectOne') : t('comboRequired')}
                         </Text>
                       )}
                     </View>
@@ -778,16 +818,19 @@ export default function HomeProductsScreen({
                               activeOpacity={0.7}
                               onPress={() => toggleComboOption(group.id, opt.id)}
                             >
-                              <Text style={[
-                                styles.comboOptionText,
-                                selected && styles.comboOptionTextSelected,
-                                hasError && styles.comboOptionTextError,
-                              ]}>
-                                {opt.name}
+                              <Text
+                                style={[
+                                  styles.comboOptionText,
+                                  selected && styles.comboOptionTextSelected,
+                                  hasError && styles.comboOptionTextError,
+                                  { fontFamily: af('medium') },
+                                ]}
+                              >
+                                {opt.nameKey ? t(opt.nameKey) : opt.name}
                               </Text>
                               {selected && (
                                 <View style={styles.comboCheck}>
-                                  <Text style={styles.comboCheckMark}>✓</Text>
+                                  <Text style={[styles.comboCheckMark, { fontFamily: af('bold') }]}>✓</Text>
                                 </View>
                               )}
                             </TouchableOpacity>
@@ -830,7 +873,7 @@ export default function HomeProductsScreen({
                     delayLongPress={400}
                   >
                     <Text style={[styles.itemActionText, item.isHeld && styles.itemActionTextFire, { fontFamily: af() }]}>
-                      {item.isHeld ? 'Fire' : 'Hold'}
+                      {item.isHeld ? t('fireBtn') : t('holdBtn')}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[layout.actionBtn, styles.itemActionBtn]} activeOpacity={0.8} onPress={() => setItemDiscountVisible(true)}>
@@ -850,11 +893,13 @@ export default function HomeProductsScreen({
                 {/* ── Selected item card ── */}
                 <View style={styles.itemDetailBody}>
                   <View style={styles.itemDetailCard}>
-                    <Text style={[styles.itemDetailName, { fontFamily: af('semibold') }]}>{item.name}</Text>
+                    <Text style={[styles.itemDetailName, { fontFamily: af('semibold') }]}>{displayCartItemName(item, t)}</Text>
                     <View style={styles.itemDetailMeta}>
                       <Text style={[styles.itemDetailQty, { fontFamily: af() }]}>{item.qty}×</Text>
-                      <Text style={[styles.itemDetailPrice, { fontFamily: af('medium') }]}>{item.price.toFixed(2)}</Text>
-                      <Image source={ICONS.sarDark} style={styles.itemDetailSar} />
+                      <View style={styles.itemDetailPriceSar}>
+                        <Text style={[styles.itemDetailPrice, { fontFamily: af('medium') }]}>{item.price.toFixed(2)}</Text>
+                        <Image source={ICONS.sarDark} style={styles.itemDetailSar} />
+                      </View>
                     </View>
                     <Text style={[styles.itemDetailTotal, { fontFamily: af('bold') }]}>{(item.qty * item.price).toFixed(2)}</Text>
                   </View>
@@ -890,14 +935,25 @@ export default function HomeProductsScreen({
               </View>
 
               {/* Search bar */}
-              <Pressable style={[layout.searchBar, searchFocused && layout.searchBarFocused]} onPress={() => searchRef.current?.focus()}>
+              <Pressable
+                style={[
+                  layout.searchBar,
+                  searchFocused && layout.searchBarFocused,
+                  isRTL && { flexDirection: 'row-reverse' },
+                ]}
+                onPress={() => searchRef.current?.focus()}
+              >
                 <View style={layout.searchIconWrap}>
                   <Image source={ICONS.search} style={layout.searchIcon} />
                 </View>
                 <View style={layout.searchInputWrap}>
                   <TextInput
                     ref={searchRef}
-                    style={layout.searchInput}
+                    style={[
+                      layout.searchInput,
+                      { fontFamily: af(), textAlign: rtlText('left') },
+                      isRTL && { writingDirection: 'rtl' },
+                    ]}
                     placeholder={t('searchProducts')}
                     placeholderTextColor={Colors.placeholder}
                     value={search}
@@ -1113,7 +1169,7 @@ export default function HomeProductsScreen({
         return (
           <ItemNoteDialog
             visible={itemNoteVisible}
-            itemName={item.name}
+            itemName={displayCartItemName(item, t)}
             note={item.kitchenNote ?? ''}
             onClose={() => setItemNoteVisible(false)}
             onSave={note => onUpdateItemNote?.(item.id, note)}
@@ -1207,7 +1263,7 @@ export default function HomeProductsScreen({
           <QuantityPadDialog
             visible={qtyPadVisible}
             currentQty={editItem?.qty ?? 1}
-            itemName={editItem?.name ?? ''}
+            itemName={editItem ? displayCartItemName(editItem, t) : ''}
             onClose={() => setQtyPadVisible(false)}
             onConfirm={qty => {
               if (editItem) onUpdateQty?.(editItem.id, qty - editItem.qty);
@@ -1218,7 +1274,10 @@ export default function HomeProductsScreen({
 
       <HoldTimeDialog
         visible={holdTimeVisible}
-        itemName={selectedCartId ? (cart.find(i => i.id === selectedCartId)?.name ?? '') : ''}
+        itemName={(() => {
+          const it = selectedCartId ? cart.find(i => i.id === selectedCartId) : null;
+          return it ? displayCartItemName(it, t) : '';
+        })()}
         onClose={() => setHoldTimeVisible(false)}
         onConfirm={minutes => {
           if (selectedCartId) {
@@ -1406,6 +1465,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+  },
+  itemDetailPriceSar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    direction: 'ltr',
   },
   itemDetailQty: {
     fontSize: 18,

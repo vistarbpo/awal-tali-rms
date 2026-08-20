@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Modal,
-  Platform,
   View,
   Text,
   TextInput,
@@ -10,6 +8,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import RootModal from './RootModal';
 import { useI18n } from '../i18n';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -87,24 +86,15 @@ export default function CallNameDialog({ visible, current, onClose, onSave }: Pr
     </View>
   );
 
-  if (Platform.OS === 'web') {
-    if (!visible) return null;
-    return (
-      <View style={s.inlineOverlay}>
-        {cardJSX}
-      </View>
-    );
-  }
-
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
+    <RootModal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={s.backdrop} />
       </TouchableWithoutFeedback>
       <View style={s.center} pointerEvents="box-none">
         {cardJSX}
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 

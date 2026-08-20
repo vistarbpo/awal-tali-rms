@@ -18,7 +18,17 @@ import { Colors } from '../constants/colors';
 import { layout, LEFT_PANEL_W, CARD_GAP, RIGHT_PAD } from '../styles/screenLayout';
 import OrderPanel, { CartItem } from '../components/OrderPanel';
 import VoidReasonDialog from '../components/VoidReasonDialog';
+import OrderNotesDialog from '../components/OrderNotesDialog';
+import OrderTagsDialog from '../components/OrderTagsDialog';
+import CallNameDialog from '../components/CallNameDialog';
+import SetGuestsDialog from '../components/SetGuestsDialog';
+import OrderMoreMenu from '../components/OrderMoreMenu';
+import { useI18n } from '../i18n';
 import { Order } from './OrdersScreen';
+
+// Set to preview a dialog state on load:
+//       'notes' | 'tags' | 'call-name' | 'set-guests' | null
+const PREVIEW_DIALOG: string | null = null;
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 import {
@@ -113,12 +123,13 @@ function ProductCard({
   onBack: () => void; onAddProduct: (p: Product) => void;
   onPrevious: () => void; onNext: () => void;
 }) {
+  const { isRTL } = useI18n();
   const sizeStyle = { width: size, height: size };
 
   if (item.type === 'back') {
     return (
       <TouchableOpacity style={[g.card, g.backCard, sizeStyle]} onPress={onBack} activeOpacity={0.7}>
-        <Image source={ICONS.arrowLeft} style={g.backIcon} />
+        <Image source={ICONS.arrowLeft} style={[g.backIcon, isRTL && { transform: [{ scaleX: -1 }] }]} />
         <Text style={g.backLabel}>BACK</Text>
       </TouchableOpacity>
     );
@@ -178,6 +189,16 @@ export default function OrderEditScreen({ order, onBack, onTabPress, onTotalPres
   const [voidReasonVisible, setVoidReasonVisible] = useState(false);
   const [isVoided, setIsVoided]             = useState(order.status === 'VOID');
   const [page, setPage]                     = useState(0);
+  const [notesVisible,    setNotesVisible]    = useState(PREVIEW_DIALOG === 'notes');
+  const [tagsVisible,     setTagsVisible]     = useState(PREVIEW_DIALOG === 'tags');
+  const [callNameVisible, setCallNameVisible] = useState(PREVIEW_DIALOG === 'call-name');
+  const [guestsVisible,   setGuestsVisible]   = useState(PREVIEW_DIALOG === 'set-guests');
+  const [moreVisible,     setMoreVisible]     = useState(false);
+  const [receiptNotes,    setReceiptNotes]    = useState('');
+  const [kitchenNotes,    setKitchenNotes]    = useState('');
+  const [activeTags,      setActiveTags]      = useState<string[]>([]);
+  const [callName,        setCallName]        = useState('');
+  const [guestCount,      setGuestCount]      = useState(0);
 
   const totalPages = Math.ceil(PRODUCTS.length / PAGE_SIZE);
 
@@ -246,7 +267,13 @@ export default function OrderEditScreen({ order, onBack, onTabPress, onTotalPres
                 key={btn.key}
                 style={[layout.actionBtn, btn.danger && layout.actionBtnDanger]}
                 activeOpacity={0.8}
-                onPress={btn.key === 'void' ? () => setVoidReasonVisible(true) : undefined}
+                onPress={
+                  btn.key === 'void'  ? () => setVoidReasonVisible(true) :
+                  btn.key === 'notes' ? () => setNotesVisible(true)      :
+                  btn.key === 'tags'  ? () => setTagsVisible(true)       :
+                  btn.key === 'more'  ? () => setMoreVisible(true)       :
+                  undefined
+                }
               >
                 <Image source={btn.icon} style={layout.actionIcon} />
                 <Text style={layout.actionLabel}>{btn.label}</Text>
@@ -328,6 +355,47 @@ export default function OrderEditScreen({ order, onBack, onTabPress, onTotalPres
           setIsVoided(true);
           setCart([]);
         }}
+      />
+
+      <OrderMoreMenu
+        visible={moreVisible}
+        onClose={() => setMoreVisible(false)}
+        hasCustomer={!!order.customerName}
+        orderType={order.type}
+        status={isVoided ? 'voided' : order.status === 'DONE' ? 'done' : 'active'}
+        onItemPress={key => {
+          if (key === 'add_call_name') setCallNameVisible(true);
+          if (key === 'set_guests')    setGuestsVisible(true);
+        }}
+      />
+
+      <OrderNotesDialog
+        visible={notesVisible}
+        receiptNotes={receiptNotes}
+        kitchenNotes={kitchenNotes}
+        onClose={() => setNotesVisible(false)}
+        onSave={(r, k) => { setReceiptNotes(r); setKitchenNotes(k); }}
+      />
+
+      <OrderTagsDialog
+        visible={tagsVisible}
+        activeTags={activeTags}
+        onClose={() => setTagsVisible(false)}
+        onApply={tags => setActiveTags(tags)}
+      />
+
+      <CallNameDialog
+        visible={callNameVisible}
+        current={callName}
+        onClose={() => setCallNameVisible(false)}
+        onSave={name => setCallName(name)}
+      />
+
+      <SetGuestsDialog
+        visible={guestsVisible}
+        current={guestCount}
+        onClose={() => setGuestsVisible(false)}
+        onConfirm={n => setGuestCount(n)}
       />
     </SafeAreaView>
   );

@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import {
-  View, Text, TouchableOpacity, TouchableWithoutFeedback,
-  Modal, ScrollView, TextInput, Image, StyleSheet, Platform,
-} from 'react-native';
+import RootModal from './RootModal';
+import { View, Text, TouchableOpacity, TouchableWithoutFeedback, ScrollView, TextInput, Image, StyleSheet, Platform } from 'react-native';
 import { Colors } from '../constants/colors';
 import { useI18n } from '../i18n';
 
@@ -32,8 +30,8 @@ const MOCK_CUSTOMERS = [
 ];
 
 const MOCK_ADDRESSES = [
-  { id: '1', address: 'King Fahd Road, Al Olaya', description: 'Near Al Faisaliyah Tower', zone: 'Zone A' },
-  { id: '2', address: 'Prince Sultan St, Al Malaz', description: 'Apt 12, Floor 3', zone: 'Zone B' },
+  { id: '1', address: 'King Fahd Road, Al Olaya', description: 'Near Al Faisaliyah Tower', zoneKey: 'zoneA' as const },
+  { id: '2', address: 'Prince Sultan St, Al Malaz', description: 'Apt 12, Floor 3', zoneKey: 'zoneB' as const },
 ];
 
 // ─── View-drawn icons ─────────────────────────────────────────────────────────
@@ -92,6 +90,7 @@ const ico = StyleSheet.create({
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function CustomerFlowDialogs({ visible, onClose, onCustomerAssigned, initialStep }: Props) {
+  const { t, af, isRTL, rtlText } = useI18n();
   const [step, setStep]                   = useState<Step>(initialStep ?? 'customers');
   const [search, setSearch]               = useState('');
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
@@ -100,7 +99,7 @@ export default function CustomerFlowDialogs({ visible, onClose, onCustomerAssign
   const [newName, setNewName]   = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [newEmail, setNewEmail] = useState('');
-  const [newCountry, setNewCountry] = useState('Saudi Arabia');
+  const [newCountry, setNewCountry] = useState('');
 
   // Create-address form
   const [newAddress, setNewAddress]     = useState('');
@@ -111,9 +110,17 @@ export default function CustomerFlowDialogs({ visible, onClose, onCustomerAssign
     setStep('customers');
     setSearch('');
     setSelectedCustomerId(null);
-    setNewName(''); setNewPhone(''); setNewEmail(''); setNewCountry('Saudi Arabia');
+    setNewName(''); setNewPhone(''); setNewEmail(''); setNewCountry('');
     setNewAddress(''); setNewDesc(''); setNewZone('');
     onClose();
+  }
+
+  function openCreateCustomer() {
+    setNewName('');
+    setNewPhone('');
+    setNewEmail('');
+    setNewCountry(t('countrySaudiArabia'));
+    setStep('create-customer');
   }
 
   function handleSelectCustomer(id: string) {
@@ -149,7 +156,7 @@ export default function CustomerFlowDialogs({ visible, onClose, onCustomerAssign
   );
 
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={resetAndClose}>
+    <RootModal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={resetAndClose}>
       <TouchableWithoutFeedback onPress={resetAndClose}>
         <View style={s.backdrop} />
       </TouchableWithoutFeedback>
@@ -160,18 +167,18 @@ export default function CustomerFlowDialogs({ visible, onClose, onCustomerAssign
           {/* ── STEP 1: Customers list ── */}
           {step === 'customers' && (
             <>
-              <View style={s.header}>
+              <View style={[s.header, isRTL && s.headerRtl]}>
                 <TouchableOpacity style={s.headerSide} onPress={resetAndClose} activeOpacity={0.6}>
-                  <Text style={s.headerActionText}>Cancel</Text>
+                  <Text style={[s.headerActionText, { fontFamily: af('regular'), textAlign: rtlText('left') }]}>{t('cancel')}</Text>
                 </TouchableOpacity>
-                <Text style={s.headerTitle}>Customers</Text>
+                <Text style={[s.headerTitle, { fontFamily: af('semibold') }]}>{t('cfCustomersTitle')}</Text>
                 <View style={s.headerSideRight}>
                   <TouchableOpacity style={s.iconBtn} activeOpacity={0.7}>
                     <SyncIcon />
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={s.plusBtn}
-                    onPress={() => setStep('create-customer')}
+                    onPress={openCreateCustomer}
                     activeOpacity={0.7}
                   >
                     <PlusIcon />
@@ -181,11 +188,11 @@ export default function CustomerFlowDialogs({ visible, onClose, onCustomerAssign
 
               {/* Search */}
               <View style={s.searchRow}>
-                <View style={s.searchBox}>
+                <View style={[s.searchBox, isRTL && s.searchBoxRtl]}>
                   <SearchIcon />
                   <TextInput
-                    style={s.searchInput}
-                    placeholder="Search by name or phone"
+                    style={[s.searchInput, { fontFamily: af('regular'), textAlign: rtlText('left') }]}
+                    placeholder={t('cfSearchCustomersPh')}
                     placeholderTextColor={Colors.placeholder}
                     value={search}
                     onChangeText={setSearch}
@@ -199,18 +206,20 @@ export default function CustomerFlowDialogs({ visible, onClose, onCustomerAssign
                 {filteredCustomers.map((c, i) => (
                   <View key={c.id}>
                     {i > 0 && <View style={s.rowDivider} />}
-                    <TouchableOpacity style={s.customerRow} onPress={() => handleSelectCustomer(c.id)} activeOpacity={0.7}>
+                    <TouchableOpacity style={[s.customerRow, isRTL && s.rowRtl]} onPress={() => handleSelectCustomer(c.id)} activeOpacity={0.7}>
                       <View style={s.customerInfo}>
-                        <Text style={s.customerName}>{c.name}</Text>
-                        <Text style={s.customerPhone}>{c.phone}</Text>
+                        <Text style={[s.customerName, { fontFamily: af('medium') }]}>{c.name}</Text>
+                        <Text style={[s.customerPhone, { fontFamily: af('regular') }]}>{c.phone}</Text>
                       </View>
-                      <ChevronRightIcon />
+                      <View style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined}>
+                        <ChevronRightIcon />
+                      </View>
                     </TouchableOpacity>
                   </View>
                 ))}
                 {filteredCustomers.length === 0 && (
                   <View style={s.emptyRow}>
-                    <Text style={s.emptyText}>No customers found</Text>
+                    <Text style={[s.emptyText, { fontFamily: af('regular') }]}>{t('cfNoCustomersFound')}</Text>
                   </View>
                 )}
                 <View style={{ height: 8 }} />
@@ -221,27 +230,43 @@ export default function CustomerFlowDialogs({ visible, onClose, onCustomerAssign
           {/* ── STEP 2: Create customer ── */}
           {step === 'create-customer' && (
             <>
-              <View style={s.header}>
+              <View style={[s.header, s.headerChromeLtr]}>
                 <TouchableOpacity style={s.headerSide} onPress={() => setStep('customers')} activeOpacity={0.6}>
                   <View style={s.backRow}>
-                    <ChevronLeftIcon />
-                    <Text style={s.headerActionText}>Back</Text>
+                    <View style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined}>
+                      <ChevronLeftIcon />
+                    </View>
+                    <Text style={[s.headerActionText, { fontFamily: af('regular') }]}>{t('back')}</Text>
                   </View>
                 </TouchableOpacity>
-                <Text style={s.headerTitle}>Create new customer</Text>
+                <Text style={[s.headerTitle, { fontFamily: af('semibold') }]}>{t('cfCreateNewCustomer')}</Text>
                 <TouchableOpacity style={[s.headerSide, s.headerSideRight]} onPress={handleSaveCustomer} activeOpacity={0.6}>
-                  <Text style={[s.headerActionText, s.headerActionSave]}>Save</Text>
+                  <Text style={[s.headerActionText, s.headerActionSave, { fontFamily: af('semibold') }]}>{t('save')}</Text>
                 </TouchableOpacity>
               </View>
 
-              <ScrollView style={s.scroll} showsVerticalScrollIndicator={false}>
-                <FormRow label="Country" value={newCountry} onChangeText={setNewCountry} placeholder="Country" />
+              <ScrollView style={[s.scroll, isRTL && s.formScrollRtl]} showsVerticalScrollIndicator={false}>
+                <FormRow label={t('country')} value={newCountry} onChangeText={setNewCountry} placeholder={t('phCountryField')} />
                 <View style={s.rowDivider} />
-                <FormRow label="Name" value={newName} onChangeText={setNewName} placeholder="Full name" />
+                <FormRow label={t('nameLabel')} value={newName} onChangeText={setNewName} placeholder={t('fullName')} />
                 <View style={s.rowDivider} />
-                <FormRow label="Phone" value={newPhone} onChangeText={setNewPhone} placeholder="+966 5x xxx xxxx" keyboardType="phone-pad" />
+                <FormRow
+                  label={t('phone')}
+                  value={newPhone}
+                  onChangeText={setNewPhone}
+                  placeholder={t('phPhoneSa')}
+                  keyboardType="phone-pad"
+                  inputLtr
+                />
                 <View style={s.rowDivider} />
-                <FormRow label="Email" value={newEmail} onChangeText={setNewEmail} placeholder="email@example.com" keyboardType="email-address" />
+                <FormRow
+                  label={t('email')}
+                  value={newEmail}
+                  onChangeText={setNewEmail}
+                  placeholder={t('phEmailExample')}
+                  keyboardType="email-address"
+                  inputLtr
+                />
                 <View style={{ height: 16 }} />
               </ScrollView>
             </>
@@ -250,17 +275,17 @@ export default function CustomerFlowDialogs({ visible, onClose, onCustomerAssign
           {/* ── STEP 3: Address list ── */}
           {step === 'addresses' && (
             <>
-              <View style={s.header}>
+              <View style={[s.header, isRTL && s.headerRtl]}>
                 <TouchableOpacity style={s.headerSide} onPress={resetAndClose} activeOpacity={0.6}>
-                  <Text style={s.headerActionText}>Cancel</Text>
+                  <Text style={[s.headerActionText, { fontFamily: af('regular'), textAlign: rtlText('left') }]}>{t('cancel')}</Text>
                 </TouchableOpacity>
-                <Text style={s.headerTitle}>Address</Text>
+                <Text style={[s.headerTitle, { fontFamily: af('semibold') }]}>{t('cfAddressTitle')}</Text>
                 <TouchableOpacity
                   style={[s.headerSide, s.headerSideRight]}
                   onPress={() => setStep('create-address')}
                   activeOpacity={0.6}
                 >
-                  <Text style={[s.headerActionText, s.headerActionSave]}>Create new</Text>
+                  <Text style={[s.headerActionText, s.headerActionSave, { fontFamily: af('semibold') }]}>{t('cfCreateNewShort')}</Text>
                 </TouchableOpacity>
               </View>
 
@@ -268,13 +293,15 @@ export default function CustomerFlowDialogs({ visible, onClose, onCustomerAssign
                 {MOCK_ADDRESSES.map((addr, i) => (
                   <View key={addr.id}>
                     {i > 0 && <View style={s.rowDivider} />}
-                    <TouchableOpacity style={s.addressRow} onPress={() => handleSelectAddress(addr)} activeOpacity={0.7}>
+                    <TouchableOpacity style={[s.addressRow, isRTL && s.rowRtl]} onPress={() => handleSelectAddress(addr)} activeOpacity={0.7}>
                       <View style={s.addressInfo}>
-                        <Text style={s.addressText}>{addr.address}</Text>
-                        <Text style={s.addressDesc}>{addr.description}</Text>
+                        <Text style={[s.addressText, { fontFamily: af('medium') }]}>{addr.address}</Text>
+                        <Text style={[s.addressDesc, { fontFamily: af('regular') }]}>{addr.description}</Text>
                       </View>
-                      <Text style={s.addressZone}>{addr.zone}</Text>
-                      <ChevronRightIcon />
+                      <Text style={[s.addressZone, { fontFamily: af('medium') }]}>{t(addr.zoneKey)}</Text>
+                      <View style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined}>
+                        <ChevronRightIcon />
+                      </View>
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -286,25 +313,27 @@ export default function CustomerFlowDialogs({ visible, onClose, onCustomerAssign
           {/* ── STEP 4: Create address ── */}
           {step === 'create-address' && (
             <>
-              <View style={s.header}>
+              <View style={[s.header, s.headerChromeLtr]}>
                 <TouchableOpacity style={s.headerSide} onPress={() => setStep('addresses')} activeOpacity={0.6}>
                   <View style={s.backRow}>
-                    <ChevronLeftIcon />
-                    <Text style={s.headerActionText}>Back</Text>
+                    <View style={isRTL ? { transform: [{ scaleX: -1 }] } : undefined}>
+                      <ChevronLeftIcon />
+                    </View>
+                    <Text style={[s.headerActionText, { fontFamily: af('regular') }]}>{t('back')}</Text>
                   </View>
                 </TouchableOpacity>
-                <Text style={s.headerTitle}>Create new address</Text>
+                <Text style={[s.headerTitle, { fontFamily: af('semibold') }]}>{t('cfCreateNewAddress')}</Text>
                 <TouchableOpacity style={[s.headerSide, s.headerSideRight]} onPress={handleSaveAddress} activeOpacity={0.6}>
-                  <Text style={[s.headerActionText, s.headerActionSave]}>Save</Text>
+                  <Text style={[s.headerActionText, s.headerActionSave, { fontFamily: af('semibold') }]}>{t('save')}</Text>
                 </TouchableOpacity>
               </View>
 
-              <ScrollView style={s.scroll} showsVerticalScrollIndicator={false}>
-                <FormRow label="Address" value={newAddress} onChangeText={setNewAddress} placeholder="Street, building" />
+              <ScrollView style={[s.scroll, isRTL && s.formScrollRtl]} showsVerticalScrollIndicator={false}>
+                <FormRow label={t('addressField')} value={newAddress} onChangeText={setNewAddress} placeholder={t('phStreetBuilding')} />
                 <View style={s.rowDivider} />
-                <FormRow label="Description" value={newDesc} onChangeText={setNewDesc} placeholder="Floor, apt, landmark" />
+                <FormRow label={t('cfDescription')} value={newDesc} onChangeText={setNewDesc} placeholder={t('phFloorLandmark')} />
                 <View style={s.rowDivider} />
-                <FormRow label="Delivery zone" value={newZone} onChangeText={setNewZone} placeholder="Zone A" />
+                <FormRow label={t('cfDeliveryZone')} value={newZone} onChangeText={setNewZone} placeholder={t('phZoneExample')} />
                 <View style={{ height: 16 }} />
               </ScrollView>
             </>
@@ -312,7 +341,7 @@ export default function CustomerFlowDialogs({ visible, onClose, onCustomerAssign
 
         </View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 
@@ -323,16 +352,24 @@ interface FormRowProps {
   onChangeText: (v: string) => void;
   placeholder?: string;
   keyboardType?: 'default' | 'phone-pad' | 'email-address';
+  /** Phone / email: force LTR digits and @ so placeholders are not reshaped by RTL. */
+  inputLtr?: boolean;
 }
 
-function FormRow({ label, value, onChangeText, placeholder, keyboardType = 'default' }: FormRowProps) {
+function FormRow({ label, value, onChangeText, placeholder, keyboardType = 'default', inputLtr }: FormRowProps) {
+  const { af, isRTL, rtlText } = useI18n();
   const [focused, setFocused] = useState(false);
+  const inputDirStyle = inputLtr
+    ? ({ textAlign: 'left' as const, writingDirection: 'ltr' as const })
+    : { textAlign: rtlText('left') };
   return (
-    <View style={s.formRow}>
-      <Text style={[s.formLabel, focused && s.formLabelFocused]}>{label}</Text>
+    <View style={[s.formRow, isRTL && s.formRowRtlDir]}>
+      <Text style={[s.formLabel, focused && s.formLabelFocused, { fontFamily: af('medium'), textAlign: rtlText('left') }]}>
+        {label}
+      </Text>
       <View style={[s.inputBox, focused && s.inputBoxFocused]}>
         <TextInput
-          style={s.formInput}
+          style={[s.formInput, { fontFamily: af('regular') }, inputDirStyle]}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
@@ -398,6 +435,14 @@ const s = StyleSheet.create({
     textAlign: 'center',
     alignSelf: 'center',
   },
+  /** List pickers: mirror toolbar like native RTL. */
+  headerRtl: {
+    direction: 'rtl',
+  },
+  /** Create forms: keep Back on the left and Save on the right (physical). */
+  headerChromeLtr: {
+    direction: 'ltr',
+  },
   headerActionText: {
     fontSize: 16,
     fontWeight: '400',
@@ -444,6 +489,9 @@ const s = StyleSheet.create({
     height: 56,
     gap: 10,
   },
+  searchBoxRtl: {
+    flexDirection: 'row-reverse',
+  },
   searchInput: {
     flex: 1,
     fontSize: 16,
@@ -464,7 +512,7 @@ const s = StyleSheet.create({
   rowDivider: {
     height: 0.5,
     backgroundColor: 'rgba(60,60,67,0.29)',
-    marginLeft: 20,
+    marginStart: 20,
   },
 
   /* Customer row */
@@ -491,6 +539,9 @@ const s = StyleSheet.create({
     fontWeight: '400',
     color: Colors.grayText,
     letterSpacing: -0.1,
+  },
+  rowRtl: {
+    direction: 'rtl',
   },
 
   emptyRow: {
@@ -545,6 +596,12 @@ const s = StyleSheet.create({
     minHeight: 68,
     gap: 16,
   },
+  formRowRtlDir: {
+    direction: 'rtl',
+  },
+  formScrollRtl: {
+    direction: 'rtl',
+  },
   formLabel: {
     fontSize: 16,
     fontWeight: '500',
@@ -582,7 +639,6 @@ const s = StyleSheet.create({
     fontWeight: '400',
     color: Colors.primary,
     letterSpacing: -0.2,
-    textAlign: 'right',
     flex: 1,
     paddingHorizontal: 4,
     paddingVertical: 0,

@@ -1,12 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  TouchableWithoutFeedback,
-} from 'react-native';
+import RootModal from './RootModal';
+import { View, Text, TouchableOpacity, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import { Colors } from '../constants/colors';
 import { useI18n } from '../i18n';
 
@@ -58,7 +52,7 @@ export default function QuantityPadDialog({ visible, currentQty, itemName, onClo
   const displayQty = input || '0';
 
   return (
-    <Modal
+    <RootModal
       visible={visible}
       transparent
       animationType="fade"
@@ -100,7 +94,15 @@ export default function QuantityPadDialog({ visible, currentQty, itemName, onClo
                       onPress={() => handleKey(key)}
                       activeOpacity={0.6}
                     >
-                      <Text style={[s.keyText, isAction && s.keyActionText]}>{key}</Text>
+                      <Text
+                        style={[
+                          s.keyText,
+                          isAction && s.keyActionText,
+                          key === '⌫' && isRTL && { transform: [{ scaleX: -1 }] },
+                        ]}
+                      >
+                        {key}
+                      </Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -125,7 +127,7 @@ export default function QuantityPadDialog({ visible, currentQty, itemName, onClo
 
         </View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 

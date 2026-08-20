@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  Modal,
   View,
   Text,
   TouchableOpacity,
@@ -8,9 +7,9 @@ import {
   StyleSheet,
   TouchableWithoutFeedback,
   ImageSourcePropType,
-  Platform,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import RootModal from './RootModal';
 import { useI18n } from '../i18n';
 import LangToggle from './LangToggle';
 
@@ -65,7 +64,7 @@ export default function MoreMenu({
   leftPanelWidth = 360,
   tabBarBottomOffset = 76,
 }: Props) {
-  const { t, af } = useI18n();
+  const { t, af, isRTL, rtlLeft } = useI18n();
   const menuItems: MenuItem[] = [
     { key: isTillOpen ? 'close_till' : 'open_till',
       label: isTillOpen ? t('closeTill') : t('openTill'),
@@ -79,22 +78,23 @@ export default function MoreMenu({
     { key: 'diagnostics',  label: t('diagnostics'),        icon: ICONS.wrench            },
     { key: 'devices',      label: t('devices'),            icon: ICONS.cable             },
     { key: 'support',      label: t('support'),            icon: ICONS.headset           },
-    { key: 'exit',         label: 'Exit',                  icon: ICONS.logOut, danger: true },
+    { key: 'exit',         label: t('exit'),                 icon: ICONS.logOut, danger: true },
   ];
-  const useModal  = Platform.OS !== 'web';
-
   const inner = (
     <>
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={s.backdrop} />
       </TouchableWithoutFeedback>
       <View
-        style={[s.menuAnchor, { left: leftPanelWidth, bottom: tabBarBottomOffset }]}
+        style={[s.menuAnchor, { bottom: tabBarBottomOffset }, rtlLeft(leftPanelWidth)]}
         pointerEvents="box-none"
       >
         <View style={s.card}>
           {/* Triangle — points down toward the HOME tab */}
-          <View style={s.triangleWrap} pointerEvents="none">
+          <View
+            style={[s.triangleWrap, isRTL ? s.triangleWrapRTL : s.triangleWrapLTR]}
+            pointerEvents="none"
+          >
             <View style={s.triangle} />
           </View>
 
@@ -108,9 +108,16 @@ export default function MoreMenu({
               activeOpacity={0.7}
             >
               {index > 0 && <View style={s.divider} />}
-              <View style={s.row}>
+              <View style={[s.row, isRTL && s.rowRtl]}>
                 <Image source={item.icon} style={s.icon} />
-                <Text style={[s.label, item.danger && s.labelDanger, { fontFamily: af('regular') }]}>
+                <Text
+                  style={[
+                    s.label,
+                    isRTL && s.labelRtl,
+                    item.danger && s.labelDanger,
+                    { fontFamily: af('regular') },
+                  ]}
+                >
                   {item.label}
                 </Text>
               </View>
@@ -127,32 +134,23 @@ export default function MoreMenu({
     </>
   );
 
-  if (useModal) {
-    return (
-      <Modal
-        visible={visible}
-        transparent
-        animationType="fade"
-        statusBarTranslucent
-        onRequestClose={onClose}
-      >
-        {inner}
-      </Modal>
-    );
-  }
-
-  if (!visible) return null;
-  return <View style={s.inlineOverlay} pointerEvents="box-none">{inner}</View>;
+  return (
+    <RootModal
+      visible={visible}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
+      {inner}
+    </RootModal>
+  );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const MENU_WIDTH = 340;
 
 const s = StyleSheet.create({
-  inlineOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 100,
-  },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'transparent',
@@ -204,10 +202,21 @@ const s = StyleSheet.create({
     paddingVertical: 12,
     alignItems: 'flex-start',
   },
+  rowRtl: {
+    flexDirection: 'row-reverse',
+  },
+  labelRtl: {
+    textAlign: 'right',
+  },
   triangleWrap: {
     position: 'absolute',
     bottom: -12,
+  },
+  triangleWrapLTR: {
     left: 40,
+  },
+  triangleWrapRTL: {
+    right: 40,
   },
   triangle: {
     width: 0,

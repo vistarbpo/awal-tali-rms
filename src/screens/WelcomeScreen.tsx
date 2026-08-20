@@ -32,7 +32,7 @@ export default function WelcomeScreen({
   onAccessRegister,
   onExit,
 }: Props) {
-  const { t, af } = useI18n();
+  const { t, af, rtlText, rtlRight } = useI18n();
 
   const initials = userName
     .split(' ')
@@ -62,18 +62,20 @@ export default function WelcomeScreen({
 
           <View style={s.userCard}>
             <View style={s.userAvatar}>
-              <Text style={s.userAvatarText}>{initials}</Text>
+              <Text style={[s.userAvatarText, { fontFamily: af('bold') }]}>{initials}</Text>
             </View>
             <View style={s.userDetails}>
-              <Text style={s.userName}>{userName}</Text>
-              <Text style={s.userMeta}>{userCode}  ·  {branchName}</Text>
+              <Text style={[s.userName, { textAlign: rtlText('left'), fontFamily: af('semibold') }]}>{userName}</Text>
+              <Text style={[s.userMeta, { textAlign: rtlText('left'), fontFamily: af('regular') }]}>
+                {userCode}  ·  {branchName}
+              </Text>
             </View>
           </View>
         </View>
 
         {/* ── RIGHT: Welcome panel ── */}
         <View style={s.right}>
-          <View style={s.langRow}>
+          <View style={[s.langRow, rtlRight(16)]}>
             <LangToggle variant="dark" />
           </View>
           <View style={s.card}>
@@ -182,6 +184,8 @@ const s = StyleSheet.create({
     paddingTop: 24,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.12)',
+    // Keep avatar on the physical left; RTL layout would otherwise flip this row.
+    direction: 'ltr',
   },
   userAvatar: {
     width: 44,
@@ -197,6 +201,8 @@ const s = StyleSheet.create({
     color: Colors.white,
   },
   userDetails: {
+    flex: 1,
+    minWidth: 0,
     gap: 3,
   },
   userName: {
@@ -215,7 +221,6 @@ const s = StyleSheet.create({
   langRow: {
     position: 'absolute',
     top: 16,
-    right: 16,
   },
 
   /* ── Right panel ── */

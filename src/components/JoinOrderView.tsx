@@ -111,8 +111,8 @@ export default function JoinOrderView({ onJoin, onBack, initialSelected = null }
                       {order.status}
                     </Text>
                     <View style={s.amountRow}>
-                      <Image source={ICONS.sar} style={s.sarIcon} />
                       <Text style={s.orderAmount}>{order.total.toFixed(2)}</Text>
+                      <Image source={ICONS.sar} style={s.sarIcon} />
                     </View>
                   </View>
                 </View>
@@ -154,8 +154,8 @@ export default function JoinOrderView({ onJoin, onBack, initialSelected = null }
                   <Text style={s.previewQty}>{item.qty} x</Text>
                   <Text style={s.previewName} numberOfLines={2}>{item.name}</Text>
                   <View style={s.previewPriceRow}>
-                    <Image source={ICONS.sar} style={s.sarSmall} />
                     <Text style={s.previewPrice}>{(item.price * item.qty).toFixed(2)}</Text>
+                    <Image source={ICONS.sar} style={s.sarSmall} />
                   </View>
                 </View>
               ))}
@@ -169,8 +169,8 @@ export default function JoinOrderView({ onJoin, onBack, initialSelected = null }
                       <Text style={s.previewQty}>{item.qty} x</Text>
                       <Text style={s.previewName} numberOfLines={2}>{item.name}</Text>
                       <View style={s.previewPriceRow}>
-                        <Image source={ICONS.sar} style={s.sarSmall} />
                         <Text style={s.previewPrice}>{(item.price * item.qty).toFixed(2)}</Text>
+                        <Image source={ICONS.sar} style={s.sarSmall} />
                       </View>
                     </View>
                   ))}
@@ -187,8 +187,8 @@ export default function JoinOrderView({ onJoin, onBack, initialSelected = null }
             <View style={s.taxRow}>
               <Text style={[s.taxLabel, { fontFamily: af() }]}>{t('taxes')}</Text>
               <View style={s.taxVal}>
-                <Image source={ICONS.sar} style={s.sarSmall} />
                 <Text style={s.taxText}>{taxes.toFixed(2)}</Text>
+                <Image source={ICONS.sar} style={s.sarSmall} />
               </View>
             </View>
 
@@ -196,8 +196,8 @@ export default function JoinOrderView({ onJoin, onBack, initialSelected = null }
             <View style={s.totalRow}>
               <Text style={[s.totalLabel, { fontFamily: af('bold') }]}>{t('total')}</Text>
               <View style={s.totalVal}>
-                <Image source={ICONS.sar} style={s.sarWhite} />
                 <Text style={s.totalAmount}>{selected.total.toFixed(2)}</Text>
+                <Image source={ICONS.sar} style={s.sarWhite} />
               </View>
             </View>
           </View>
@@ -298,6 +298,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     gap: 2,
     marginTop: 2,
+    direction: 'ltr',
   },
   sarIcon: {
     width: 10,
@@ -423,6 +424,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
+    direction: 'ltr',
   },
   sarSmall: {
     width: 9,
@@ -467,6 +469,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
+    direction: 'ltr',
   },
   taxText: {
     fontSize: 13,
@@ -491,6 +494,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    direction: 'ltr',
   },
   sarWhite: {
     width: 12,

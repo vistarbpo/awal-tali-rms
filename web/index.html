@@ -13,7 +13,26 @@
       rel="stylesheet"
     />
     <style>
-      html, body, #root { height: 100%; margin: 0; padding: 0; }
+      /* Full-viewport flex root so RN Web centers the tablet frame (not stuck top-left). */
+      html {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        min-height: 100%;
+        min-height: 100dvh;
+        background-color: #e7e2dc;
+      }
+      #root {
+        min-height: 100%;
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+      }
+      /* Fallback when RN Web omits fontFamily on some nodes (Arabic) */
+      html[lang='ar'] #root {
+        font-family: 'IBM Plex Sans Arabic', Tahoma, sans-serif;
+      }
     </style>
   </head>
   <body>

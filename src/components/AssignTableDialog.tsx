@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Modal,
-  Platform,
   View,
   Text,
   TouchableOpacity,
@@ -10,7 +8,9 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Colors } from '../constants/colors';
+import RootModal from './RootModal';
 import { useI18n } from '../i18n';
+import type { TKey } from '../i18n/translations';
 
 // ─── Table data (mirrors TablesScreen) ────────────────────────────────────────
 type TableStatus = 'available' | 'occupied' | 'paid';
@@ -50,10 +50,10 @@ function statusColor(status: TableStatus) {
   if (status === 'occupied')  return Colors.red;
   return Colors.yellowGold;
 }
-function statusLabel(status: TableStatus, t: (key: string) => string) {
+function statusLabel(status: TableStatus, t: (key: TKey) => string) {
   if (status === 'available') return t('available');
   if (status === 'occupied')  return t('occupied');
-  return 'Paid';
+  return t('tablePaid');
 }
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -118,7 +118,7 @@ export default function AssignTableDialog({ visible, currentTableId, onClose, on
             >
               <View style={[s.statusDot, { backgroundColor: statusColor(table.status) }]} />
               <Text style={[s.tableName, isSelected && s.tableNameSelected]}>{table.name}</Text>
-              <Text style={s.tableSeats}>{table.seats} seats</Text>
+              <Text style={[s.tableSeats, { fontFamily: af('regular') }]}>{table.seats} {t('seats')}</Text>
               <Text style={[s.tableStatus, { color: statusColor(table.status) }]}>
                 {statusLabel(table.status, t)}
               </Text>
@@ -131,20 +131,15 @@ export default function AssignTableDialog({ visible, currentTableId, onClose, on
     </View>
   );
 
-  if (Platform.OS === 'web') {
-    if (!visible) return null;
-    return <View style={s.inlineOverlay}>{cardJSX}</View>;
-  }
-
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
+    <RootModal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={s.backdrop} />
       </TouchableWithoutFeedback>
       <View style={s.center} pointerEvents="box-none">
         {cardJSX}
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 

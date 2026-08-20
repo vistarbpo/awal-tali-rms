@@ -1,23 +1,10 @@
 import React, { useRef, useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  Pressable,
-  Image,
-  TextInput,
-  FlatList,
-  ScrollView,
-  Modal,
-  SafeAreaView,
-  StatusBar,
-  StyleSheet,
-  Animated,
-} from 'react-native';
+import RootModal from '../components/RootModal';
+import { View, Text, TouchableOpacity, TouchableWithoutFeedback, Pressable, Image, TextInput, FlatList, ScrollView, SafeAreaView, StatusBar, StyleSheet, Animated } from 'react-native';
 import { Colors } from '../constants/colors';
 import { layout } from '../styles/screenLayout';
 import { useI18n } from '../i18n';
+import type { TKey } from '../i18n/translations';
 import OrderPanel, { CartItem } from '../components/OrderPanel';
 import ReturnOrderDialog, { ReturnItem } from '../components/ReturnOrderDialog';
 import ReturnReasonDialog from '../components/ReturnReasonDialog';
@@ -56,9 +43,11 @@ interface OrderFilters {
 
 export interface OrderItem {
   name: string;
+  nameKey?: TKey;
   qty: number;
   price: number;
   note?: string;
+  noteKey?: TKey;
 }
 
 export interface Order {
@@ -81,18 +70,18 @@ export interface Order {
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
 const ORDERS: Order[] = [
-  { id: '1',  orderNumber: '100351', type: 'PICK UP',    itemCount: 8, time: '07:41 PM', closedAt: '07:55 PM', createdBy: 'Mohammed',  source: 'Cashier', paymentMethod: 'Card',   status: 'ACTIVE',  total: 23.00, items: [{ name: 'Gourmet Burger Large', qty: 1, price: 23, note: '+ Sourdough Bread' }] },
-  { id: '2',  orderNumber: '100350', type: 'PICK UP',    itemCount: 7, time: '07:39 PM', closedAt: '07:52 PM', createdBy: 'Mohammed',  source: 'Cashier', paymentMethod: 'Cash',   status: 'ACTIVE',  total: 67.50, items: [{ name: 'Grilled Chicken', qty: 2, price: 45 }, { name: 'Garden Salad', qty: 1, price: 18 }] },
-  { id: '3',  orderNumber: '100349', type: 'PICK UP',    itemCount: 6, time: '07:38 PM', closedAt: '07:50 PM', createdBy: 'Sara',      source: 'Cashier', paymentMethod: 'Card',   status: 'DONE',    total: 7.00,  items: [{ name: 'Water Bottle', qty: 2, price: 7 }] },
-  { id: '4',  orderNumber: '100348', type: 'PICK UP',    itemCount: 5, time: '06:55 PM', closedAt: '07:10 PM', createdBy: 'Mohammed',  source: 'API',     paymentMethod: 'Cash',   status: 'ACTIVE',  total: 2.00,  items: [{ name: 'Coffee', qty: 1, price: 2 }] },
-  { id: '5',  orderNumber: '100347', type: 'DINE IN',    tableNumber: 'Table 1', itemCount: 3, time: '05:17 PM', closedAt: '05:45 PM', customerName: 'Hassan',  customerPhone: '0599999999', createdBy: 'Sara', source: 'Cashier', paymentMethod: 'Unpaid', status: 'VOID', total: 0.00, items: [{ name: 'Fried Rice', qty: 1, price: 15 }, { name: 'Juice', qty: 2, price: 10 }] },
-  { id: '6',  orderNumber: '100346', type: 'DINE IN',    tableNumber: 'Table 1', itemCount: 4, time: '03:54 PM', closedAt: '04:20 PM', createdBy: 'Mohammed',  source: 'Cashier', paymentMethod: 'Unpaid', status: 'VOID', total: 0.00, items: [{ name: 'Pasta Primavera', qty: 1, price: 30 }] },
-  { id: '7',  orderNumber: '100345', type: 'DELIVERY',   itemCount: 4, time: '03:10 PM', closedAt: '03:45 PM', customerName: 'Ahmed Sha',  customerPhone: '0508946545', createdBy: 'Sara', source: 'API', paymentMethod: 'Card', status: 'DONE', total: 112.75, items: [{ name: 'Beef Steak', qty: 1, price: 65 }, { name: 'Pasta', qty: 1, price: 30 }, { name: 'Salad', qty: 2, price: 36 }] },
-  { id: '8',  orderNumber: '100344', type: 'PICK UP',    itemCount: 2, time: '02:30 PM', closedAt: '02:44 PM', customerName: 'Fatima N',   customerPhone: '0509876543', createdBy: 'Mohammed', source: 'Cashier', paymentMethod: 'Cash', status: 'DONE', total: 36.00, items: [{ name: 'Caesar Salad', qty: 2, price: 18 }] },
-  { id: '9',  orderNumber: '100343', type: 'DINE IN',    tableNumber: 'Table 3', itemCount: 5, time: '01:15 PM', closedAt: '02:00 PM', customerName: 'Khalid M', customerPhone: '0544332211', createdBy: 'Sara', source: 'Cashier', paymentMethod: 'Split', status: 'DONE', total: 204.00, items: [{ name: 'Mixed Grill', qty: 2, price: 150 }, { name: 'Lamb Chops', qty: 1, price: 70 }, { name: 'Juice', qty: 2, price: 20 }] },
-  { id: '10', orderNumber: '100342', type: 'DRIVE THRU', itemCount: 3, time: '12:05 PM', closedAt: '12:18 PM', createdBy: 'Mohammed',  source: 'Cashier', paymentMethod: 'Card',   status: 'DONE',    total: 55.50, items: [{ name: 'Chicken Tikka', qty: 1, price: 40 }, { name: 'Salad', qty: 1, price: 18 }] },
-  { id: '11', orderNumber: '100341', type: 'PENDING',    itemCount: 2, time: '11:50 AM', createdBy: 'Sara',      source: 'API',     paymentMethod: 'Unpaid', status: 'PENDING', total: 38.50, items: [{ name: 'Veggie Wrap', qty: 2, price: 20 }] } as any,
-  { id: '12', orderNumber: '100340', type: 'PICK UP',    itemCount: 1, time: '11:30 AM', createdBy: 'Mohammed',  source: 'Cashier', paymentMethod: 'Unpaid', status: 'PENDING', total: 22.00, items: [{ name: 'Veggie Wrap', qty: 1, price: 20 }] },
+  { id: '1',  orderNumber: '100351', type: 'PICK UP',    itemCount: 8, time: '07:41 PM', closedAt: '07:55 PM', createdBy: 'Mohammed',  source: 'Cashier', paymentMethod: 'Card',   status: 'ACTIVE',  total: 23.00, items: [{ name: 'Gourmet Burger Large', nameKey: 'prodGourmetBurgerLarge', qty: 1, price: 23, note: '+ Sourdough Bread', noteKey: 'noteSourdough' }] },
+  { id: '2',  orderNumber: '100350', type: 'PICK UP',    itemCount: 7, time: '07:39 PM', closedAt: '07:52 PM', createdBy: 'Mohammed',  source: 'Cashier', paymentMethod: 'Cash',   status: 'ACTIVE',  total: 67.50, items: [{ name: 'Grilled Chicken', nameKey: 'prodGrilledChicken', qty: 2, price: 45 }, { name: 'Garden Salad', nameKey: 'prodGardenSalad', qty: 1, price: 18 }] },
+  { id: '3',  orderNumber: '100349', type: 'PICK UP',    itemCount: 6, time: '07:38 PM', closedAt: '07:50 PM', createdBy: 'Sara',      source: 'Cashier', paymentMethod: 'Card',   status: 'DONE',    total: 7.00,  items: [{ name: 'Water Bottle', nameKey: 'prodWaterBottle', qty: 2, price: 7 }] },
+  { id: '4',  orderNumber: '100348', type: 'PICK UP',    itemCount: 5, time: '06:55 PM', closedAt: '07:10 PM', createdBy: 'Mohammed',  source: 'API',     paymentMethod: 'Cash',   status: 'ACTIVE',  total: 2.00,  items: [{ name: 'Coffee', nameKey: 'prodCoffee', qty: 1, price: 2 }] },
+  { id: '5',  orderNumber: '100347', type: 'DINE IN',    tableNumber: 'Table 1', itemCount: 3, time: '05:17 PM', closedAt: '05:45 PM', customerName: 'Hassan',  customerPhone: '0599999999', createdBy: 'Sara', source: 'Cashier', paymentMethod: 'Unpaid', status: 'VOID', total: 0.00, items: [{ name: 'Fried Rice', nameKey: 'prodFriedRice', qty: 1, price: 15 }, { name: 'Juice', nameKey: 'prodJuice', qty: 2, price: 10 }] },
+  { id: '6',  orderNumber: '100346', type: 'DINE IN',    tableNumber: 'Table 1', itemCount: 4, time: '03:54 PM', closedAt: '04:20 PM', createdBy: 'Mohammed',  source: 'Cashier', paymentMethod: 'Unpaid', status: 'VOID', total: 0.00, items: [{ name: 'Pasta Primavera', nameKey: 'prodPastaPrimavera', qty: 1, price: 30 }] },
+  { id: '7',  orderNumber: '100345', type: 'DELIVERY',   itemCount: 4, time: '03:10 PM', closedAt: '03:45 PM', customerName: 'Ahmed Sha',  customerPhone: '0508946545', createdBy: 'Sara', source: 'API', paymentMethod: 'Card', status: 'DONE', total: 112.75, items: [{ name: 'Beef Steak', nameKey: 'prodBeefSteak', qty: 1, price: 65 }, { name: 'Pasta', nameKey: 'prodPastaShort', qty: 1, price: 30 }, { name: 'Salad', nameKey: 'prodSaladShort', qty: 2, price: 36 }] },
+  { id: '8',  orderNumber: '100344', type: 'PICK UP',    itemCount: 2, time: '02:30 PM', closedAt: '02:44 PM', customerName: 'Fatima N',   customerPhone: '0509876543', createdBy: 'Mohammed', source: 'Cashier', paymentMethod: 'Cash', status: 'DONE', total: 36.00, items: [{ name: 'Caesar Salad', nameKey: 'prodCaesarSalad', qty: 2, price: 18 }] },
+  { id: '9',  orderNumber: '100343', type: 'DINE IN',    tableNumber: 'Table 3', itemCount: 5, time: '01:15 PM', closedAt: '02:00 PM', customerName: 'Khalid M', customerPhone: '0544332211', createdBy: 'Sara', source: 'Cashier', paymentMethod: 'Split', status: 'DONE', total: 204.00, items: [{ name: 'Mixed Grill', nameKey: 'prodMixedGrill', qty: 2, price: 150 }, { name: 'Lamb Chops', nameKey: 'prodLambChops', qty: 1, price: 70 }, { name: 'Juice', nameKey: 'prodJuice', qty: 2, price: 20 }] },
+  { id: '10', orderNumber: '100342', type: 'DRIVE THRU', itemCount: 3, time: '12:05 PM', closedAt: '12:18 PM', createdBy: 'Mohammed',  source: 'Cashier', paymentMethod: 'Card',   status: 'DONE',    total: 55.50, items: [{ name: 'Chicken Tikka', nameKey: 'prodChickenTikka', qty: 1, price: 40 }, { name: 'Salad', nameKey: 'prodSaladShort', qty: 1, price: 18 }] },
+  { id: '11', orderNumber: '100341', type: 'PENDING',    itemCount: 2, time: '11:50 AM', createdBy: 'Sara',      source: 'API',     paymentMethod: 'Unpaid', status: 'PENDING', total: 38.50, items: [{ name: 'Veggie Wrap', nameKey: 'prodVeggieWrap', qty: 2, price: 20 }] } as any,
+  { id: '12', orderNumber: '100340', type: 'PICK UP',    itemCount: 1, time: '11:30 AM', createdBy: 'Mohammed',  source: 'Cashier', paymentMethod: 'Unpaid', status: 'PENDING', total: 22.00, items: [{ name: 'Veggie Wrap', nameKey: 'prodVeggieWrap', qty: 1, price: 20 }] },
 ];
 
 // ─── Status config ────────────────────────────────────────────────────────────
@@ -113,12 +102,12 @@ const STATUS_BG: Record<OrderStatus, string> = {
 };
 
 // ─── More menu ────────────────────────────────────────────────────────────────
-const ALL_MORE_ACTIONS = [
-  { key: 'receipt',  label: 'View Receipt' },
-  { key: 'print',    label: 'Print' },
-  { key: 'kitchen',  label: 'Send To Kitchen' },
-  { key: 'return',   label: 'Return Order' },
-  { key: 'details',  label: 'View Order Details' },
+const ALL_MORE_ACTIONS: { key: string; tKey: TKey }[] = [
+  { key: 'receipt',  tKey: 'viewReceipt' },
+  { key: 'print',    tKey: 'print' },
+  { key: 'kitchen',  tKey: 'sendOrderKitchen' },
+  { key: 'return',   tKey: 'returnOrder' },
+  { key: 'details',  tKey: 'viewOrderDetails' },
 ];
 
 const STATUS_MORE_KEYS: Record<OrderStatus, string[]> = {
@@ -137,11 +126,11 @@ interface MoreMenuProps {
 }
 
 function MoreMenu({ visible, onClose, onAction, orderStatus }: MoreMenuProps) {
-  const { af, isRTL } = useI18n();
+  const { af, isRTL, t } = useI18n();
   const allowedKeys = orderStatus ? STATUS_MORE_KEYS[orderStatus] : STATUS_MORE_KEYS.ACTIVE;
   const actions = ALL_MORE_ACTIONS.filter(a => allowedKeys.includes(a.key));
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
+    <RootModal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={StyleSheet.absoluteFill} />
       </TouchableWithoutFeedback>
@@ -156,7 +145,7 @@ function MoreMenu({ visible, onClose, onAction, orderStatus }: MoreMenuProps) {
                 activeOpacity={0.6}
               >
                 <Text style={[mm.rowLabel, action.key === 'details' && mm.rowLabelHighlight, { fontFamily: af('regular') }]}>
-                  {action.label}
+                  {t(action.tKey)}
                 </Text>
                 {action.key === 'details' && (
                   <View style={mm.activeDot}>
@@ -168,7 +157,7 @@ function MoreMenu({ visible, onClose, onAction, orderStatus }: MoreMenuProps) {
           ))}
         </View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 
@@ -242,14 +231,14 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function TapRow({ label, onPress }: { label: string; onPress: () => void }) {
-  const { af } = useI18n();
+function TapRow({ onPress }: { onPress: () => void }) {
+  const { af, isRTL, t } = useI18n();
   return (
     <TouchableOpacity style={dv.infoRow} onPress={onPress} activeOpacity={0.7}>
-      <Text style={[dv.infoLabel, { fontFamily: af('regular') }]}>{label}</Text>
+      <Text style={[dv.infoLabel, { fontFamily: af('regular') }]}>{t('viewReceipt')}</Text>
       <View style={dv.tapRowRight}>
-        <Text style={[dv.tapRowLink, { fontFamily: af('semibold') }]}>View</Text>
-        <Text style={[dv.tapRowChev, { fontFamily: af('regular') }]}>›</Text>
+        <Text style={[dv.tapRowLink, { fontFamily: af('semibold') }]}>{t('viewBtn')}</Text>
+        <Text style={[dv.tapRowChev, { fontFamily: af('regular') }]}>{isRTL ? '‹' : '›'}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -261,23 +250,21 @@ interface OrderDetailViewProps {
 }
 
 function OrderDetailView({ order, onBack }: OrderDetailViewProps) {
-  const { t, af } = useI18n();
+  const { t, af, isRTL } = useI18n();
   const subtotal = order.items.reduce((sum, i) => sum + i.price * i.qty, 0);
   const tax      = order.status === 'VOID' ? 0 : subtotal * 0.15;
   const total    = subtotal + tax;
   const [receiptVisible, setReceiptVisible] = useState(false);
 
-  const PAYMENT_LABEL: Record<PaymentMethod, string> = {
-    Cash: 'Cash', Card: 'Card', Split: 'Split', Unpaid: 'Unpaid',
-  };
-
   return (
     <>
-      {/* Action bar */}
-      <View style={[s.actionBar, dv.actionBar]}>
+      {/* RTL: direction rtl mirrors row so Back sits on the right; LTR unchanged */}
+      <View style={[s.actionBar, dv.actionBar, isRTL ? dv.actionBarRtl : dv.actionBarLtr]}>
         <TouchableOpacity style={s.backBtn} onPress={onBack} activeOpacity={0.8}>
-          <Image source={ICONS.arrowLeft} style={s.btnIcon} />
-          <Text style={[s.btnLabel, { fontFamily: af('medium') }]}>BACK</Text>
+          <Image source={ICONS.arrowLeft} style={[s.btnIcon, isRTL && dv.backIconRtl]} />
+          <Text style={[s.btnLabel, { fontFamily: af('medium') }]}>
+            {isRTL ? t('back') : t('back').toUpperCase()}
+          </Text>
         </TouchableOpacity>
 
         <View style={dv.titleArea}>
@@ -289,12 +276,14 @@ function OrderDetailView({ order, onBack }: OrderDetailViewProps) {
         </View>
 
         <TouchableOpacity style={s.toolBtn} onPress={() => setReceiptVisible(true)} activeOpacity={0.8}>
-          <Text style={[s.btnLabel, { fontFamily: af('medium') }]}>VIEW RECEIPT</Text>
+          <Text style={[s.btnLabel, { fontFamily: af('medium') }]}>
+            {isRTL ? t('viewReceipt') : t('viewReceipt').toUpperCase()}
+          </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Detail content card */}
-      <View style={dv.card}>
+      {/* Detail content card — RTL mirrors section rows; amount clusters stay ltr in styles */}
+      <View style={[dv.card, isRTL && dv.cardRtl]}>
         {/* Status accent bar */}
         <View style={[dv.accentBar, { backgroundColor: STATUS_COLOR[order.status] }]} />
 
@@ -302,36 +291,48 @@ function OrderDetailView({ order, onBack }: OrderDetailViewProps) {
 
           {/* Order info grid */}
           <View style={dv.section}>
-            <Text style={[dv.sectionLabel, { fontFamily: af('bold') }]}>ORDER INFORMATION</Text>
-            <InfoRow label="Order Type"   value={order.type + (order.tableNumber ? ` — ${order.tableNumber}` : '')} />
-            {order.source        && <InfoRow label="Order Source" value={order.source} />}
-            <InfoRow label="Creator"      value={order.createdBy} />
-            <InfoRow label="Order Time"   value={order.time} />
-            {order.closedAt      && <InfoRow label="Closed At"   value={order.closedAt} />}
-            <InfoRow label="Payment"      value={PAYMENT_LABEL[order.paymentMethod]} />
-            <InfoRow label="Items"        value={`${order.itemCount} items`} />
-            {order.customerName  && <InfoRow label="Customer" value={order.customerName} />}
-            {order.customerPhone && <InfoRow label="Phone"    value={order.customerPhone} />}
-            <TapRow label="View Receipt"  onPress={() => setReceiptVisible(true)} />
+            <Text style={[dv.sectionLabel, { fontFamily: af('bold') }, isRTL && dv.sectionLabelPlain]}>
+              {isRTL ? t('orderInfoHeading') : t('orderInfoHeading').toUpperCase()}
+            </Text>
+            <InfoRow label={t('labelOrderType')}   value={formatOrderTypeForDetail(order, t)} />
+            {order.source        && <InfoRow label={t('labelOrderSource')} value={t(SOURCE_TKEY[order.source])} />}
+            <InfoRow label={t('labelCreator')}      value={order.createdBy} />
+            <InfoRow label={t('labelOrderTime')}   value={order.time} />
+            {order.closedAt      && <InfoRow label={t('labelClosedAt')}   value={order.closedAt} />}
+            <InfoRow label={t('labelPayment')}      value={t(PAYMENT_TKEY[order.paymentMethod])} />
+            <InfoRow label={t('labelItemsCount')}   value={`${order.itemCount} ${t('items')}`} />
+            {order.customerName  && <InfoRow label={t('labelCustomer')} value={order.customerName} />}
+            {order.customerPhone && <InfoRow label={t('labelPhone')}    value={order.customerPhone} />}
+            <TapRow onPress={() => setReceiptVisible(true)} />
           </View>
 
           <View style={dv.divider} />
 
           {/* Items */}
           <View style={dv.section}>
-            <Text style={[dv.sectionLabel, { fontFamily: af('bold') }]}>ORDER ITEMS</Text>
+            <Text style={[dv.sectionLabel, { fontFamily: af('bold') }, isRTL && dv.sectionLabelPlain]}>
+              {isRTL ? t('orderItemsHeading') : t('orderItemsHeading').toUpperCase()}
+            </Text>
             {order.items.map((item, i) => (
               <View key={i} style={dv.itemRow}>
                 <View style={dv.itemQtyBadge}>
                   <Text style={[dv.itemQtyText, { fontFamily: af('bold') }]}>{item.qty}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[dv.itemName, { fontFamily: af('medium') }]}>{item.name}</Text>
-                  {item.note && <Text style={[dv.itemNote, { fontFamily: af('regular') }]}>{item.note}</Text>}
+                  <Text style={[dv.itemName, { fontFamily: af('medium') }]}>
+                    {item.nameKey ? t(item.nameKey) : item.name}
+                  </Text>
+                  {(item.note || item.noteKey) && (
+                    <Text style={[dv.itemNote, { fontFamily: af('regular') }]}>
+                      {item.noteKey ? t(item.noteKey) : item.note}
+                    </Text>
+                  )}
                 </View>
                 <View style={dv.amountRow}>
+                  <Text style={[dv.itemPrice, { fontFamily: af('semibold'), ...(isRTL ? { writingDirection: 'ltr' as const } : {}) }]}>
+                    {(item.price * item.qty).toFixed(2)}
+                  </Text>
                   <Image source={ICONS.sar} style={dv.sarIcon} />
-                  <Text style={[dv.itemPrice, { fontFamily: af('semibold') }]}>{(item.price * item.qty).toFixed(2)}</Text>
                 </View>
               </View>
             ))}
@@ -342,24 +343,30 @@ function OrderDetailView({ order, onBack }: OrderDetailViewProps) {
           {/* Totals */}
           <View style={[dv.section, { gap: 12 }]}>
             <View style={dv.totalRow}>
-              <Text style={[dv.totalLabel, { fontFamily: af('regular') }]}>Subtotal</Text>
+              <Text style={[dv.totalLabel, { fontFamily: af('regular') }]}>{t('subtotal')}</Text>
               <View style={dv.amountRow}>
+                <Text style={[dv.totalVal, { fontFamily: af('medium'), ...(isRTL ? { writingDirection: 'ltr' as const } : {}) }]}>
+                  {subtotal.toFixed(2)}
+                </Text>
                 <Image source={ICONS.sar} style={dv.sarIcon} />
-                <Text style={[dv.totalVal, { fontFamily: af('medium') }]}>{subtotal.toFixed(2)}</Text>
               </View>
             </View>
             <View style={dv.totalRow}>
-              <Text style={[dv.totalLabel, { fontFamily: af('regular') }]}>Tax (15%)</Text>
+              <Text style={[dv.totalLabel, { fontFamily: af('regular') }]}>{t('taxFifteenPct')}</Text>
               <View style={dv.amountRow}>
+                <Text style={[dv.totalVal, { fontFamily: af('medium'), ...(isRTL ? { writingDirection: 'ltr' as const } : {}) }]}>
+                  {tax.toFixed(2)}
+                </Text>
                 <Image source={ICONS.sar} style={dv.sarIcon} />
-                <Text style={[dv.totalVal, { fontFamily: af('medium') }]}>{tax.toFixed(2)}</Text>
               </View>
             </View>
             <View style={[dv.totalRow, dv.grandTotalRow]}>
-              <Text style={[dv.grandTotalLabel, { fontFamily: af('bold') }]}>Total</Text>
+              <Text style={[dv.grandTotalLabel, { fontFamily: af('bold') }]}>{t('total')}</Text>
               <View style={dv.amountRow}>
+                <Text style={[dv.grandTotalVal, { fontFamily: af('bold'), ...(isRTL ? { writingDirection: 'ltr' as const } : {}) }]}>
+                  {order.status === 'VOID' ? '0.00' : total.toFixed(2)}
+                </Text>
                 <Image source={ICONS.sar} style={[dv.sarIcon, dv.sarIconLg]} />
-                <Text style={[dv.grandTotalVal, { fontFamily: af('bold') }]}>{order.status === 'VOID' ? '0.00' : total.toFixed(2)}</Text>
               </View>
             </View>
           </View>
@@ -378,6 +385,10 @@ function OrderDetailView({ order, onBack }: OrderDetailViewProps) {
 
 const dv = StyleSheet.create({
   actionBar: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  actionBarRtl: { direction: 'rtl' },
+  actionBarLtr: { direction: 'ltr' },
+  backIconRtl: { transform: [{ scaleX: -1 }] },
+  cardRtl: { direction: 'rtl' },
   titleArea:{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 4 },
   titleOrderNum: { fontSize: 18, fontWeight: '700', color: Colors.primary, letterSpacing: -0.4 },
   statusChip:    { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
@@ -399,6 +410,7 @@ const dv = StyleSheet.create({
 
   section:      { paddingHorizontal: 24, paddingVertical: 18 },
   sectionLabel: { fontSize: 11, fontWeight: '700', color: Colors.grayText, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 12 },
+  sectionLabelPlain: { textTransform: 'none', letterSpacing: 0 },
 
   infoRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: Colors.grayBorder },
   infoLabel: { fontSize: 14, fontWeight: '500', color: Colors.grayText },
@@ -422,7 +434,7 @@ const dv = StyleSheet.create({
   grandTotalRow:  { borderTopWidth: 1, borderTopColor: Colors.grayBorder, paddingTop: 12, marginTop: 4 },
   grandTotalLabel:{ fontSize: 18, fontWeight: '700', color: Colors.primary },
   grandTotalVal:  { fontSize: 18, fontWeight: '700', color: Colors.primary },
-  amountRow:      { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  amountRow:      { flexDirection: 'row', alignItems: 'center', gap: 4, direction: 'ltr' },
   sarIcon:        { width: 12, height: 14, resizeMode: 'contain', opacity: 0.6 },
   sarIconLg:      { width: 15, height: 17, opacity: 1 },
 });
@@ -570,13 +582,15 @@ function FilterPanel({ visible, filters, onApply, onClose, initialStep }: Filter
     return (
       <View style={fp.calendar}>
         <View style={fp.calHeader}>
-          <Text style={[fp.calMonthTitle, { fontFamily: af('semibold') }]}>{MONTH_NAMES[calMonth]} {calYear} ›</Text>
+          <Text style={[fp.calMonthTitle, { fontFamily: af('semibold') }]}>
+            {MONTH_NAMES[calMonth]} {calYear} {isRTL ? '‹' : '›'}
+          </Text>
           <View style={fp.calNavRow}>
             <TouchableOpacity onPress={prevMonth} style={fp.calNav} activeOpacity={0.7}>
-              <Text style={[fp.calNavText, { fontFamily: af('regular') }]}>‹</Text>
+              <Text style={[fp.calNavText, { fontFamily: af('regular') }]}>{isRTL ? '›' : '‹'}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={nextMonth} style={fp.calNav} activeOpacity={0.7}>
-              <Text style={[fp.calNavText, { fontFamily: af('regular') }]}>›</Text>
+              <Text style={[fp.calNavText, { fontFamily: af('regular') }]}>{isRTL ? '‹' : '›'}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -650,7 +664,10 @@ function FilterPanel({ visible, filters, onApply, onClose, initialStep }: Filter
     return (
       <View style={fp.subHeader}>
         <TouchableOpacity style={fp.backBtn} onPress={() => setStep('main')} activeOpacity={0.7}>
-          <Text style={[fp.backText, { fontFamily: af('medium') }]}>‹ Back</Text>
+          <Text style={[fp.backText, { fontFamily: af('medium') }]}>
+            {isRTL ? '› ' : '‹ '}
+            {t('back')}
+          </Text>
         </TouchableOpacity>
         <Text style={[fp.subHeaderTitle, { fontFamily: af('semibold') }]}>{title}</Text>
         <View style={fp.backBtn} />
@@ -665,7 +682,9 @@ function FilterPanel({ visible, filters, onApply, onClose, initialStep }: Filter
         <Text style={[fp.fRowLabel, { fontFamily: af('regular') }]}>{label}</Text>
         <View style={fp.fRowRight}>
           <Text style={[fp.fRowValue, { fontFamily: af('regular') }]}>{value}</Text>
-          {onPress && <Text style={[fp.fRowChev, { fontFamily: af('regular') }]}>›</Text>}
+          {onPress && (
+            <Text style={[fp.fRowChev, { fontFamily: af('regular') }]}>{isRTL ? '‹' : '›'}</Text>
+          )}
         </View>
       </TouchableOpacity>
     );
@@ -707,7 +726,10 @@ function FilterPanel({ visible, filters, onApply, onClose, initialStep }: Filter
       <>
         <View style={fp.dateStepHeader}>
           <TouchableOpacity onPress={() => setStep('main')} activeOpacity={0.7} style={fp.backBtn}>
-            <Text style={[fp.backText, { fontFamily: af('medium') }]}>‹ Back</Text>
+            <Text style={[fp.backText, { fontFamily: af('medium') }]}>
+              {isRTL ? '› ' : '‹ '}
+              {t('back')}
+            </Text>
           </TouchableOpacity>
           <Text style={[fp.dateStepLabel, { textAlign: 'center', fontFamily: af('medium') }]}>{t('filterBizDate')}</Text>
           <TouchableOpacity onPress={() => { setLocal(l => ({ ...l, businessDate: '' })); setStep('main'); }} activeOpacity={0.7} style={fp.backBtn}>
@@ -726,7 +748,10 @@ function FilterPanel({ visible, filters, onApply, onClose, initialStep }: Filter
       <>
         <View style={fp.dateStepHeader}>
           <TouchableOpacity onPress={() => setStep('main')} activeOpacity={0.7} style={fp.backBtn}>
-            <Text style={[fp.backText, { fontFamily: af('medium') }]}>‹ Back</Text>
+            <Text style={[fp.backText, { fontFamily: af('medium') }]}>
+              {isRTL ? '› ' : '‹ '}
+              {t('back')}
+            </Text>
           </TouchableOpacity>
           <Text style={[fp.dateStepLabel, { textAlign: 'center', fontFamily: af('medium') }]}>{t('filterDueDate')}</Text>
           <TouchableOpacity onPress={() => { setLocal(l => ({ ...l, dueDate: '' })); setStep('main'); }} activeOpacity={0.7} style={fp.backBtn}>
@@ -819,7 +844,7 @@ function FilterPanel({ visible, filters, onApply, onClose, initialStep }: Filter
   }
 
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
+    <RootModal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={fp.backdrop} />
       </TouchableWithoutFeedback>
@@ -828,7 +853,7 @@ function FilterPanel({ visible, filters, onApply, onClose, initialStep }: Filter
           {renderContent()}
         </View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 
@@ -1149,7 +1174,6 @@ const fp = StyleSheet.create({
 });
 
 // ─── i18n key map for status labels ──────────────────────────────────────────
-import type { TKey } from '../i18n/translations';
 const STATUS_I18N_KEY: Record<OrderStatus, TKey> = {
   ACTIVE:   'statusActive',
   PENDING:  'statusPending',
@@ -1159,11 +1183,30 @@ const STATUS_I18N_KEY: Record<OrderStatus, TKey> = {
 };
 
 // ─── i18n key map for order type labels ──────────────────────────────────────
-const TYPE_I18N_KEY: Partial<Record<string, TKey>> = {
+const TYPE_I18N_KEY: Record<OrderType, TKey> = {
   'DINE IN':    'dineIn',
   'PICK UP':    'pickUp',
   'DELIVERY':   'delivery',
   'DRIVE THRU': 'driveThru',
+};
+
+function formatOrderTypeForDetail(order: Order, t: (k: TKey) => string): string {
+  const tk = TYPE_I18N_KEY[order.type];
+  const base = tk ? t(tk) : order.type;
+  if (order.tableNumber) return `${base} — ${order.tableNumber}`;
+  return base;
+}
+
+const PAYMENT_TKEY: Record<PaymentMethod, TKey> = {
+  Cash:   'cash',
+  Card:   'paymentCard',
+  Split:  'paymentSplit',
+  Unpaid: 'paymentUnpaid',
+};
+
+const SOURCE_TKEY: Record<OrderSource, TKey> = {
+  Cashier: 'sourceCashier',
+  API:     'sourceAPI',
 };
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
@@ -1171,8 +1214,15 @@ function orderToCartItems(order: Order): CartItem[] {
   return order.items.map((item, i) => ({
     id: `${order.id}-item-${i}`,
     name: item.name,
+    nameKey: item.nameKey,
     qty: item.qty,
     price: item.price,
+    ...(item.note || item.noteKey
+      ? {
+          kitchenNote: item.note,
+          ...(item.noteKey ? { kitchenNoteKey: item.noteKey } : {}),
+        }
+      : {}),
   }));
 }
 
@@ -1182,7 +1232,7 @@ const REFUND_METHODS = ['Cash', 'Mada', 'Credit Card', 'House Account'];
 function RefundMethodDialog({ visible, onSelect, onClose }: { visible: boolean; onSelect: (method: string) => void; onClose: () => void }) {
   const { af } = useI18n();
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
+    <RootModal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={rm.backdrop} />
       </TouchableWithoutFeedback>
@@ -1201,7 +1251,7 @@ function RefundMethodDialog({ visible, onSelect, onClose }: { visible: boolean; 
           ))}
         </View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 
@@ -1267,7 +1317,7 @@ interface Props {
 }
 
 export default function OrdersScreen({ onBack, onTotalPress, onLoadOrder }: Props) {
-  const { t, af, isRTL } = useI18n();
+  const { t, af, isRTL, rtlText } = useI18n();
   const [activeTab, setActiveTab]               = useState<FilterTab>(
     PREVIEW_DIALOG === 'void-list' ? 'VOID' : 'ALL'
   );
@@ -1367,8 +1417,14 @@ export default function OrdersScreen({ onBack, onTotalPress, onLoadOrder }: Prop
         createdBy:     selectedOrder.createdBy,
         paymentMethod: 'Unpaid',
         status:        'RETURNED' as OrderStatus,
-        total:         returnTotal,
-        items:         returnItems.map(i => ({ name: i.name, qty: i.qty, price: i.price })),
+        total:         Math.round(returnTotal * 100) / 100,
+        items:         returnItems.map(i => ({
+          name: i.name,
+          nameKey: i.nameKey,
+          qty: i.qty,
+          price: i.price,
+          ...(i.note || i.noteKey ? { note: i.note, noteKey: i.noteKey } : {}),
+        })),
         customerName:  selectedOrder.customerName,
         customerPhone: selectedOrder.customerPhone,
       };
@@ -1399,7 +1455,7 @@ export default function OrdersScreen({ onBack, onTotalPress, onLoadOrder }: Prop
             : undefined}
           isVoided={selectedOrder?.status === 'VOID'}
           isReturned={selectedOrder?.status === 'RETURNED'}
-          tableNumber={selectedOrder?.type === 'DINE IN' ? 'Table' : undefined}
+          tableNumber={selectedOrder?.tableNumber}
         />
 
         {/* ══ RIGHT: Content ══ */}
@@ -1410,27 +1466,35 @@ export default function OrdersScreen({ onBack, onTotalPress, onLoadOrder }: Prop
           ) : (
             <>
               {/* Action bar */}
-              <View style={s.actionBar}>
+              <View style={[s.actionBar, isRTL ? s.actionBarRtl : s.actionBarLtr]}>
                 <TouchableOpacity style={s.backBtn} onPress={() => { if (selectedOrder) onLoadOrder?.(selectedOrder); onBack?.(); }} activeOpacity={0.8}>
-                  <Image source={ICONS.arrowLeft} style={s.btnIcon} />
-                  <Text style={[s.btnLabel, { fontFamily: af('medium') }]}>BACK</Text>
+                  <Image source={ICONS.arrowLeft} style={[s.btnIcon, isRTL && s.backIconRtl]} />
+                  <Text style={[s.btnLabel, { fontFamily: af('medium') }]}>
+                    {isRTL ? t('back') : t('back').toUpperCase()}
+                  </Text>
                 </TouchableOpacity>
 
                 <View style={{ flex: 1 }} />
 
                 <TouchableOpacity style={[s.toolBtn, activeFilterCount > 0 && s.toolBtnActive]} onPress={() => setFilterVisible(true)} activeOpacity={0.8}>
-                  <Text style={[s.btnLabel, { fontFamily: af('medium') }]}>FILTER</Text>
+                  <Text style={[s.btnLabel, { fontFamily: af('medium') }]}>
+                    {isRTL ? t('filters') : t('filters').toUpperCase()}
+                  </Text>
                   {activeFilterCount > 0 && (
-                    <View style={s.filterBadge}>
+                    <View style={[s.filterBadge, isRTL ? s.filterBadgeRtl : s.filterBadgeLtr]}>
                       <Text style={[s.filterBadgeText, { fontFamily: af('bold') }]}>{activeFilterCount}</Text>
                     </View>
                   )}
                 </TouchableOpacity>
                 <TouchableOpacity style={s.toolBtn} activeOpacity={0.8} onPress={() => setSyncDialogVisible(true)}>
-                  <Text style={[s.btnLabel, { fontFamily: af('medium') }]}>SYNC</Text>
+                  <Text style={[s.btnLabel, { fontFamily: af('medium') }]}>
+                    {isRTL ? t('syncBtn') : t('syncBtn').toUpperCase()}
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={s.toolBtn} onPress={() => setMoreMenuVisible(true)} activeOpacity={0.8}>
-                  <Text style={[s.btnLabel, { fontFamily: af('medium') }]}>MORE</Text>
+                  <Text style={[s.btnLabel, { fontFamily: af('medium') }]}>
+                    {isRTL ? t('more') : t('more').toUpperCase()}
+                  </Text>
                 </TouchableOpacity>
               </View>
 
@@ -1487,7 +1551,7 @@ export default function OrdersScreen({ onBack, onTotalPress, onLoadOrder }: Prop
               <View style={s.listCard}>
                 {filtered.length === 0 ? (
                   <View style={s.emptyState}>
-                    <Text style={[s.emptyText, { fontFamily: af('regular') }]}>No orders found</Text>
+                    <Text style={[s.emptyText, { fontFamily: af('regular') }]}>{t('ordersEmpty')}</Text>
                   </View>
                 ) : (
                   <FlatList
@@ -1499,23 +1563,51 @@ export default function OrdersScreen({ onBack, onTotalPress, onLoadOrder }: Prop
                       return (
                         <TouchableOpacity onPress={() => setSelectedOrder(order)} activeOpacity={0.7}>
                           {isSelected && <View style={[s.selectedAccent, isRTL ? { right: 0, left: undefined } : { left: 0 }]} />}
-                          <View style={[s.orderRow, isSelected && s.orderRowSelected]}>
+                          <View style={[s.orderRow, isSelected && s.orderRowSelected, isRTL && s.orderRowRtl]}>
                             <View style={s.col1}>
-                              <Text style={[s.orderNum, isSelected && s.orderNumActive, { fontFamily: af('semibold') }]}>{order.orderNumber}</Text>
+                              <Text
+                                style={[
+                                  s.orderNum,
+                                  isSelected && s.orderNumActive,
+                                  { fontFamily: af('semibold'), textAlign: rtlText('left') },
+                                ]}
+                              >
+                                {order.orderNumber}
+                              </Text>
                             </View>
                             <View style={s.col2}>
-                              <Text style={[s.orderType, { fontFamily: af('medium') }]}>{TYPE_I18N_KEY[order.type] ? t(TYPE_I18N_KEY[order.type]!) : order.type}{order.tableNumber ? ` (${order.tableNumber})` : ''} ({order.itemCount})</Text>
-                              <Text style={[s.orderTime, { fontFamily: af('regular') }]}>{order.time}</Text>
+                              <Text style={[s.orderType, { fontFamily: af('medium'), textAlign: rtlText('left') }]}>
+                                {`${formatOrderTypeForDetail(order, t)} (${order.itemCount})`}
+                              </Text>
+                              <Text style={[s.orderTime, { fontFamily: af('regular'), textAlign: rtlText('left') }]}>{order.time}</Text>
                             </View>
                             <View style={s.col3}>
-                              {order.customerName  && <Text style={[s.customerName, { fontFamily: af('medium') }]}>{order.customerName}</Text>}
-                              {order.customerPhone && <Text style={[s.customerPhone, { fontFamily: af('regular') }]}>{order.customerPhone}</Text>}
+                              {order.customerName && (
+                                <Text style={[s.customerName, { fontFamily: af('medium'), textAlign: rtlText('left') }]} numberOfLines={1}>
+                                  {order.customerName}
+                                </Text>
+                              )}
+                              {order.customerPhone && (
+                                <Text style={[s.customerPhone, { fontFamily: af('regular'), textAlign: rtlText('left') }]} numberOfLines={1}>
+                                  {order.customerPhone}
+                                </Text>
+                              )}
                             </View>
                             <View style={s.col4}>
-                              <Text style={[s.orderStatus, { color: STATUS_COLOR[order.status], fontFamily: af('bold') }]}>{STATUS_I18N_KEY[order.status] ? t(STATUS_I18N_KEY[order.status]) : order.status}</Text>
-                              <View style={s.amountRow}>
+                              <Text
+                                style={[
+                                  s.orderStatus,
+                                  { color: STATUS_COLOR[order.status], fontFamily: af('bold'), textAlign: 'right' },
+                                ]}
+                                numberOfLines={1}
+                              >
+                                {STATUS_I18N_KEY[order.status] ? t(STATUS_I18N_KEY[order.status]) : order.status}
+                              </Text>
+                              <View style={[s.amountRow, s.amountRowInList]}>
+                                <Text style={[s.orderAmount, { fontFamily: af('medium'), writingDirection: 'ltr' }]}>
+                                  {(Math.round(order.total * 100) / 100).toFixed(2)}
+                                </Text>
                                 <Image source={ICONS.sar} style={s.sarIcon} />
-                                <Text style={[s.orderAmount, { fontFamily: af('medium') }]}>{order.total.toFixed(2)}</Text>
                               </View>
                             </View>
                           </View>
@@ -1617,6 +1709,9 @@ const s = StyleSheet.create({
     gap: 10,
     marginBottom: 12,
   },
+  actionBarRtl: { direction: 'rtl' },
+  actionBarLtr: { direction: 'ltr' },
+  backIconRtl: { transform: [{ scaleX: -1 }] },
   backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1651,7 +1746,6 @@ const s = StyleSheet.create({
   filterBadge: {
     position: 'absolute',
     top: 6,
-    right: 6,
     width: 18,
     height: 18,
     borderRadius: 9,
@@ -1659,6 +1753,8 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  filterBadgeLtr: { right: 6, left: undefined },
+  filterBadgeRtl: { left: 6, right: undefined },
   filterBadgeText: {
     fontSize: 11,
     fontWeight: '700',
@@ -1681,15 +1777,16 @@ const s = StyleSheet.create({
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 60 },
   emptyText:  { fontSize: 15, fontWeight: '400', color: Colors.placeholder },
 
-  /* Order row */
-  orderRow:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 15, position: 'relative' },
+  /* Order row — RTL uses direction so columns mirror (web + native); gap prevents column overlap */
+  orderRow:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 15, position: 'relative', gap: 10 },
+  orderRowRtl:      { direction: 'rtl' },
   orderRowSelected: { backgroundColor: Colors.primaryLight, paddingStart: 26 },
   selectedAccent:   { position: 'absolute', top: 0, bottom: 0, width: 4, backgroundColor: Colors.primary, zIndex: 1 },
 
-  col1: { width: 100 },
-  col2: { width: 160, gap: 3 },
-  col3: { flex: 1, gap: 2 },
-  col4: { alignItems: 'flex-end', gap: 3 },
+  col1: { width: 88, flexShrink: 0 },
+  col2: { width: 148, flexShrink: 0, gap: 3 },
+  col3: { flex: 1, minWidth: 0, gap: 2 },
+  col4: { alignItems: 'flex-end', gap: 4, minWidth: 100, flexShrink: 0 },
 
   orderNum:     { fontSize: 15, fontWeight: '600', color: Colors.black, letterSpacing: -0.075 },
   orderNumActive: { color: Colors.primary },
@@ -1704,8 +1801,9 @@ const s = StyleSheet.create({
   dashedRow: { flexDirection: 'row', paddingHorizontal: 20, gap: 3, overflow: 'hidden' },
   dash:      { width: 5, height: 1, backgroundColor: Colors.grayBorder, borderRadius: 1 },
 
-  /* Currency */
-  amountRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  /* Currency — list row: LTR amount+icon, tucked to inner edge of col4 */
+  amountRow: { flexDirection: 'row', alignItems: 'center', gap: 4, direction: 'ltr' },
+  amountRowInList: { alignSelf: 'flex-end' },
   sarIcon:   { width: 11, height: 13, resizeMode: 'contain', opacity: 0.55 },
 
 });

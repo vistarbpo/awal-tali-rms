@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
+import { Colors } from './src/constants/colors';
 // Fonts — only needed on native; web loads IBM Plex Arabic via Google Fonts in index.html
 // To enable native fonts: npx expo install @expo-google-fonts/ibm-plex-sans-arabic expo-font
 let _useFonts: (fonts: any) => [boolean, Error | null] = () => [true, null];
@@ -32,6 +33,7 @@ import ReservationsScreen from './src/screens/ReservationsScreen';
 import ProductAvailabilityCategoriesScreen from './src/screens/ProductAvailabilityCategoriesScreen';
 import ProductAvailabilityProductsScreen, { ProductAvailabilityMap } from './src/screens/ProductAvailabilityProductsScreen';
 import { CartItem, Course, ComboGroup } from './src/components/OrderPanel';
+import type { TKey } from './src/i18n/translations';
 import { OrderType } from './src/components/OrderTypeDialog';
 import { OrderDiscount } from './src/components/DiscountDialog';
 import { OrderCharge } from './src/components/AddChargeDialog';
@@ -45,8 +47,32 @@ type Screen =
 // ─── Preview mode (Figma capture) ─────────────────────────────────────────────
 // 'products' | 'products-done' | 'products-voided' | 'products-charges' | 'products-delivery'
 // | 'products-item-applied' | 'orders' | 'avail-products' | 'avail-categories'
-// | 'payment' | 'payment-item-discount' | 'welcome' | 'home' | 'tables' | 'reservations' | null
+// | 'payment' | 'payment-item-discount' | 'welcome' | 'home' | 'tables' | 'reservations'
+// | 'order-edit' | null
 const APP_PREVIEW: string | null = null;
+
+// Sample order for the 'order-edit' preview (cart mirrors the default products-screen cart)
+const PREVIEW_ORDER: Order = {
+  id: '2', orderNumber: '100350', type: 'PICK UP', itemCount: 4, time: '07:39 PM',
+  createdBy: 'Mohammed', source: 'Cashier', paymentMethod: 'Unpaid', status: 'ACTIVE', total: 176,
+  items: [
+    { name: 'Beef Steak', nameKey: 'prodBeefSteak', qty: 2, price: 65 },
+    { name: 'Garden Salad', nameKey: 'prodGardenSalad', qty: 1, price: 18 },
+    { name: 'Combo Meal Sandwich', nameKey: 'prodComboMealSandwich', qty: 1, price: 28 },
+  ],
+};
+
+/** Web: `?embed=1` — full-bleed inside an iframe (e.g. portfolio iPad mockup); skips outer chrome frame. */
+function isWebPortfolioEmbed(): boolean {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return false;
+  try {
+    const q = new URLSearchParams(window.location.search);
+    const v = q.get('embed');
+    return v === '1' || v === 'true';
+  } catch {
+    return false;
+  }
+}
 
 export default function App() {
   const [fontsLoaded] = _useFonts(_fontAssets);
@@ -65,6 +91,7 @@ function AppInner() {
     if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location.pathname === '/design-system') return 'design-system';
     if (APP_PREVIEW?.startsWith('products') || APP_PREVIEW?.startsWith('split-order')) return 'products';
     if (APP_PREVIEW === 'orders') return 'orders';
+    if (APP_PREVIEW === 'order-edit') return 'order-edit';
     if (APP_PREVIEW === 'avail-products') return 'avail-products';
     if (APP_PREVIEW === 'avail-categories') return 'avail-categories';
     if (APP_PREVIEW === 'payment' || APP_PREVIEW === 'payment-item-discount') return 'payment';
@@ -75,7 +102,7 @@ function AppInner() {
     return 'login';
   });
   const [isClockedIn, setIsClockedIn]     = useState(false);
-  const [editingOrder, setEditingOrder]   = useState<Order | null>(null);
+  const [editingOrder, setEditingOrder]   = useState<Order | null>(APP_PREVIEW === 'order-edit' ? PREVIEW_ORDER : null);
   const [orderEditPayment, setOrderEditPayment] = useState<{ cart: CartItem[]; orderType: string; backScreen: Screen } | null>(null);
   const [isTillOpen, setIsTillOpen]     = useState(APP_PREVIEW !== null && APP_PREVIEW !== 'orders' && APP_PREVIEW !== 'payment');
   const [orderType, setOrderType]       = useState<OrderType | null>(APP_PREVIEW === 'products-delivery' ? 'Delivery' : 'Pick up');
@@ -95,10 +122,18 @@ function AppInner() {
   // Cart lives here — persists across home ↔ products navigation
   const _itemApplied = APP_PREVIEW === 'products-item-applied' || APP_PREVIEW === 'payment-item-discount';
   const [cart, setCart]                     = useState<CartItem[]>([
-    { id: 'bs-1', name: 'Beef Steak', qty: 2, price: 65,
+    { id: 'bs-1', name: 'Beef Steak', nameKey: 'prodBeefSteak', qty: 2, price: 65,
       ...(_itemApplied ? { discount: { label: '10 Off', kind: 'amount' as const, value: 10 } } : {}) },
-    { id: 'gr-1', name: 'Garden Salad',    qty: 1, price: 18 },
-    { id: 'cm-1', name: 'Combo Meal Sandwich', qty: 1, price: 28, comboSelectionLabels: ['Pepsi', 'Fries'] },
+    { id: 'gr-1', name: 'Garden Salad', nameKey: 'prodGardenSalad', qty: 1, price: 18 },
+    {
+      id: 'cm-1',
+      name: 'Combo Meal Sandwich',
+      nameKey: 'prodComboMealSandwich',
+      qty: 1,
+      price: 28,
+      comboSelectionLabels: ['Pepsi', 'Fries'],
+      comboOptionKeys: ['optPepsi', 'optFries'],
+    },
   ]);
   const [selectedCartId, setSelectedCartId] = useState<string | null>(
     APP_PREVIEW?.startsWith('products') ? 'bs-1' : null
@@ -168,9 +203,17 @@ function AppInner() {
     setCart(prev => prev.map(i => i.id === id ? { ...i, kitchenNote: note || undefined } : i));
   }
 
-  function updateItemComboSelections(id: string, labels: string[], selections: Record<string, string>, groups: ComboGroup[]) {
+  function updateItemComboSelections(
+    id: string,
+    labels: string[],
+    selections: Record<string, string>,
+    groups: ComboGroup[],
+    comboOptionKeys?: TKey[],
+  ) {
     setCart(prev => prev.map(i =>
-      i.id === id ? { ...i, comboSelectionLabels: labels, comboSelections: selections, comboGroups: groups } : i
+      i.id === id
+        ? { ...i, comboSelectionLabels: labels, comboSelections: selections, comboGroups: groups, comboOptionKeys }
+        : i
     ));
   }
 
@@ -355,8 +398,15 @@ function AppInner() {
             const items: CartItem[] = order.items.map((item, i) => ({
               id: `${order.id}-${i}`,
               name: item.name,
+              nameKey: item.nameKey,
               qty: item.qty,
               price: item.price,
+              ...(item.note || item.noteKey
+                ? {
+                    kitchenNote: item.note,
+                    ...(item.noteKey ? { kitchenNoteKey: item.noteKey } : {}),
+                  }
+                : {}),
             }));
             setCart(items);
             setSelectedCartId(null);
@@ -446,10 +496,30 @@ function AppInner() {
     if (screen === 'design-system') {
       return <View style={[{ flex: 1 }, dirStyle]}>{renderScreen()}</View>;
     }
+    if (isWebPortfolioEmbed()) {
+      return (
+        <View style={[appStyles.webEmbedRoot, dirStyle]}>
+          {renderScreen()}
+        </View>
+      );
+    }
     return (
       <View style={[appStyles.webShell, dirStyle]}>
-        <View style={appStyles.ipadFrame}>
-          {renderScreen()}
+        <View style={appStyles.ipadBezel}>
+          {/* Landscape hardware: volume (left), power (top), speakers + USB-C (bottom) */}
+          <View style={appStyles.ipadHWLeft} pointerEvents="none">
+            <View style={appStyles.ipadHWVolShort} />
+            <View style={appStyles.ipadHWVolLong} />
+          </View>
+          <View style={appStyles.ipadHWPower} pointerEvents="none" />
+          <View style={appStyles.ipadHWBottom} pointerEvents="none">
+            <View style={appStyles.ipadHWSpeaker} />
+            <View style={appStyles.ipadHWPort} />
+            <View style={appStyles.ipadHWSpeaker} />
+          </View>
+          <View style={appStyles.ipadFrame}>
+            {renderScreen()}
+          </View>
         </View>
       </View>
     );
@@ -460,20 +530,110 @@ function AppInner() {
 
 
 const appStyles = StyleSheet.create({
+  /* Portfolio iframe: no letterbox — parent page supplies device chrome */
+  webEmbedRoot: {
+    flex: 1,
+    width: '100%',
+    alignSelf: 'stretch',
+    backgroundColor: Colors.backgroundAlt,
+  },
+  /* Standalone web: soft brand-neutral surround (not harsh black) */
   webShell: {
     flex: 1,
-    backgroundColor: '#0B151A',
+    width: '100%',
+    backgroundColor: Colors.liteColor,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 32,
+    paddingHorizontal: 20,
   },
+  /* Outer shell — thinner bezel, closer to iPad Air / Pro landscape */
+  ipadBezel: {
+    position: 'relative',
+    alignSelf: 'center',
+    maxWidth: '100%',
+    overflow: 'visible',
+    paddingHorizontal: 10,
+    paddingBottom: 12,
+    paddingTop: 10,
+    borderRadius: 28,
+    backgroundColor: Colors.ipadBezel,
+    borderTopColor: 'rgba(255, 255, 255, 0.12)',
+    borderLeftColor: 'rgba(255, 255, 255, 0.05)',
+    borderRightColor: 'rgba(0, 0, 0, 0.18)',
+    borderBottomColor: 'rgba(0, 0, 0, 0.22)',
+    borderWidth: 4,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.22,
+    shadowRadius: 44,
+    elevation: 22,
+  },
+  ipadHWLeft: {
+    position: 'absolute',
+    left: -3,
+    top: '34%',
+    zIndex: 6,
+    alignItems: 'center',
+  },
+  ipadHWVolShort: {
+    width: 3,
+    height: 32,
+    marginBottom: 10,
+    borderRadius: 1.5,
+    backgroundColor: Colors.ipadSideButton,
+  },
+  ipadHWVolLong: {
+    width: 3,
+    height: 46,
+    borderRadius: 1.5,
+    backgroundColor: Colors.ipadSideButton,
+  },
+  ipadHWPower: {
+    position: 'absolute',
+    right: '9%',
+    top: -2,
+    width: 44,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: Colors.ipadSideButton,
+    zIndex: 6,
+  },
+  ipadHWBottom: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 5,
+    zIndex: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  ipadHWSpeaker: {
+    width: 18,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: Colors.ipadSpeakerMesh,
+  },
+  ipadHWPort: {
+    width: 52,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: Colors.ipadPort,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  /* Display stack — uniform radius like laminated glass */
   ipadFrame: {
     width: IPAD_W,
     height: IPAD_H,
+    maxWidth: '100%',
     overflow: 'hidden',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.5,
-    shadowRadius: 40,
+    borderRadius: 14,
+    position: 'relative',
+    backgroundColor: Colors.black,
+    borderWidth: 4,
+    borderColor: 'rgba(0, 0, 0, 0.55)',
   },
 });

@@ -1,12 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Platform,
-} from 'react-native';
+import RootModal from './RootModal';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { CameraView, Camera } from 'expo-camera';
 import { Colors } from '../constants/colors';
 import { useI18n } from '../i18n';
@@ -47,7 +41,7 @@ export default function ScanLoyaltyQRModal({ visible, onClose, onScanned }: Prop
   }
 
   return (
-    <Modal
+    <RootModal
       visible={visible}
       transparent
       animationType="slide"
@@ -112,7 +106,7 @@ export default function ScanLoyaltyQRModal({ visible, onClose, onScanned }: Prop
 
         </View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 

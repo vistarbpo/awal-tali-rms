@@ -26,7 +26,19 @@ export const Colors = {
   grayBorder:       '#EEEEEE', // dividers
   placeholder:      '#C9C9C9', // input placeholder text
 
+  // ── Namecheap rebrand ────────────────────────────────────────────────────────
+  brand:          '#FE5803', // primary orange — CTAs, TOTAL bar, primary buttons
+  darkInk:        '#1E1E24', // near-black — toolbar buttons, dark chips
+  warmTint:       '#FFF6F0', // warm peach — dialog header bg
+  cancelSurface:  '#FEF0F0', // light peach — cancel btn bg, waste-on bg
+
   // ── Status ────────────────────────────────────────────────────────────────────
   green:            '#4CAF82', // clocked-in / success
   availGreen:       '#4CA924', // product availability — available badge
+
+  // ── Web preview — iPad-style device chrome ───────────────────────────────────
+  ipadBezel:        '#2c2c2e',
+  ipadSideButton:   '#3a3a3c',
+  ipadPort:         '#121214',
+  ipadSpeakerMesh:  '#252528',
 };

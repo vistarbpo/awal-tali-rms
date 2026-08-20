@@ -1,13 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  TouchableWithoutFeedback,
-  Animated,
-} from 'react-native';
+import RootModal from './RootModal';
+import { View, Text, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, Animated } from 'react-native';
 import { Colors } from '../constants/colors';
 import { useI18n } from '../i18n';
 
@@ -68,7 +61,7 @@ export default function SyncDataDialog({ visible, onClose, title }: Props) {
   const isSyncing = phase === 'syncing';
 
   return (
-    <Modal
+    <RootModal
       visible={visible}
       transparent
       animationType="fade"
@@ -131,7 +124,7 @@ export default function SyncDataDialog({ visible, onClose, title }: Props) {
 
         </View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 

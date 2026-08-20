@@ -1,13 +1,6 @@
 import React from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-} from 'react-native';
+import RootModal from './RootModal';
+import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { Colors } from '../constants/colors';
 import { iconSarDark } from '../assets/icons';
 import { useI18n } from '../i18n';
@@ -19,16 +12,16 @@ interface TillRow {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-function FmtAmt({ val, style }: { val: number | string; style?: object }) {
+function FmtAmt({ val, bold }: { val: number | string; bold?: boolean }) {
   if (typeof val === 'number') {
     return (
-      <View style={[r.sarAmtWrap, style]}>
+      <View style={r.sarAmtWrap}>
+        <Text style={[r.sarAmtText, bold && r.rowBold]}>{val.toFixed(2)}</Text>
         <Image source={iconSarDark} style={r.sarAmtIcon} />
-        <Text style={r.sarAmtText}>{val.toFixed(2)}</Text>
       </View>
     );
   }
-  return <Text style={[r.rowAmount, style]}>{String(val)}</Text>;
+  return <Text style={[r.rowAmount, bold && r.rowBold]}>{String(val)}</Text>;
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
@@ -44,11 +37,11 @@ function SectionTitle({ title }: { title: string }) {
   );
 }
 
-function Row({ label, amount, bold }: TillRow & { bold?: boolean }) {
+function Row({ label, amount, bold, rtl }: TillRow & { bold?: boolean; rtl?: boolean }) {
   return (
-    <View style={r.row}>
-      <Text style={[r.rowLabel, bold && r.rowBold]}>{label}</Text>
-      <FmtAmt val={amount} style={bold ? r.rowBold : undefined} />
+    <View style={[r.row, rtl && r.rowRtl]}>
+      <Text style={[r.rowLabel, rtl && r.rowLabelRtl, bold && r.rowBold]}>{label}</Text>
+      <FmtAmt val={amount} bold={bold} />
     </View>
   );
 }
@@ -76,12 +69,12 @@ const DIFF         = CLOSING - ESTIMATED;  // positive → surplus, negative →
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function TillsSummaryReportModal({ visible, onClose, dateLabel, printedAt }: Props) {
-  const { t, af } = useI18n();
-  const surplusLabel   = DIFF > 0  ? 'Cash Surplus:'   : DIFF < 0 ? 'Cash Shortage:' : 'Cash Shortage:';
+  const { t, af, isRTL } = useI18n();
+  const surplusLabel   = DIFF > 0 ? t('tillSurplus') : t('tillShortage');
   const surplusAmount  = Math.abs(DIFF);
 
   return (
-    <Modal
+    <RootModal
       visible={visible}
       transparent
       animationType="fade"
@@ -94,7 +87,7 @@ export default function TillsSummaryReportModal({ visible, onClose, dateLabel, p
         <View style={r.card}>
 
           {/* ── Header bar ── */}
-          <View style={r.headerBar}>
+          <View style={[r.headerBar, isRTL && r.headerBarRtl]}>
             <TouchableOpacity onPress={onClose} style={r.doneBtn} activeOpacity={0.7}>
               <Text style={[r.doneText, { fontFamily: af('semibold') }]}>{t('done')}</Text>
             </TouchableOpacity>
@@ -113,62 +106,72 @@ export default function TillsSummaryReportModal({ visible, onClose, dateLabel, p
             <View style={r.metaBlock}>
               <Text style={r.metaLine}>اول و تالي - فرع الشوقية</Text>
               <Text style={r.metaLine}>B01</Text>
-              <Text style={r.metaLine}>Till Close Report</Text>
-              <Text style={r.metaLine}>Business Date: {dateLabel}</Text>
-              <Text style={r.metaLine}>Printed at: {printedAt}</Text>
+              <Text style={r.metaLine}>{t('tillCloseReport')}</Text>
+              <Text style={r.metaLine}>
+                {t('tillBizDate')} {dateLabel}
+              </Text>
+              <Text style={r.metaLine}>
+                {t('tillPrintedAt')} {printedAt}
+              </Text>
             </View>
 
             <Divider />
 
             {/* ── Till info ── */}
             <View style={r.tillInfo}>
-              <Text style={r.infoLine}>User: Sara</Text>
-              <Text style={r.infoLine}>Opened At: {dateLabel} 09:00 AM</Text>
-              <Text style={r.infoLine}>Closed At: {dateLabel} 11:59 PM</Text>
+              <Text style={r.infoLine}>
+                {t('tillUser')} Sara
+              </Text>
+              <Text style={r.infoLine}>
+                {t('tillOpenedAt')} {dateLabel} 09:00 AM
+              </Text>
+              <Text style={r.infoLine}>
+                {t('tillClosedAt')} {dateLabel} 11:59 PM
+              </Text>
             </View>
 
             <Divider />
 
             {/* ── Payments ── */}
-            <SectionTitle title="Payments" />
-            <Row label="House Account:"    amount={0} />
-            <Row label="Solo Visa:"        amount={0} />
-            <Row label="Solo Apple Pay:"   amount={0} />
-            <Row label="Cash:"             amount={CASH} />
-            <Row label="Gift Card:"        amount={0} />
-            <Row label="Mada:"             amount={MADA} />
-            <Row label="Solo Mastercard:"  amount={0} />
-            <Row label="Total Payments:"   amount={TOTAL_PAY} bold />
-            <Row label="Total Returns:"    amount={0} />
-            <Row label="Net Payments:"     amount={TOTAL_PAY} bold />
+            <SectionTitle title={t('tillPaySection')} />
+            <Row rtl={isRTL} label={t('tillPayHouseAcct')}    amount={0} />
+            <Row rtl={isRTL} label={t('tillPaySoloVisa')}        amount={0} />
+            <Row rtl={isRTL} label={t('tillPaySoloApple')}   amount={0} />
+            <Row rtl={isRTL} label={t('tillPayCash')}             amount={CASH} />
+            <Row rtl={isRTL} label={t('tillPayGift')}        amount={0} />
+            <Row rtl={isRTL} label={t('tillPayMada')}             amount={MADA} />
+            <Row rtl={isRTL} label={t('tillPaySoloMc')}  amount={0} />
+            <Row rtl={isRTL} label={t('tillPayTotal')}   amount={TOTAL_PAY} bold />
+            <Row rtl={isRTL} label={t('tillPayReturns')}    amount={0} />
+            <Row rtl={isRTL} label={t('tillPayNet')}     amount={TOTAL_PAY} bold />
 
             <Divider />
 
             {/* ── Drawer Operations ── */}
-            <SectionTitle title="Drawer Operations" />
-            <Row label="Total Pay In:"               amount={PAY_IN} />
-            <Row label="Total Pay Out:"              amount={PAY_OUT} />
-            <Row label="Total Cash Drops:"           amount={CASH_DROPS} />
-            <Row label="Total Payment Operations:"   amount={CASH} />
-            <Row label="Total Return Operations:"    amount={0} />
-            <Row label="Count of Open Drawers:"      amount={0} />
+            <SectionTitle title={t('tillDrawerSection')} />
+            <Row rtl={isRTL} label={t('tillDrawerPayIn')}               amount={PAY_IN} />
+            <Row rtl={isRTL} label={t('tillDrawerPayOut')}              amount={PAY_OUT} />
+            <Row rtl={isRTL} label={t('tillDrawerDrops')}           amount={CASH_DROPS} />
+            <Row rtl={isRTL} label={t('tillDrawerPayOps')}   amount={CASH} />
+            <Row rtl={isRTL} label={t('tillDrawerRetOps')}    amount={0} />
+            <Row rtl={isRTL} label={t('tillDrawerOpenCount')}      amount={0} />
 
             <Divider />
 
             {/* ── Cash summary ── */}
-            <Row label="Opening Amount:"              amount={OPENING} />
-            <Row label="Closing Amount:"              amount={CLOSING} />
-            <Row label="Estimated Cash In Register:"  amount={ESTIMATED} />
-            <Row label={surplusLabel}                 amount={surplusAmount} bold />
+            <Row rtl={isRTL} label={t('tillOpenAmt')}              amount={OPENING} />
+            <Row rtl={isRTL} label={t('tillCloseAmt')}              amount={CLOSING} />
+            <Row rtl={isRTL} label={t('tillEstCash')}  amount={ESTIMATED} />
+            <Row rtl={isRTL} label={surplusLabel}                 amount={surplusAmount} bold />
 
             <Divider />
 
-            <Text style={r.endOfReport}>End Of Report</Text>
+            <Text style={r.endOfReport}>{t('tillEndReport')}</Text>
 
           </ScrollView>
         </View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 
@@ -206,6 +209,9 @@ const r = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.grayBorder,
     backgroundColor: Colors.grayLight,
+  },
+  headerBarRtl: {
+    flexDirection: 'row-reverse',
   },
   doneBtn: { width: 48 },
   doneText: {
@@ -277,16 +283,33 @@ const r = StyleSheet.create({
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 10,
     paddingHorizontal: 14,
     paddingVertical: 6,
+  },
+  rowRtl: {
+    flexDirection: 'row-reverse',
   },
   rowLabel: {
     fontSize: 13,
     color: Colors.black,
     fontWeight: '400',
     flex: 1,
+    minWidth: 0,
+    paddingEnd: 4,
   },
-  sarAmtWrap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 3 },
+  rowLabelRtl: {
+    textAlign: 'right',
+  },
+  sarAmtWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 5,
+    flexShrink: 0,
+    direction: 'ltr',
+  },
   sarAmtIcon: { width: 11, height: 12, resizeMode: 'contain' },
   sarAmtText: { fontSize: 13, color: Colors.black },
   rowAmount: {
@@ -295,6 +318,7 @@ const r = StyleSheet.create({
     fontWeight: '400',
     textAlign: 'right',
     minWidth: 90,
+    flexShrink: 0,
   },
   rowBold: {
     fontWeight: '700',

@@ -1,12 +1,6 @@
 import React from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  TouchableWithoutFeedback,
-} from 'react-native';
+import RootModal from './RootModal';
+import { View, Text, TouchableOpacity, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import { Colors } from '../constants/colors';
 import { useI18n } from '../i18n';
 
@@ -21,7 +15,7 @@ interface Props {
 export default function ConfirmDialog({ visible, title, message, onNo, onYes }: Props) {
   const { t, af } = useI18n();
   return (
-    <Modal
+    <RootModal
       visible={visible}
       transparent
       animationType="fade"
@@ -56,7 +50,7 @@ export default function ConfirmDialog({ visible, title, message, onNo, onYes }: 
 
         </View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 

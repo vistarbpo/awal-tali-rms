@@ -1,13 +1,6 @@
 import React from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  StyleSheet,
-  Image,
-} from 'react-native';
+import RootModal from '../components/RootModal';
+import { View, Text, TouchableOpacity, TouchableWithoutFeedback, StyleSheet, Image } from 'react-native';
 import { Colors } from '../constants/colors';
 import { iconHeadset } from '../assets/icons';
 import { useI18n } from '../i18n';
@@ -77,7 +70,7 @@ interface Props {
 export default function SupportScreen({ visible, onClose }: Props) {
   const { t, af, isRTL } = useI18n();
   return (
-    <Modal
+    <RootModal
       visible={visible}
       transparent
       animationType="fade"
@@ -172,7 +165,7 @@ export default function SupportScreen({ visible, onClose }: Props) {
 
         </View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 

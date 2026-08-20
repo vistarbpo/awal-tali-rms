@@ -142,7 +142,7 @@
       bottom: 18px;
       border-radius: 20px;
       overflow: hidden;
-      background: #000;
+      background: #fafafa;
     }
 
     .screen iframe {
@@ -150,18 +150,6 @@
       height: 100%;
       border: none;
       display: block;
-    }
-
-    .camera {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      right: 10px;
-      width: 8px;
-      height: 8px;
-      background: #2c2c2e;
-      border-radius: 50%;
-      border: 1px solid #3a3a3c;
     }
 
     .footer {
@@ -188,9 +176,9 @@
   <!-- iPad frame -->
   <div class="ipad-wrap" id="ipadWrap">
     <div class="ipad" id="ipad">
-      <div class="camera"></div>
       <div class="screen">
-        <iframe src="/" title="TalabOS App" allow="fullscreen"></iframe>
+        <!-- embed=1: full bleed inside mockup (no double tablet frame) -->
+        <iframe src="/?embed=1" title="TalabOS App" allow="fullscreen"></iframe>
       </div>
     </div>
   </div>

@@ -1,13 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  TextInput,
-  StyleSheet,
-  TouchableWithoutFeedback,
-} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import RootModal from './RootModal';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import { Colors } from '../constants/colors';
 import { useI18n } from '../i18n';
 
@@ -28,7 +21,7 @@ export default function OrderNotesDialog({
   onClose,
   onSave,
 }: Props) {
-  const { t, af, isRTL } = useI18n();
+  const { t, af, isRTL, rtlText } = useI18n();
   const [receipt,        setReceipt]        = useState('');
   const [kitchen,        setKitchen]        = useState('');
   const [receiptFocused, setReceiptFocused] = useState(false);
@@ -47,7 +40,7 @@ export default function OrderNotesDialog({
   }
 
   return (
-    <Modal
+    <RootModal
       visible={visible}
       transparent
       animationType="fade"
@@ -59,12 +52,12 @@ export default function OrderNotesDialog({
       </TouchableWithoutFeedback>
 
       <View style={s.center} pointerEvents="box-none">
-        <View style={s.card}>
+        <View style={[s.card, isRTL && s.cardRtl]}>
 
           {/* Header */}
-          <View style={s.header}>
+          <View style={[s.header, isRTL && s.headerRtl]}>
             <TouchableOpacity onPress={onClose} activeOpacity={0.7} style={s.cancelWrap}>
-              <Text style={[s.cancelText, { fontFamily: af('medium') }]}>{t('cancel')}</Text>
+              <Text style={[s.cancelText, { fontFamily: af('medium'), textAlign: rtlText('left') }]}>{t('cancel')}</Text>
             </TouchableOpacity>
             <Text style={[s.headerTitle, { fontFamily: af('semibold') }]}>{t('orderNotesTitle')}</Text>
             <View style={s.cancelWrap} />
@@ -72,12 +65,24 @@ export default function OrderNotesDialog({
 
           {/* Receipt Notes */}
           <View style={s.section}>
-            <Text style={[s.sectionLabel, { fontFamily: af('semibold') }]}>Receipt Notes</Text>
+            <Text
+              style={[
+                s.sectionLabel,
+                { fontFamily: af('semibold'), textAlign: rtlText('left') },
+                isRTL && s.sectionLabelPlain,
+              ]}
+            >
+              {t('orderNotesReceiptSection')}
+            </Text>
             <TextInput
-              style={[s.textArea, receiptFocused && s.textAreaFocused, { fontFamily: af('regular'), textAlign: isRTL ? 'right' : 'left' }]}
+              style={[
+                s.textArea,
+                receiptFocused && s.textAreaFocused,
+                { fontFamily: af('regular'), textAlign: rtlText('left') },
+              ]}
               value={receipt}
               onChangeText={setReceipt}
-              placeholder="Add a note printed on the receipt..."
+              placeholder={t('orderNotesReceiptPh')}
               placeholderTextColor={Colors.placeholder}
               multiline
               numberOfLines={3}
@@ -93,12 +98,24 @@ export default function OrderNotesDialog({
 
           {/* Kitchen Notes */}
           <View style={s.section}>
-            <Text style={[s.sectionLabel, { fontFamily: af('semibold') }]}>Kitchen Notes</Text>
+            <Text
+              style={[
+                s.sectionLabel,
+                { fontFamily: af('semibold'), textAlign: rtlText('left') },
+                isRTL && s.sectionLabelPlain,
+              ]}
+            >
+              {t('orderNotesKitchenSection')}
+            </Text>
             <TextInput
-              style={[s.textArea, kitchenFocused && s.textAreaFocused, { fontFamily: af('regular'), textAlign: isRTL ? 'right' : 'left' }]}
+              style={[
+                s.textArea,
+                kitchenFocused && s.textAreaFocused,
+                { fontFamily: af('regular'), textAlign: rtlText('left') },
+              ]}
               value={kitchen}
               onChangeText={setKitchen}
-              placeholder="Add a note sent to the kitchen..."
+              placeholder={t('orderNotesKitchenPh')}
               placeholderTextColor={Colors.placeholder}
               multiline
               numberOfLines={3}
@@ -119,7 +136,7 @@ export default function OrderNotesDialog({
 
         </View>
       </View>
-    </Modal>
+    </RootModal>
   );
 }
 
@@ -145,6 +162,9 @@ const s = StyleSheet.create({
     shadowRadius: 24,
     elevation: 12,
   },
+  cardRtl: {
+    direction: 'rtl',
+  },
 
   // Header
   header: {
@@ -155,6 +175,9 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: Colors.grayBorder,
+  },
+  headerRtl: {
+    direction: 'rtl',
   },
   cancelWrap: {
     width: 80,
@@ -187,6 +210,10 @@ const s = StyleSheet.create({
     letterSpacing: 0.6,
     textTransform: 'uppercase',
     marginBottom: 10,
+  },
+  sectionLabelPlain: {
+    textTransform: 'none',
+    letterSpacing: 0,
   },
   textArea: {
     height: 88,
