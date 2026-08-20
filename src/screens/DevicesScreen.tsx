@@ -162,8 +162,9 @@ function SwipeRow({
     Animated.spring(tx, { toValue: v, useNativeDriver: false, bounciness: 0, speed: 18 }).start();
   }, [tx]);
 
-  // Parent closes every other row when one opens.
-  useEffect(() => { if (!isOpen) snapTo(0); }, [isOpen, snapTo]);
+  // Follow the parent's open state in both directions: it closes every other row
+  // when one opens, and an externally-set open row must actually render open.
+  useEffect(() => { snapTo(isOpen ? dir * REVEAL_W : 0); }, [isOpen, dir, snapTo]);
 
   const pan = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => false,
@@ -331,27 +332,41 @@ const SEED_SUB_CASHIERS: SubCashierDevice[] = [
   { id: 'sub-1', name: '2nd Floor Cashier', ipAddress: '192.168.100.184', online: false },
 ];
 
+// ─── Preview staging ──────────────────────────────────────────────────────────
+// Opens the modal straight onto one sub-view for Figma capture. Same convention
+// as PREVIEW_DIALOG elsewhere — REVERT to null after capturing.
+//   'add-menu' | 'swiped' | 'printer-info' | 'model-picker' | 'printer-type-picker'
+// | 'printer-order-types' | 'kds-info' | 'kds-type-picker' | 'kds-order-types'
+// | 'kds-categories' | 'kds-products' | 'sub-cashier-info' | null
+const PREVIEW_SUBVIEW: string | null = null;
+
+const OVERLAY_PREVIEWS = ['add-menu', 'swiped'];
+const PREVIEW_VIEW: SubView | null =
+  PREVIEW_SUBVIEW && !OVERLAY_PREVIEWS.includes(PREVIEW_SUBVIEW) ? PREVIEW_SUBVIEW as SubView : null;
+
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function DevicesScreen({ visible, onClose }: Props) {
   const { t, af, isRTL } = useI18n();
-  const [subView, setSubView]         = useState<SubView>('list');
-  const [addMenuOpen, setAddMenuOpen] = useState(false);
+  const [subView, setSubView]         = useState<SubView>(PREVIEW_VIEW ?? 'list');
+  const [addMenuOpen, setAddMenuOpen] = useState(PREVIEW_SUBVIEW === 'add-menu');
 
   const [printers,    setPrinters]    = useState<PrinterDevice[]>(SEED_PRINTERS);
   const [kdsDevices,  setKdsDevices]  = useState<KDSDevice[]>(SEED_KDS);
   const [subCashiers, setSubCashiers] = useState<SubCashierDevice[]>(SEED_SUB_CASHIERS);
 
-  const [printerDraft,    setPrinterDraft]    = useState<PrinterDevice>(BLANK_PRINTER);
-  const [kdsDraft,        setKdsDraft]        = useState<KDSDevice>(BLANK_KDS);
-  const [subCashierDraft, setSubCashierDraft] = useState<SubCashierDevice>(BLANK_SUB_CASHIER);
+  const [printerDraft,    setPrinterDraft]    = useState<PrinterDevice>(PREVIEW_SUBVIEW ? SEED_PRINTERS[0] : BLANK_PRINTER);
+  const [kdsDraft,        setKdsDraft]        = useState<KDSDevice>(PREVIEW_SUBVIEW ? SEED_KDS[1] : BLANK_KDS);
+  const [subCashierDraft, setSubCashierDraft] = useState<SubCashierDevice>(PREVIEW_SUBVIEW ? SEED_SUB_CASHIERS[0] : BLANK_SUB_CASHIER);
 
   /** Row currently swiped open — only one at a time. */
-  const [openRowId, setOpenRowId] = useState<string | null>(null);
+  const [openRowId, setOpenRowId] = useState<string | null>(PREVIEW_SUBVIEW === 'swiped' ? 'kds-2' : null);
   const [pingingId, setPingingId] = useState<string | null>(null);
   const pingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /** Category whose products are being edited; null = every product. */
-  const [scopedCategory, setScopedCategory] = useState<{ id: string; name: string } | null>(null);
+  const [scopedCategory, setScopedCategory] = useState<{ id: string; name: string } | null>(
+    PREVIEW_SUBVIEW === 'kds-products' ? { id: 'c6', name: 'MAIN DISHES' } : null,
+  );
 
   useEffect(() => () => { if (pingTimer.current) clearTimeout(pingTimer.current); }, []);
 
