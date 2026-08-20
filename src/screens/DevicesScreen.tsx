@@ -7,7 +7,7 @@ import {
 import { Colors } from '../constants/colors';
 import { useI18n } from '../i18n';
 import { AVAIL_CATEGORIES } from './ProductAvailabilityCategoriesScreen';
-import { CATEGORY_PRODUCTS, AvailProduct } from './ProductAvailabilityProductsScreen';
+import { CATEGORY_PRODUCTS } from './ProductAvailabilityProductsScreen';
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -25,15 +25,6 @@ const PRINTER_MODELS: { brand: string; models: string[] }[] = [
 const PRINTER_TYPES = ['Cashier', 'Kitchen', 'Order info', 'Kitchen Sticky Printer'];
 const KDS_TYPES     = ['TalabOS', 'Custom'];
 const ORDER_TYPES   = ['Dine In', 'Pick Up', 'Delivery', 'Drive Thru'];
-
-/** Flat, de-duplicated product list across every category. */
-const ALL_PRODUCTS: AvailProduct[] = (() => {
-  const seen = new Map<string, AvailProduct>();
-  Object.values(CATEGORY_PRODUCTS).forEach(list =>
-    list.forEach(p => { if (!seen.has(p.id)) seen.set(p.id, p); }),
-  );
-  return [...seen.values()];
-})();
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -108,7 +99,7 @@ function BrandSwitch({ value, onValueChange }: { value: boolean; onValueChange: 
 
 const sw = StyleSheet.create({
   track:   { width: 50, height: 30, borderRadius: 15, backgroundColor: '#E4E4E7', padding: 2, justifyContent: 'center' },
-  trackOn: { backgroundColor: Colors.brand },
+  trackOn: { backgroundColor: Colors.primary },
   thumb: {
     width: 26, height: 26, borderRadius: 13, backgroundColor: Colors.white, alignSelf: 'flex-start',
     shadowColor: Colors.black, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.18, shadowRadius: 2, elevation: 2,
@@ -161,7 +152,10 @@ function SwipeRow({
    *  re-deriving from gestureState.dx, so a coarse or partly-dropped move stream
    *  can never snap the row somewhere other than where the user sees it. */
   const currentX = useRef(0);
-  const dir      = isRTL ? 1 : -1;
+  /** Remove sits on the leading edge: swipe right in LTR, left in RTL. */
+  const dir = isRTL ? -1 : 1;
+  const lo  = dir > 0 ? 0 : -REVEAL_W;
+  const hi  = dir > 0 ? REVEAL_W : 0;
 
   const snapTo = useCallback((v: number) => {
     currentX.current = v;
@@ -177,26 +171,23 @@ function SwipeRow({
       Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
     onPanResponderGrant: () => { startX.current = isOpen ? dir * REVEAL_W : 0; },
     onPanResponderMove: (_, g) => {
-      const raw  = startX.current + g.dx;
-      const next = isRTL
-        ? Math.min(Math.max(raw, 0), REVEAL_W)
-        : Math.max(Math.min(raw, 0), -REVEAL_W);
+      const next = Math.min(Math.max(startX.current + g.dx, lo), hi);
       currentX.current = next;
       tx.setValue(next);
     },
     onPanResponderRelease: (_, g) => {
       // Fall back to gestureState only if no move ever landed.
       const at     = currentX.current !== startX.current ? currentX.current : startX.current + g.dx;
-      const opened = isRTL ? at > REVEAL_W * 0.4 : at < -REVEAL_W * 0.4;
+      const opened = dir > 0 ? at > REVEAL_W * 0.4 : at < -REVEAL_W * 0.4;
       if (opened) { onOpen(); snapTo(dir * REVEAL_W); }
       else        { onSettleClosed(); snapTo(0); }
     },
     onPanResponderTerminate: () => snapTo(isOpen ? dir * REVEAL_W : 0),
-  }), [isOpen, isRTL, dir, onOpen, onSettleClosed, snapTo, tx]);
+  }), [isOpen, dir, lo, hi, onOpen, onSettleClosed, snapTo, tx]);
 
   return (
     <View style={s.swipeWrap}>
-      <View style={[s.removeLayer, isRTL ? { left: 0 } : { right: 0 }]}>
+      <View style={[s.removeLayer, isRTL ? { right: 0 } : { left: 0 }]}>
         <TouchableOpacity style={s.removeBtn} activeOpacity={0.85} onPress={onRemove}>
           <Text style={s.removeIcon}>✕</Text>
           <Text style={[s.removeLabel, { fontFamily: af('semibold') }]}>{t('remove')}</Text>
@@ -407,11 +398,11 @@ export default function DevicesScreen({ visible, onClose }: Props) {
     pingTimer.current = setTimeout(() => setPingingId(null), 900);
   }
 
-  /** Opens the KDS menu screens against a saved device rather than the edit draft. */
-  function openMenuScreen(device: KDSDevice, view: 'kds-categories' | 'kds-products') {
+  /** Products always enters through the category list, against a saved device. */
+  function openMenuScreen(device: KDSDevice) {
     setKdsDraft(device);
     setScopedCategory(null);
-    setSubView(view);
+    setSubView('kds-categories');
   }
 
   function toggleOrderType(list: string[], type: string) {
@@ -454,7 +445,7 @@ export default function DevicesScreen({ visible, onClose }: Props) {
     setOpenRowId(null);
   }
 
-  const visibleProducts = scopedCategory ? (CATEGORY_PRODUCTS[scopedCategory.id] ?? []) : ALL_PRODUCTS;
+  const visibleProducts = scopedCategory ? (CATEGORY_PRODUCTS[scopedCategory.id] ?? []) : [];
   const allProductsOn   = visibleProducts.length > 0 && visibleProducts.every(p => kdsDraft.enabledProducts.includes(p.id));
   const allCategoriesOn = AVAIL_CATEGORIES.every(c => kdsDraft.enabledCategories.includes(c.id));
 
@@ -570,10 +561,9 @@ export default function DevicesScreen({ visible, onClose }: Props) {
                             online={k.online}
                             name={k.name || 'KDS Device'} ip={k.ipAddress}
                             chips={[
-                              { label: t('ping'),       onPress: () => handlePing(k.id) },
-                              { label: t('categories'), onPress: () => openMenuScreen(k, 'kds-categories') },
-                              { label: t('products'),   onPress: () => openMenuScreen(k, 'kds-products') },
-                              { label: t('edit'),       onPress: () => { setKdsDraft(k); setSubView('kds-info'); }, accent: true },
+                              { label: t('ping'),     onPress: () => handlePing(k.id) },
+                              { label: t('products'), onPress: () => openMenuScreen(k) },
+                              { label: t('edit'),     onPress: () => { setKdsDraft(k); setSubView('kds-info'); }, accent: true },
                             ]}
                           />
                         </React.Fragment>
@@ -810,15 +800,9 @@ export default function DevicesScreen({ visible, onClose }: Props) {
 
                 <View style={s.group}>
                   <NavRow
-                    label={t('categories')}
-                    value={kdsDraft.enabledCategories.length > 0 ? `${kdsDraft.enabledCategories.length}` : null}
-                    onPress={() => { setScopedCategory(null); setSubView('kds-categories'); }}
-                  />
-                  <Hairline />
-                  <NavRow
                     label={t('products')}
                     value={kdsDraft.enabledProducts.length > 0 ? `${kdsDraft.enabledProducts.length}` : null}
-                    onPress={() => { setScopedCategory(null); setSubView('kds-products'); }}
+                    onPress={() => { setScopedCategory(null); setSubView('kds-categories'); }}
                   />
                   <Hairline />
                   <NavRow label={t('deviceType')} value={kdsDraft.type} onPress={() => setSubView('kds-type-picker')} />
@@ -911,7 +895,7 @@ export default function DevicesScreen({ visible, onClose }: Props) {
             <>
               <Header
                 leftLabel={t('back')}
-                onLeft={() => { if (scopedCategory) { setScopedCategory(null); setSubView('kds-categories'); } else setSubView('list'); }}
+                onLeft={() => { setScopedCategory(null); setSubView('kds-categories'); }}
                 title={scopedCategory ? scopedCategory.name : t('products')}
                 rightLabel={allProductsOn ? t('deselectAll') : t('selectAll')} onRight={selectAllProducts}
               />
@@ -1030,20 +1014,20 @@ const s = StyleSheet.create({
     textAlign: 'center',
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.darkInk,
+    color: Colors.black,
     letterSpacing: -0.3,
   },
   headerAction: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.brand,
+    color: Colors.primary,
     letterSpacing: -0.2,
   },
   plusBtn: {
     width: 34,
     height: 34,
     borderRadius: 12,
-    backgroundColor: Colors.brand,
+    backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1114,14 +1098,14 @@ const s = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: '400',
-    color: Colors.darkInk,
+    color: Colors.black,
     letterSpacing: -0.2,
   },
   rowLabelInline: {
     flexShrink: 1,
     fontSize: 16,
     fontWeight: '400',
-    color: Colors.darkInk,
+    color: Colors.black,
     letterSpacing: -0.2,
   },
   toggleLabelHit: {
@@ -1136,7 +1120,7 @@ const s = StyleSheet.create({
   drillChevron: {
     fontSize: 20,
     lineHeight: 22,
-    color: Colors.brand,
+    color: Colors.primary,
     fontWeight: '700',
   },
   rowRight: {
@@ -1158,7 +1142,7 @@ const s = StyleSheet.create({
   },
   rowInput: {
     fontSize: 15,
-    color: Colors.darkInk,
+    color: Colors.black,
     textAlign: 'right',
     flex: 1,
     letterSpacing: -0.2,
@@ -1172,7 +1156,7 @@ const s = StyleSheet.create({
   },
   checkmark: {
     fontSize: 17,
-    color: Colors.brand,
+    color: Colors.primary,
     fontWeight: '700',
   },
   hairline: {
@@ -1185,7 +1169,9 @@ const s = StyleSheet.create({
   swipeWrap: {
     position: 'relative',
     overflow: 'hidden',
-    backgroundColor: Colors.red,
+    // No red fill here — the reveal layer supplies it. A red wrap bled a
+    // hairline past the face's edge at fractional device pixels.
+    backgroundColor: Colors.white,
   },
   removeLayer: {
     position: 'absolute',
@@ -1219,7 +1205,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 18,
     paddingVertical: 14,
-    minHeight: 72,
+    minHeight: 84,
     backgroundColor: Colors.white,
   },
   deviceIdent: {
@@ -1238,7 +1224,7 @@ const s = StyleSheet.create({
   deviceName: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.darkInk,
+    color: Colors.black,
     letterSpacing: -0.25,
     flexShrink: 1,
   },
@@ -1256,25 +1242,26 @@ const s = StyleSheet.create({
   },
   pillOnline:  { backgroundColor: Colors.green },
   pillOffline: { backgroundColor: Colors.red },
-  pillPinging: { backgroundColor: Colors.warmTint },
+  pillPinging: { backgroundColor: Colors.primaryLight },
   pillText: {
     fontSize: 11.5,
     fontWeight: '700',
     color: Colors.white,
     letterSpacing: 0.1,
   },
-  pillTextPinging: { color: Colors.brand },
+  pillTextPinging: { color: Colors.primary },
 
   // ── Action chips ──
   chipRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
+    gap: 10,
   },
   chip: {
-    height: 36,
-    paddingHorizontal: 14,
-    borderRadius: 11,
+    height: 50,
+    minWidth: 112,
+    paddingHorizontal: 20,
+    borderRadius: 13,
     backgroundColor: Colors.grayLight,
     borderWidth: 1,
     borderColor: Colors.grayBorder,
@@ -1282,17 +1269,17 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   chipAccent: {
-    backgroundColor: Colors.warmTint,
-    borderColor: Colors.brand,
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
   },
   chipText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: Colors.primary,
     letterSpacing: -0.1,
   },
   chipTextAccent: {
-    color: Colors.brand,
+    color: Colors.white,
   },
 
   // ── Copies stepper ──
@@ -1318,7 +1305,7 @@ const s = StyleSheet.create({
   stepGlyph: {
     fontSize: 17,
     fontWeight: '700',
-    color: Colors.brand,
+    color: Colors.primary,
     lineHeight: 20,
   },
   stepGlyphOff: {
@@ -1329,7 +1316,7 @@ const s = StyleSheet.create({
     textAlign: 'center',
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.darkInk,
+    color: Colors.black,
   },
 
   // ── Add device dropdown ──
@@ -1354,7 +1341,7 @@ const s = StyleSheet.create({
   addMenuLabel: {
     fontSize: 16,
     fontWeight: '500',
-    color: Colors.darkInk,
+    color: Colors.black,
     letterSpacing: -0.2,
   },
 
